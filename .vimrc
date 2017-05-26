@@ -355,9 +355,6 @@ call plug#begin('~/.vim/plugged')
 "
 " " Make sure you use single quotes
 
-" let Vundle manage Vundle, required
-Plug 'VundleVim/Vundle.vim'
-
 " Manage your project looks like a tree-list
 Plug 'scrooloose/nerdtree'
 Plug 'jistr/vim-nerdtree-tabs'
