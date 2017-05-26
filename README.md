@@ -2,6 +2,7 @@
 my own vimrc and tux_conf file
 
 DEPENDENCY
+
 this script and configuration file rely on program below
 1. vim, better newer than 7.4, you can check it by vim --version
 2. python, both python2.7 and/or python3 is okay
@@ -12,6 +13,7 @@ have some problems on your computer, you may solve it by yourself or contact me
 by <nepood@gmail.com> or pull your request to this repo.
 
 DESCRIPTION
+
 this is my own vimrc file to write program. it combine functions as below:
 1. show directory and project as tree using nerdtree and minibufexpl on the left
 2. dispaly varialbes, structures, functions on the right using tagbar
@@ -24,6 +26,7 @@ this is my own vimrc file to write program. it combine functions as below:
 
 
 INSTALLATION
+
 1. run script by "./auto_install.sh"
 2. enter into vim and install plugins by ":PlugInstall"
 3. all okay, enjoy your new vim
