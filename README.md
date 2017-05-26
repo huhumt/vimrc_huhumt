@@ -3,10 +3,11 @@ my own vimrc and tux_conf file
 
 DEPENDENCY
 this script and configuration file rely on program below
-1. vim, better newer than 7.4
-2. python, both python2.7 and python3 is okay
+1. vim, better newer than 7.4, you can check it by vim --version
+2. python, both python2.7 and/or python3 is okay
 3. curl and git for download plugins
-4. some other dependencies, sorry for it. I only test on my own computer, maybe
+4. ctags for jump in code
+5. some other dependencies, sorry for it. I only test on my own computer, maybe
 have some problem on your computer, you may solve it by yourself or contact me
 by <nepood@gmail.com> or pull your request to this repo.
 
