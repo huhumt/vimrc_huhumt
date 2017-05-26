@@ -1,6 +1,15 @@
 # vimrc_huhumt
 my own vimrc and tux_conf file
 
+DEPENDENCY
+this script and configuration file rely on program below
+1. vim, better newer than 7.4
+2. python, both python2.7 and python3 is okay
+3. curl and git for download plugins
+4. some other dependencies, sorry for it. I only test on my own computer, maybe
+have some problem on your computer, you may solve it by yourself or contact me
+by <nepood@gmail.com> or pull your request to this repo.
+
 DESCRIPTION
 this is my own vimrc file to write program. it combine functions as below:
 1. show directory and project as tree using nerdtree and minibufexpl on the left
@@ -14,7 +23,6 @@ this is my own vimrc file to write program. it combine functions as below:
 
 
 INSTALLATION
-1. change auto_install.sh to excuteble by "chmod 755 auto_install.sh"
-2. run script by "./auto_install.sh"
-3. enter into vim and install plugins by ":PlugInstall"
-4. all okay, enjoy your new vim
+1. run script by "./auto_install.sh"
+2. enter into vim and install plugins by ":PlugInstall"
+3. all okay, enjoy your new vim
