@@ -308,7 +308,7 @@ command -nargs=0 P :r $HOME/.vimbuf
 
 
 " Support Plug NerdTree
-let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$']
+let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.out$']
 map <Leader>n <plug>NERDTreeTabsToggle<CR>
 let g:nerdtree_tabs_open_on_console_startup=1
 
@@ -342,6 +342,13 @@ let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
+
+
+" support minibufexpl plugin
+let g:miniBufExplMapWindowNavVim = 1
+let g:miniBufExplMapWindowNavArrows = 1
+let g:miniBufExplMapCTabSwitchBufs = 1
+let g:miniBufExplModSelTarget = 1
 
 " Support tagbar plugin
 nmap <Leader>t :TagbarToggle<CR>
