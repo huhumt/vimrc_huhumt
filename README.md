@@ -14,7 +14,7 @@ by <nepood@gmail.com> or pull your request to this repo.
 
 DESCRIPTION
 
-this is my own vimrc file to write program. it combine functions as below:
+this is my own vimrc file to write program. it combines functions as below:
 1. show directory and project as tree using nerdtree and minibufexpl on the left
 2. dispaly varialbes, structures, functions on the right using tagbar
 3. auto complete code by tab using supertab, maybe you want to use youcompleteme

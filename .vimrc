@@ -299,7 +299,7 @@ set guioptions=mlrb
 set fileencodings=ucs-bom,utf-8,gb2312,gb18030
 set termencoding=utf-8
 set fileformats=unix
-set tag=tags;
+set tag=tags
 highlight Comment ctermfg=green guifg=green
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 
