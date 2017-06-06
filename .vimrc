@@ -81,22 +81,6 @@ else
 
 endif " has("autocmd")
 
-" add any cscope database in current directory
-"if filereadable("~/minigui/trunk/cscope.out")
-"cs add ~/minigui/trunk/cscope.out
-" else add the database pointed to by environment variable
-"elseif $CSCOPE_DB != ""
-"cs add $CSCOPE_DB
-"endif
-
-" add any cscope database in current directory
-if filereadable("./cscope.out")
-    cs add ./cscope.out
-" else add the database pointed to by environment variable
-elseif $CSCOPE_DB != ""
-    cs add $CSCOPE_DB
-endif
-
 " CSCOPE settings for vim
 " This file contains some boilerplate settings for vim's cscope interface,
 " plus some keyboard mappings that I've found useful.
@@ -131,6 +115,14 @@ if has("cscope")
     " check cscope for definition of a symbol before checking ctags: set to 1
     " if you want the reverse search order.
     set csto=0
+
+    " add any cscope database in current directory
+    if filereadable("./cscope.out")
+        cs add ./cscope.out
+        " else add the database pointed to by environment variable
+    elseif $CSCOPE_DB != ""
+        cs add $CSCOPE_DB
+    endif
 
     " show msg when any other cscope db added
     set cscopeverbose
@@ -308,7 +300,7 @@ command -nargs=0 P :r $HOME/.vimbuf
 
 
 " Support Plug NerdTree
-let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.out$']
+let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
 map <Leader>n <plug>NERDTreeTabsToggle<CR>
 let g:nerdtree_tabs_open_on_console_startup=1
 
@@ -354,6 +346,7 @@ let g:miniBufExplModSelTarget = 1
 nmap <Leader>t :TagbarToggle<CR>
 let g:tagbar_ctags_bin='/usr/bin/ctags'
 let g:tagbar_width=35
+
 
 
 
