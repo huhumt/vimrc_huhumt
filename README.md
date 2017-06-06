@@ -30,3 +30,10 @@ INSTALLATION
 1. run script by "./auto_install.sh"
 2. enter into vim and install plugins by ":PlugInstall"
 3. all okay, enjoy your new vim
+
+UPDATE
+
+20170606: You must try YouCompleteMe plugin, or you will lose great
+pleasure to write code. Although it's a bit more complex to install,
+trust me, it's worth your time and effort. Treasure your life by typing
+less codes using auto-complete tools.
