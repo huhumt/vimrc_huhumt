@@ -37,3 +37,8 @@ UPDATE
 pleasure to write code. Although it's a bit more complex to install,
 trust me, it's worth your time and effort. Treasure your life by typing
 less codes using auto-complete tools.
+
+20170607: All the script has been well tested on my MSYS2 terminal run on
+Microsoft Windows7 Professional cracked edition work computer. What a shame!
+After testing on my debian personal computer, I found it should run
+"chmod 775 atuo_install.sh" first to make the script executable.
