@@ -1,5 +1,6 @@
 # vimrc_huhumt
 my own vimrc and tux_conf file
+![alt text](https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/demo.png)
 
 DEPENDENCY
 
