@@ -7,8 +7,9 @@ this script and configuration file rely on program below
 1. vim, better newer than 7.4, you can check it by vim --version
 2. python, both python2.7 and/or python3 is okay
 3. curl and git for download plugins
-4. ctags for jump in code
-5. some other dependencies, sorry for it. I only test on my own computer, maybe
+4. ctags and cscope for jump in code
+5. clang, cmake to support YouCompleteMe, Clang Complete
+6. some other dependencies, sorry for it. I only test on my own computer, maybe
 have some problems on your computer, you may solve it by yourself or contact me
 by <nepood@gmail.com> or pull your request to this repo.
 
