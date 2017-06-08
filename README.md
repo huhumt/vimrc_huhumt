@@ -27,7 +27,7 @@ this is my own vimrc file to write program. it combines functions as below:
 
 INSTALLATION
 
-1. run script by "./auto_install.sh"
+1. run script by "./auto_install.sh", maybe first you need run "chmod 755 auto_install.sh"
 2. enter into vim and install plugins by ":PlugInstall"
 3. all okay, enjoy your new vim
 
@@ -42,3 +42,14 @@ less codes using auto-complete tools.
 Microsoft Windows7 Professional cracked edition work computer. What a shame!
 After testing on my debian personal computer, I found it should run
 "chmod 775 atuo_install.sh" first to make the script executable.
+
+20170608: I find some problems when run vim on tmux, the colors of vim will change.
+I have search for some solutions but haven't totally solve them. I am using Mintty
+terminal emulator on MSYS2(a Cygwin similar) environment. If you have some good
+ideas for it, please let me know, I will appriciate for your kindness. Another big
+problem is I can not run both YouCompleteMe(lack of python-dev support) and
+Clang Complete(lack of libclang support), what a pity. But SuperTab is not enough
+for auto completation, it can not identify class, structure. So I change to use
+AutoComplPop, hope you like it too. Sometimes I feel it's exhausted to deal with all
+kinds of these problems, but it's worth my effort to try those good things rather than
+using pirated software. At the same time, you can try eclipse-cdt at the same time.
