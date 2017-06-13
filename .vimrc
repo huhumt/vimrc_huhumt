@@ -140,10 +140,10 @@ if has("cscope")
     " s: Find this C symbol
     " t: Find this text string
 
-    " nmap <C-s> :cs find c <C-R>=expand("<cword>")<CR><CR>
-    " nmap <C-e> :cs find e <C-R>=expand("<cword>")<CR><CR>
-    " nmap <C-w> :cs find f <C-R>=expand("<cfile>")<CR><CR>
-    " nmap <C-i> :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+    nmap <Leader><Leader>c :cs find c <C-R>=expand("<cword>")<CR><CR>
+    nmap <Leader><Leader>e :cs find e <C-R>=expand("<cword>")<CR><CR>
+    nmap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
+    nmap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
 
 
     """"""""""""" key map timeouts
@@ -338,6 +338,7 @@ Plug 'Chiel92/vim-autoformat'
 
 " fuzzy search using Ctrl-P
 Plug 'ctrlpvim/ctrlp.vim'
+
 
 "
 " Initialize plugin system
