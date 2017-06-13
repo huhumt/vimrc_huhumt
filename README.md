@@ -55,7 +55,7 @@ Clang Complete(lack of libclang support), what a pity. But SuperTab is not enoug
 for auto completation, it can not identify class, structure. So I change to use
 AutoComplPop, hope you like it too. Sometimes I feel it's exhausted to deal with all
 kinds of these problems, but it's worth my effort to try those good things rather than
-using pirated software. At the same time, you can try eclipse-cdt at the same time.
+using pirated software. At the same time, you can try eclipse-cdt as alternatives.
 
 20170613: I have tested on my debian 8 personal computer with xterm terminal and find
 there is no problem in dispaly color when running vim with tmux. Maybe it's a small
