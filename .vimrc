@@ -75,6 +75,14 @@ if has("autocmd")
 
     augroup END
 
+    augroup qf
+        au!
+
+        " auto open quickfix window
+        autocmd QuickFixCmdPost * cwindow 1
+
+    augroup END
+
 else
 
     set autoindent		" always set autoindenting on
@@ -126,6 +134,10 @@ if has("cscope")
 
     " show msg when any other cscope db added
     set cscopeverbose
+
+    if has('quickfix')
+        set cscopequickfix=s-,c-,d-,i-,t-,e-
+    endif
 
 
     """"""""""""" My cscope/vim key mappings
@@ -228,8 +240,11 @@ command -nargs=0 P :r $HOME/.vimbuf
 
 " Support Plug NerdTree
 let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
+let g:NERDTreeDirArrowExpandable = "▸"
+let g:NERDTreeDirArrowCollapsible = "▾"
 map <Leader>n <plug>NERDTreeTabsToggle<CR>
-let g:nerdtree_tabs_open_on_console_startup=1
+let g:nerdtree_tabs_open_on_console_startup = 1
+let g:nerdtree_tabs_smart_startup_focus = 2
 
 " Support NerdCommenter, powerful comment tool
 " Add spaces after comment delimiters by default
@@ -262,7 +277,6 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
-
 " support minibufexpl plugin
 let g:miniBufExplMapWindowNavVim = 1
 let g:miniBufExplMapWindowNavArrows = 1
@@ -272,7 +286,11 @@ let g:miniBufExplModSelTarget = 1
 " Support tagbar plugin
 nmap <Leader>t :TagbarToggle<CR>
 let g:tagbar_ctags_bin='/usr/bin/ctags'
-let g:tagbar_width=35
+" let g:tagbar_width=35 " default is 40
+let g:tagbar_iconchars = ['▸', '▾']
+if has("autocmd")
+    autocmd VimEnter * nested :TagbarOpen
+endif " if has("autocmd")
 
 " Support Auto-Format plugin
 nmap <Leader>f :Autoformat<CR>
