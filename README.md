@@ -29,7 +29,8 @@ this is my own vimrc file to write program. it combines functions as below:
 
 INSTALLATION
 
-1. run script by "./auto_install.sh", maybe first you need run "chmod 755 auto_install.sh"
+1. run script by "./auto_install.sh", maybe you need run "chmod 755 auto_install.sh"
+first to make the script executable. Or you can run "sh auto_install.sh" directly
 2. enter into vim and install plugins by ":PlugInstall"
 3. all okay, enjoy your new vim
 
@@ -55,3 +56,7 @@ for auto completation, it can not identify class, structure. So I change to use
 AutoComplPop, hope you like it too. Sometimes I feel it's exhausted to deal with all
 kinds of these problems, but it's worth my effort to try those good things rather than
 using pirated software. At the same time, you can try eclipse-cdt at the same time.
+
+20170613: I have tested on my debian 8 personal computer with xterm terminal and find
+there is no problem in dispaly color when running vim with tmux. Maybe it's a small
+problem of the MSYS2 Mintty terminal. So wish you good luck.
