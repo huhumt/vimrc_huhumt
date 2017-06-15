@@ -78,8 +78,8 @@ if has("autocmd")
     augroup qf
         au!
 
-        " auto open quickfix window
-        autocmd QuickFixCmdPost * cwindow 1
+        " auto open quickfix window, default height is 10
+        autocmd QuickFixCmdPost * copen 20
 
     augroup END
 
