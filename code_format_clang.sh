@@ -37,7 +37,7 @@ format_code()
             check_type $1/$dir
             if [ $? -eq 0 ]
             then
-                clang-format -i $1/$dir
+                clang-format -style=llvm -i $1/$dir
                 printf "    success format file: $1/$dir\n"
             else
                 printf "    unsupported file type: $1/$dir\n"
@@ -53,7 +53,7 @@ main()
     do
         if [ -f $name ]
         then
-            clang-format -i $name
+            clang-format -style=llvm -i $name
         elif [ -d $name ]
         then
             len=${#name}
