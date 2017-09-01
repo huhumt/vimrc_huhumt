@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-if [ $# -eq 0 ]
-then
-    printf "Plese give directory or file to do format\n"
-    exit
-fi
-
 check_type()
 {
     local par1=$1
@@ -67,4 +61,9 @@ main()
     done
 }
 
+if [ $# -eq 0 ]
+then
+    printf "Plese give directory or file to do format\n"
+    exit
+fi
 main $@
