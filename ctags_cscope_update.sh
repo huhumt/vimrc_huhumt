@@ -9,7 +9,7 @@ then
 fi
 
 cscope_item=( ./cscope.out ./cscope.in.out ./cscope.po.out )
-for item in $cscope_item[@]
+for item in ${cscope_item[@]}
 do
     if [ -f $item ]
     then
