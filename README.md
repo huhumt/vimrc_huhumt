@@ -46,8 +46,8 @@ Microsoft Windows7 Professional cracked edition work computer. What a shame!
 After testing on my debian personal computer, I found it should run
 "chmod 775 atuo_install.sh" first to make the script executable.
 
-20170608: I find some problems when run vim on tmux, the colors of vim will change.
-I have search for some solutions but haven't totally solve them. I am using Mintty
+20170608: I find some problems when running vim on tmux, the colors of vim will change.
+I have searched for some solutions but haven't totally solved them. I am using Mintty
 terminal emulator on MSYS2(a Cygwin similar) environment. If you have some good
 ideas for it, please let me know, I will appriciate for your kindness. Another big
 problem is I can not run both YouCompleteMe(lack of python-dev support) and
