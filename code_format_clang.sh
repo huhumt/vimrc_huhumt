@@ -66,4 +66,5 @@ then
     printf "Plese give directory or file to do format\n"
     exit
 fi
+
 main $@
