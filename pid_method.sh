@@ -4,7 +4,6 @@ pid_get()
 {
     local process_name=$1
     local process_list=$(ps aux)
-    local process_name_found=""
 
     while read line
     do
@@ -17,7 +16,7 @@ pid_get()
 
         if [ "${cur_process/$process_name}" != "$cur_process" ]
         then
-            process_name_found=($line)
+            local process_name_found=($line)
             break
         fi
     done <<< $process_list
