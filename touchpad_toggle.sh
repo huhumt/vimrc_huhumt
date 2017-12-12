@@ -2,7 +2,8 @@
 # it is for toggle touchpad by a keyboard button
 
 #!/bin/bash
-touchpad_id=$(xinput list | grep -i GlidePoint | grep -iEo [0-9]{2})
+#touchpad_id=$(xinput list | grep -i Synaptics | grep -iEo [0-9]{2})
+touchpad_id=$(xinput list | grep -i Synaptics | grep -oP "(?<=id=)\d+")
 touchpad_status=$(xinput list-props $touchpad_id | grep -i "Device Enabled" | grep -iEo "[0-9]+$")
 echo $touchpad_status
 #touchpad_status=$(synclient -l | grep -i TouchpadOff | grep -iEo [0-9])
