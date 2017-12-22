@@ -10,8 +10,8 @@ update_ctags_cscope()
     if [ -e "tags" ]
     then
         cp tags tags.old
-        mv tags.new tags
     fi
+    mv tags.new tags
 
     rm cscope*
     # generate cscope
@@ -64,7 +64,7 @@ main()
         then
             # update tags and copy to work directory
             update_ctags_cscope
-        # vim is inactive, stop process
+            # vim is inactive, stop process
         else
             # wait for 60 second for vim re-active
             if [ $cnt -gt 6 ]
