@@ -13,8 +13,8 @@ update_ctags_cscope()
     fi
     mv tags.new tags
 
-    find ./ -name "cscope*" > /dev/null
-    if [ $? -eq 0 ]
+    cs_num=$(find ./ -name "cscope*" | wc -l)
+    if [ $cs_num -gt 0 ]
     then
         rm cscope*
     fi
@@ -24,8 +24,7 @@ update_ctags_cscope()
     echo "Update code tags"
 
     # check whether tags file generated
-    find ./ -name "tags" > /dev/null
-    if [ $? -eq 0 ]
+    if [ -e "tags" ]
     then
         echo "...ctags built"
     else
@@ -44,10 +43,10 @@ update_ctags_cscope()
     echo "Finish update code tags, let's roll"
 }
 
-check_vim_status()
+check_process_status()
 {
     # if vim is on, return 0, otherwise return 1
-    vim_on=$(ps aux | grep vim)
+    vim_on=$(ps aux | grep $1)
 }
 
 main()
@@ -60,7 +59,8 @@ main()
     while true
     do
         # check whether vim is active
-        check_vim_status
+        process_name="vim"
+        check_process_status $process_name
         # 0: on, 1: off
         vim_status=$?
         # vim is active, update tags every 10 second
