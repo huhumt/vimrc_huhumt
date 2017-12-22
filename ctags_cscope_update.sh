@@ -13,7 +13,11 @@ update_ctags_cscope()
     fi
     mv tags.new tags
 
-    rm cscope*
+    find ./ -name "cscope*" > /dev/null
+    if [ $? -eq 0 ]
+    then
+        rm cscope*
+    fi
     # generate cscope
     cscope -Rbkq
 
@@ -29,7 +33,7 @@ update_ctags_cscope()
     fi
 
     # check how many cscope file generated
-    cs_num=$(find ./ -iname "cscope*" | wc -l)
+    cs_num=$(find ./ -name "cscope*" | wc -l)
     if [ $cs_num -eq 3 ]
     then
         echo "...cscope built"
