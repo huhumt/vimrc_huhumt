@@ -154,8 +154,8 @@ if has("cscope")
 
     nmap <Leader><Leader>c :cs find c <C-R>=expand("<cword>")<CR><CR>
     nmap <Leader><Leader>e :cs find e <C-R>=expand("<cword>")<CR><CR>
-    nmap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
-    nmap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+    " nmap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
+    " nmap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
 
 
     """"""""""""" key map timeouts
@@ -228,6 +228,8 @@ set nowrap
 set guioptions=mlrb
 
 set tag=tags
+map <Leader>u :!ctags -Rn<CR>:!cscope -Rbkq<CR>:cs reset<CR><CR>
+
 "
 " endif
 
@@ -243,8 +245,8 @@ let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
 let g:NERDTreeDirArrowExpandable = "▸"
 let g:NERDTreeDirArrowCollapsible = "▾"
 map <Leader>n <plug>NERDTreeTabsToggle<CR>
-let g:nerdtree_tabs_open_on_console_startup = 1
-let g:nerdtree_tabs_smart_startup_focus = 2
+" let g:nerdtree_tabs_open_on_console_startup = 1
+" let g:nerdtree_tabs_smart_startup_focus = 2
 
 " Support NerdCommenter, powerful comment tool
 " Add spaces after comment delimiters by default
@@ -273,7 +275,7 @@ set statusline+=%{SyntasticStatuslineFlag()}
 set statusline+=%*
 
 let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
+let g:syntastic_auto_loc_list = 2
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
@@ -288,9 +290,9 @@ nmap <Leader>t :TagbarToggle<CR>
 let g:tagbar_ctags_bin='/usr/bin/ctags'
 " let g:tagbar_width=35 " default is 40
 let g:tagbar_iconchars = ['▸', '▾']
-if has("autocmd")
-    autocmd VimEnter * nested :TagbarOpen
-endif " if has("autocmd")
+" if has("autocmd")
+"     autocmd VimEnter * nested :TagbarOpen
+" endif " if has("autocmd")
 
 " Support Auto-Format plugin
 nmap <Leader>f :Autoformat<CR>
@@ -325,7 +327,7 @@ Plug 'jistr/vim-nerdtree-tabs'
 Plug 'scrooloose/nerdcommenter'
 
 " check your code syntastic
-Plug 'scrooloose/syntastic'
+Plug 'vim-syntastic/syntastic'
 
 " display vim status
 Plug 'vim-airline/vim-airline'
@@ -342,11 +344,9 @@ Plug 'majutsushi/tagbar'
 
 " auto complete code usging SuperTab
 " Plug 'ervandew/supertab'
-Plug 'vim-scripts/AutoComplPop'
-
-" auto update ctags
-Plug 'xolox/vim-misc'
-Plug 'xolox/vim-easytags'
+" Plug 'vim-scripts/AutoComplPop'
+" Plug 'Valloric/YouCompleteMe'
+Plug 'ervandew/supertab'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
