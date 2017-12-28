@@ -20,6 +20,8 @@ update_ctags_cscope()
     fi
     # generate cscope
     cscope -Rbkq
+    # take effect on vim
+    # vim --servername VIM --remote-expr "ResetCscope()"
 
     echo "Update code tags"
 
@@ -49,7 +51,7 @@ check_process_status()
     vim_on=$(ps aux | grep $1)
 }
 
-main()
+run_daemon()
 {
     # first generate tags and cscope in current directory
     update_ctags_cscope
@@ -86,5 +88,18 @@ main()
     done
 }
 
+main()
+{
+    echo $1
+
+    if [ "$1" = "-d" ]
+    then
+        run_daemon
+    else
+        update_ctags_cscope
+    fi
+}
+
 # run in background slient
 main $@ > /dev/null &
+# main $@
