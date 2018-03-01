@@ -6,22 +6,17 @@ update_ctags_cscope()
 
     # generate ctags
     ctags -Rnf ./tags.new
-    # delete old tags and cscope files
-    if [ -e "tags" ]
-    then
-        cp tags tags.old
-    fi
-    mv tags.new tags
 
-    cs_num=$(find ./ -name "cscope*" | wc -l)
-    if [ $cs_num -gt 0 ]
-    then
-        rm cscope*
-    fi
     # generate cscope
-    cscope -Rbkq
+    cscope -Rbk
+
+    # overwrite old file with newest one
+    mv tags.new tags
+    # mv cscope.out.new cscope.out
+
     # take effect on vim
     # vim --servername VIM --remote-expr "ResetCscope()"
+    # vim -c "silent cscope reset" -c "q"
 
     echo "Update code tags"
 
@@ -33,9 +28,8 @@ update_ctags_cscope()
         echo "Fail to build ctags"
     fi
 
-    # check how many cscope file generated
-    cs_num=$(find ./ -name "cscope*" | wc -l)
-    if [ $cs_num -eq 3 ]
+    # check whether cscope.output file exist
+    if [ -e "cscope.out" ]
     then
         echo "...cscope built"
     else
@@ -47,8 +41,7 @@ update_ctags_cscope()
 
 check_process_status()
 {
-    # if vim is on, return 0, otherwise return 1
-    vim_on=$(ps aux | grep $1)
+    return $(ps aux | grep -v grep | grep $1 | wc -l)
 }
 
 run_daemon()
@@ -60,15 +53,22 @@ run_daemon()
     # generate tags and cscope files every 10 second
     while true
     do
+        # check whether this script is the last one
+        process_name="mintty"
+        check_process_status $process_name
+        if [ $? -eq 0 ]
+        then
+            break
+        fi
+
         # check whether vim is active
         process_name="vim"
         check_process_status $process_name
-        # 0: on, 1: off
-        vim_status=$?
         # vim is active, update tags every 10 second
-        if [ $vim_status -eq 0 ]
+        if [ $? -gt 0 ]
         then
             # update tags and copy to work directory
+            cnt="0"
             update_ctags_cscope
             # vim is inactive, stop process
         else
@@ -76,8 +76,6 @@ run_daemon()
             if [ $cnt -gt 6 ]
             then
                 # or end process
-                echo "I need rest, goodbye"
-                rm tags* cscope*
                 break
             else
                 echo "vim is not in process"
@@ -86,20 +84,22 @@ run_daemon()
         fi
         sleep 10
     done
+
+    echo "I need rest, goodbye"
+    rm tags* cscope*
 }
 
 main()
 {
-    echo $1
-
     if [ "$1" = "-d" ]
     then
+        # run in background slient
+        printf "\n\t...run ctags and cscope update in background slient"
+        # run_daemon > /dev/null &
         run_daemon
     else
         update_ctags_cscope
     fi
 }
 
-# run in background slient
-main $@ > /dev/null &
-# main $@
+main $@
