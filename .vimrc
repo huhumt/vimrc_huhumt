@@ -227,6 +227,9 @@ set number
 set nowrap
 set guioptions=mlrb
 
+set list
+set listchars=tab:>-
+
 set tag=tags
 map <Leader>u :!ctags -Rn<CR>:!cscope -Rbkq<CR>:cs reset<CR><CR>
 
@@ -258,7 +261,7 @@ let g:NERDDefaultAlign = 'left'
 " Set a language to use its alternate delimiters by default
 let g:NERDAltDelims_java = 1
 " Add your own custom formats or override the defaults
-let g:NERDCustomDelimiters = { 'h': { 'left': '/**','right': '**/' } }
+" let g:NERDCustomDelimiters = { 'h': { 'left': '/**','right': '**/' } }
 let g:NERDCustomDelimiters = { 'cpp': { 'left': '/**','right': '**/' } }
 " Allow commenting and inverting empty lines (useful when commenting a region)
 let g:NERDCommentEmptyLines = 1
