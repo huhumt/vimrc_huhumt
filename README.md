@@ -60,3 +60,6 @@ using pirated software. At the same time, you can try eclipse-cdt as alternative
 20170613: I have tested on my debian 8 personal computer with xterm terminal and find
 there is no problem in dispaly color when running vim with tmux. Maybe it's a small
 problem of the MSYS2 Mintty terminal. So wish you good luck.
+
+20180525: You can now do all the procedure by only one command "sh auto_install.sh".
+I have added some small scripts for my own use.
