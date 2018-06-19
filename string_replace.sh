@@ -110,5 +110,5 @@ else
     dst_str=$(str_handle $dst_str)
 fi
 
-printf "replace $src_str with $dst_str in $dst_dir"
+printf "replace $src_str with $dst_str in $dst_dir\n"
 main $src_str $dst_str $dst_dir
