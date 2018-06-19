@@ -30,6 +30,8 @@ do_replace()
         else
             sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
         fi
+    else
+        printf "Unsupport file type\n"
     fi
 }
 
@@ -49,6 +51,21 @@ str_replace()
             do_replace $filename
         fi
     done
+}
+
+str_handle()
+{
+    local char_array=$(echo "$1" | sed -e 's/\(.\)/\1\ /g')
+    local str_output=""
+    for i in $char_array
+    do
+        if [ "$i" = "/" ]
+        then
+            str_output+="\\"
+        fi
+        str_output+=$i
+    done
+    echo $str_output
 }
 
 main()
@@ -81,11 +98,17 @@ dst_dir=$3
 if [ "$src_str" = "" ]
 then
     printf "source string can't be empty\n"
+    exit
+else
+    src_str=$(str_handle $src_str)
 fi
 
-if [ "$dst_dir" = "" ]
+if [ "$dst_str" = "" ]
 then
     dst_str="EmPtYeMpTy"
+else
+    dst_str=$(str_handle $dst_str)
 fi
 
+printf "replace $src_str with $dst_str in $dst_dir"
 main $src_str $dst_str $dst_dir
