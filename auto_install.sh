@@ -6,6 +6,9 @@ mkdir ~/.vim/plugged
 cp .vimrc .tmux.conf ~/
 vim -c "silent PlugClean" -c "silent PlugInstall" -c "qa"
 
+mkdir ~/.config/pip
+cp pip.conf ~/.config/pip/
+
 # get system info of kernal and os in lowercase
 kernel_name=$(echo "$(uname -s)" | tr '[:upper:]' '[:lower:]')
 os_name=$(echo "$(uname -o)" | tr '[:upper:]' '[:lower:]')
