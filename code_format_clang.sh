@@ -25,14 +25,11 @@ format_method()
     if [ "$method" = "clang-format-vim" ]
     then
         vim $filename -c "silent Autoformat" -c "wq"
+    elif [ "$method" = "clang-format-file" ]
+    then
+        clang-format -style=file -i $filename
     else
-        wget https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.clang-format
-        if [ -f ./.clang-format ]
-        then
-            clang-format -style=file -i $filename
-        else
-            clang-format -style=llvm -i $filename
-        fi
+        clang-format -style=llvm -i $filename
     fi
 }
 
@@ -54,8 +51,6 @@ do_format()
     fi
 }
 
-sum_of_file="0"
-sum_of_line="0"
 format_code()
 {
     local dirlist=$(ls $1)
@@ -68,7 +63,7 @@ format_code()
         if [ -d $filename ]
         then
             printf "\nDirectory: $filename\n"
-            format_code $filename
+            format_code $filename $method
         elif [ -f $filename ]
         then
             do_format $filename $method
@@ -84,6 +79,20 @@ main()
     if [ "$2" = "--with-vim" ]
     then
         method+="-vim"
+    else
+        if [ ! -f ~/.clang-format ]
+        then
+            printf "Download clang-format rules from github...\n"
+            wget -q -P ~/ https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.clang-format
+        fi
+
+        cp ~/.clang-format ./
+        if [ -f ./.clang-format ]
+        then
+            method+="-file"
+        else
+            method+="-llvm"
+        fi
     fi
 
     if [ -f $name ]
@@ -100,14 +109,21 @@ main()
         format_code $name $method
         printf "\nTotally has $sum_of_file files with $sum_of_line lines\n"
     fi
+
+    if [ -f ./.clang-format ]
+    then
+        rm ./.clang-format
+    fi
 }
 
+sum_of_file="0"
+sum_of_line="0"
 if [ $# -eq 0 ]
 then
     printf "Plese give directory or file to do format\n"
     printf "Usage: code_format_clang filename/directory --with-vim\n"
-    printf "--with-vim is optional to use vim clang plugin,\n"
-    printf "otherwise, use system clang-format instead"
+    printf "appendix '--with-vim' is optional to use vim clang plugin,\n"
+    printf "otherwise, use system clang-format instead\n"
     exit
 fi
 
