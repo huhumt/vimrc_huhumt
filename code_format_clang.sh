@@ -22,11 +22,35 @@ format_method()
     local filename=$1
     local method=$2
 
-    if [ "$method" = "clang-format" ]
+    if [ "$method" = "clang-format-vim" ]
     then
-        clang-format -style=llvm -i $filename
-    else
         vim $filename -c "silent Autoformat" -c "wq"
+    else
+        wget https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.clang-format
+        if [ -f ./.clang-format ]
+        then
+            clang-format -style=file -i $filename
+        else
+            clang-format -style=llvm -i $filename
+        fi
+    fi
+}
+
+do_format()
+{
+    local filename=$1
+    local method=$2
+
+    check_type $filename
+    if [ $? -eq 0 ]
+    then
+        format_method $filename $method
+        local lines=$(wc -l < $filename)
+        printf "    success format file: $filename, totally has $lines lines\n"
+        sum_of_file=$(($sum_of_file+1))
+        sum_of_line=$(($sum_of_line+$lines))
+    else
+        printf "    unsupported file type: $filename\n"
     fi
 }
 
@@ -40,23 +64,14 @@ format_code()
 
     for dir in ${dirlist[@]}
     do
-        if [ -d $1/$dir ]
+        local filename=$1/$dir
+        if [ -d $filename ]
         then
-            printf "\nDirectory: $1/$dir\n"
-            format_code $1/$dir
-        elif [ -f $1/$dir ]
+            printf "\nDirectory: $filename\n"
+            format_code $filename
+        elif [ -f $filename ]
         then
-            check_type $1/$dir
-            if [ $? -eq 0 ]
-            then
-                format_method $1/$dir $2
-                local lines=$(wc -l < $1/$dir)
-                printf "    success format file: $1/$dir, totally has $lines lines\n"
-                sum_of_file=$(($sum_of_file+1))
-                sum_of_line=$(($sum_of_line+$lines))
-            else
-                printf "    unsupported file type: $1/$dir\n"
-            fi
+            do_format $filename $method
         fi
     done
 }
@@ -64,19 +79,16 @@ format_code()
 main()
 {
     local name=$1
-    local method="vim-clang"
+    local method="clang-format"
+
+    if [ "$2" = "--with-vim" ]
+    then
+        method+="-vim"
+    fi
 
     if [ -f $name ]
     then
-        check_type $name
-        if [ $? -eq 0 ]
-        then
-            format_method $name $method
-            local lines=$(wc -l < $name)
-            printf "    success format file: $name, totally has $lines lines\n"
-        else
-            printf "    unsupported file type: $name\n"
-        fi
+        do_format $name $method
     elif [ -d $name ]
     then
         len=${#name}
@@ -93,7 +105,9 @@ main()
 if [ $# -eq 0 ]
 then
     printf "Plese give directory or file to do format\n"
-    printf "Usage: code_format_clang filename/directory\n"
+    printf "Usage: code_format_clang filename/directory --with-vim\n"
+    printf "--with-vim is optional to use vim clang plugin,\n"
+    printf "otherwise, use system clang-format instead"
     exit
 fi
 
