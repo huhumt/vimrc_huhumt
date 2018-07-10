@@ -28,7 +28,7 @@ then
     # sed -i 's/'"\/usr\/bin\/ctags"'/'"\/mingw64\/bin\/ctags"'/g' ~/.vimrc
     # use local mirror to speedup download
     cp ./demo/mirrorlist* /etc/pacman.d/
-    cp ./cn_update_package /usr/local/bin/
+    cp ./cn_update_package $usr_local_bin_path
     cn_update_package
 else
     usr_local_bin_path="$home_director/.local/bin"
@@ -39,6 +39,12 @@ fi
 
 cp ./code_backup.sh \
    ./ctags_cscope_update.sh \
-   ./replace_line.py \
+   ./string_replace.sh \
    ./code_format_clang.sh \
    $usr_local_bin_path
+
+
+chmod 755 $usr_local_bin_path/code_backup.sh \
+          $usr_local_bin_path/ctags_cscope_update.sh \
+          $usr_local_bin_path/string_replace.sh \
+          $usr_local_bin_path/code_format_clang.sh \
