@@ -43,7 +43,6 @@ cp ./code_backup.sh \
    ./code_format_clang.sh \
    $usr_local_bin_path
 
-
 chmod 755 $usr_local_bin_path/code_backup.sh \
           $usr_local_bin_path/ctags_cscope_update.sh \
           $usr_local_bin_path/string_replace.sh \
