@@ -231,7 +231,7 @@ set list
 set listchars=tab:>-
 
 set tag=tags
-map <Leader>u :!ctags -Rn<CR>:!cscope -Rbkq<CR>:cs reset<CR><CR>
+map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 
 "
 " endif
@@ -314,6 +314,9 @@ let g:ctrlp_custom_ignore = {
   \ 'link': 'some_bad_symbolic_links',
   \ }
 
+" Support Hexmode plugin
+let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
+
 
 
 
@@ -360,6 +363,10 @@ Plug 'Chiel92/vim-autoformat'
 
 " fuzzy search using Ctrl-P
 Plug 'ctrlpvim/ctrlp.vim'
+
+" Support open and edit hex file
+Plug 'fidian/hexmode'
+
 
 
 "
