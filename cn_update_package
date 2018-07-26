@@ -23,4 +23,4 @@ cp mirrorlist.mingw32.cn mirrorlist.mingw32
 cp mirrorlist.mingw64.cn mirrorlist.mingw64
 cp mirrorlist.msys.cn mirrorlist.msys
 
-pacman -Syu
+pacman -Syu --noconfirm
