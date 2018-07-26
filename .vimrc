@@ -247,7 +247,7 @@ command -nargs=0 P :r $HOME/.vimbuf
 let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
 let g:NERDTreeDirArrowExpandable = "▸"
 let g:NERDTreeDirArrowCollapsible = "▾"
-map <Leader>n <plug>NERDTreeTabsToggle<CR>
+map <Leader>n :NERDTreeTabsToggle<CR>
 " let g:nerdtree_tabs_open_on_console_startup = 1
 " let g:nerdtree_tabs_smart_startup_focus = 2
 
@@ -317,6 +317,11 @@ let g:ctrlp_custom_ignore = {
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
 
+" Support for Vim-Dict plugin
+let g:trans_bin = "/usr/local/bin"
+inoremap <silent> <leader>t <ESC>:Trans<CR>
+nnoremap <silent> <leader>t :Trans<CR>
+vnoremap <silent> <leader>t :TransVisual<CR>
 
 
 
@@ -366,6 +371,9 @@ Plug 'ctrlpvim/ctrlp.vim'
 
 " Support open and edit hex file
 Plug 'fidian/hexmode'
+
+" use network dictionary for words
+Plug 'echuraev/translate-shell.vim'
 
 
 
