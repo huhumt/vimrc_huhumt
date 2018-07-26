@@ -16,7 +16,7 @@ update_ctags_cscope()
 
     # take effect on vim
     # vim --servername VIM --remote-expr "ResetCscope()"
-    # vim -c "silent cscope reset" -c "q"
+    # vim -E -c "silent cscope reset" -c "qa"
 
     echo "Update code tags"
 
