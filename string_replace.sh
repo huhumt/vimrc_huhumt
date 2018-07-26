@@ -26,9 +26,11 @@ do_replace()
     then
         if [ "$dst_str" = "EmPtYeMpTy" ]
         then
-            sed -i 's/'"$src_str"'//g' $filename
+            #sed -i 's/'"$src_str"'//g' $filename
+            sed -i "s#$src_str##g" "$filename"
         else
-            sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
+            #sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
+            sed -i "s#$src_str#$dst_str#g" "$filename"
         fi
     else
         printf "Unsupport file type\n"
@@ -53,19 +55,37 @@ str_replace()
     done
 }
 
-str_handle()
+str_add_escape_char()
 {
-    local char_array=$(echo "$1" | sed -e 's/\(.\)/\1\ /g')
+    local char_array=$(echo $1 | sed -e 's#\(.\)#\1\ #g')
     local str_output=""
     for i in $char_array
     do
-        if [ "$i" = "/" ]
+        if [ "$i" = "\\" ]
         then
-            str_output+="\\"
+            str_output+="\\\\"
+        else
+            str_output+=$i
         fi
-        str_output+=$i
     done
-    echo $str_output
+    echo "$str_output"
+}
+
+str_handle()
+{
+    local string_array=($1)
+    local str_output=""
+
+    for cur_str in ${string_array[@]}
+    do
+        str_output+="$(str_add_escape_char $cur_str)"
+        str_output+=" "
+    done
+
+    local len=${#str_output}
+    str_output=${str_output:0:len-1}
+
+    echo "$str_output"
 }
 
 main()
@@ -100,14 +120,14 @@ then
     printf "source string can't be empty\n"
     exit
 else
-    src_str=$(str_handle $src_str)
+    src_str=$(str_handle "$src_str")
 fi
 
 if [ "$dst_str" = "" ]
 then
     dst_str="EmPtYeMpTy"
 else
-    dst_str=$(str_handle $dst_str)
+    dst_str=$(str_handle "$dst_str")
 fi
 
 printf "replace $src_str with $dst_str in $dst_dir\n"
