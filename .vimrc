@@ -253,20 +253,20 @@ map <Leader>n :NERDTreeTabsToggle<CR>
 
 " Support NerdCommenter, powerful comment tool
 " Add spaces after comment delimiters by default
-let g:NERDSpaceDelims = 1
+"let g:NERDSpaceDelims = 1
 " Use compact syntax for prettified multi-line comments
-let g:NERDCompactSexyComs = 1
+"let g:NERDCompactSexyComs = 1
 " Align line-wise comment delimiters flush left instead of following code indentation
-let g:NERDDefaultAlign = 'left'
+"let g:NERDDefaultAlign = 'left'
 " Set a language to use its alternate delimiters by default
-let g:NERDAltDelims_java = 1
+"let g:NERDAltDelims_java = 1
 " Add your own custom formats or override the defaults
 " let g:NERDCustomDelimiters = { 'h': { 'left': '/**','right': '**/' } }
-let g:NERDCustomDelimiters = { 'cpp': { 'left': '/**','right': '**/' } }
+"let g:NERDCustomDelimiters = { 'cpp': { 'left': '/**','right': '**/' } }
 " Allow commenting and inverting empty lines (useful when commenting a region)
-let g:NERDCommentEmptyLines = 1
+"let g:NERDCommentEmptyLines = 1
 " Enable trimming of trailing whitespace when uncommenting
-let g:NERDTrimTrailingWhitespace = 1
+"let g:NERDTrimTrailingWhitespace = 1
 
 " Support airline plugin
 let g:airline#extensions#tabline#enabled = 1
@@ -300,19 +300,35 @@ let g:tagbar_iconchars = ['▸', '▾']
 
 " Support Auto-Format plugin
 nmap <Leader>f :Autoformat<CR>
+let g:formatdef_my_custom_cs = '"clang-format -style=file -i ~/.clang-format"'
+let g:formatters_cs = ['my_custom_cs']
+let g:autoformat_autoindent = 0
+let g:autoformat_retab = 0
+let g:autoformat_remove_trailing_spaces = 0
 
 " Support Ctrl-P plugin
-let g:ctrlp_map = '<c-p>'
-let g:ctrlp_cmd = 'CtrlP'
+" let g:ctrlp_map = '<c-p>'
+" let g:ctrlp_cmd = 'CtrlP'
 
-let g:ctrlp_working_path_mode = 'ra'
-let g:ctrlp_root_markers = ['pom.xml', '.p4ignore', 'README.md']
+" let g:ctrlp_working_path_mode = 'ra'
+" let g:ctrlp_root_markers = ['pom.xml', '.p4ignore', 'README.md', 'tags', 'cscope.out']
 
-let g:ctrlp_custom_ignore = {
-  \ 'dir':  '\v[\/]\.(git|hg|svn)$',
-  \ 'file': '\v\.(exe|so|dll|swp|tmp)$',
-  \ 'link': 'some_bad_symbolic_links',
-  \ }
+" let g:ctrlp_custom_ignore = {
+"   \ 'dir':  '\v[\/]\.(git|hg|svn)$',
+"   \ 'file': '\v\.(exe|so|dll|swp|tmp)$',
+"   \ 'link': 'some_bad_symbolic_links',
+"   \ }
+let g:Lf_ShortcutF = '<C-P>'
+let g:Lf_HideHelp = 1
+let g:Lf_RootMarkers = ['tags', 'cscope.out']
+let g:Lf_WildIgnore = {
+        \ 'dir': ['.svn','.git','.hg'],
+        \ 'file': [
+            \ '*.sw?','~$*','*.bak','*.exe',
+            \ '*.o','*.so','*.py[co]','*.dll',
+            \ '*.tmp','tags','*.out'
+            \]
+        \}
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -322,6 +338,20 @@ let g:trans_bin = "/usr/local/bin"
 inoremap <silent> <leader>t <ESC>:Trans<CR>
 nnoremap <silent> <leader>t :Trans<CR>
 vnoremap <silent> <leader>t :TransVisual<CR>
+
+" Support for easy motion
+let g:EasyMotion_do_mapping = 0 " Disable default mappings
+
+" Jump to anywhere you want with minimal keystrokes, with just one key binding.
+" `s{char}{label}`
+nmap s <Plug>(easymotion-overwin-f)
+
+" Turn on case insensitive feature
+let g:EasyMotion_smartcase = 1
+
+" JK motions: Line motions
+map <Leader>j <Plug>(easymotion-j)
+map <Leader>k <Plug>(easymotion-k)
 
 
 
@@ -336,7 +366,8 @@ Plug 'scrooloose/nerdtree'
 Plug 'jistr/vim-nerdtree-tabs'
 
 " comment your code easily
-Plug 'scrooloose/nerdcommenter'
+" Plug 'scrooloose/nerdcommenter'
+Plug 'tpope/vim-commentary'
 
 " check your code syntastic
 Plug 'vim-syntastic/syntastic'
@@ -367,13 +398,17 @@ Plug 'Raimondi/delimitMate'
 Plug 'Chiel92/vim-autoformat'
 
 " fuzzy search using Ctrl-P
-Plug 'ctrlpvim/ctrlp.vim'
+" Plug 'ctrlpvim/ctrlp.vim'
+Plug 'Yggdroot/LeaderF'
 
 " Support open and edit hex file
 Plug 'fidian/hexmode'
 
 " use network dictionary for words
 Plug 'echuraev/translate-shell.vim'
+
+" use easy motion for fast jump
+Plug 'easymotion/vim-easymotion'
 
 
 
