@@ -301,7 +301,7 @@ let g:tagbar_iconchars = ['▸', '▾']
 " Support Auto-Format plugin
 nnoremap <Leader>f :FormatCode<CR>
 vnoremap <Leader>f :FormatLines<CR>
-let codefmt:clang_format_style = "'file'"
+let g:clang_format_style = "'file'"
 " let g:formatdef_my_custom_cs = '"clang-format -style=file -i ~/.clang-format"'
 " let g:formatdef_my_custom_cs = '"clang-format -style=file"'
 " let g:formatters_cs = ['my_custom_cs']
