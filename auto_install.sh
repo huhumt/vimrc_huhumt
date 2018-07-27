@@ -16,7 +16,7 @@ fi
 mkdir -p $home_directory/.vim/plugged
 
 # use self-configuration for vim and tmux
-cp .vimrc .tmux.conf $home_directory
+cp .vimrc .tmux.conf .clang-format $home_directory
 
 # install necessary vim plugins automatic
 vim -c "silent PlugInstall" -c "qa"
@@ -55,7 +55,7 @@ else
     else
         cp $home_directory/.bash_profile $home_directory/.bash_profile.bak
     fi
-    echo "PATH=$PATH:$usr_local_bin_path" >> $home_directory/.bash_profile
+    echo "export PATH=\${PATH}:$usr_local_bin_path" >> $home_directory/.bash_profile
 fi
 
 # nc: if file exist, do not download
