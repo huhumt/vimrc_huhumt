@@ -299,12 +299,16 @@ let g:tagbar_iconchars = ['▸', '▾']
 " endif " if has("autocmd")
 
 " Support Auto-Format plugin
-nmap <Leader>f :Autoformat<CR>
-let g:formatdef_my_custom_cs = '"clang-format -style=file -i ~/.clang-format"'
-let g:formatters_cs = ['my_custom_cs']
-let g:autoformat_autoindent = 0
-let g:autoformat_retab = 0
-let g:autoformat_remove_trailing_spaces = 0
+nnoremap <Leader>f :FormatCode<CR>
+vnoremap <Leader>f :FormatLines<CR>
+let codefmt:clang_format_style = "'file'"
+" let g:formatdef_my_custom_cs = '"clang-format -style=file -i ~/.clang-format"'
+" let g:formatdef_my_custom_cs = '"clang-format -style=file"'
+" let g:formatters_cs = ['my_custom_cs']
+" let g:formatdef_my_custom_cs = "'my_custom_cs - --range '.a:firstline.' '.a:lastline"
+" let g:autoformat_autoindent = 0
+" let g:autoformat_retab = 0
+" let g:autoformat_remove_trailing_spaces = 0
 
 " Support Ctrl-P plugin
 " let g:ctrlp_map = '<c-p>'
@@ -395,7 +399,9 @@ Plug 'ervandew/supertab'
 Plug 'Raimondi/delimitMate'
 
 " auto format code using clang style
-Plug 'Chiel92/vim-autoformat'
+" Plug 'Chiel92/vim-autoformat'
+Plug 'google/vim-maktaba'
+Plug 'google/vim-codefmt'
 
 " fuzzy search using Ctrl-P
 " Plug 'ctrlpvim/ctrlp.vim'
