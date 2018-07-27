@@ -324,7 +324,11 @@ let g:clang_format_style = "'file'"
 "   \ }
 let g:Lf_ShortcutF = '<C-P>'
 let g:Lf_HideHelp = 1
-let g:Lf_RootMarkers = ['tags', 'cscope.out']
+let g:Lf_RootMarkers = [
+        \ 'tags', 'cscope.out',
+        \ '.project*', 'README*',
+        \'.git', '.svn', '.hg'
+        \]
 let g:Lf_WildIgnore = {
         \ 'dir': ['.svn','.git','.hg'],
         \ 'file': [
@@ -333,15 +337,14 @@ let g:Lf_WildIgnore = {
             \ '*.tmp','tags','*.out'
             \]
         \}
+let g:Lf_DefaultExternalTool = "ag"
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
 
 " Support for Vim-Dict plugin
 let g:trans_bin = "/usr/local/bin"
-inoremap <silent> <leader>t <ESC>:Trans<CR>
-nnoremap <silent> <leader>t :Trans<CR>
-vnoremap <silent> <leader>t :TransVisual<CR>
+nnoremap <silent> <leader><leader>t :Trans<CR>
 
 " Support for easy motion
 let g:EasyMotion_do_mapping = 0 " Disable default mappings
