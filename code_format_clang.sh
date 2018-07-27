@@ -86,7 +86,11 @@ main()
             wget -q -P ~/ https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.clang-format
         fi
 
-        cp ~/.clang-format ./
+        if [ ! -f ./.clang-format ]
+        then
+            cp ~/.clang-format ./
+        fi
+
         if [ -f ./.clang-format ]
         then
             method+="-file"
