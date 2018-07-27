@@ -7,7 +7,6 @@ home_directory=$(eval echo ~${SUDO_USER})
 curl -fLo $home_directory/.vim/autoload/plug.vim --create-dirs \
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-
 # delete old plugged and create new one
 if [ -d "$home_directory/.vim/plugged" ]
 then
@@ -39,6 +38,8 @@ then
     # use local mirror to speedup download
     cp ./demo/mirrorlist* /etc/pacman.d/
     cp ./cn_update_package $usr_local_bin_path
+    # add a good color configuration for mintty
+    cp ./base16-eighties-mod /usr/share/mintty/themes/
     # DO NOT RUN UPDATE PACKAGE COMMAND HERE
     #cn_update_package
 else
