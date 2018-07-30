@@ -237,6 +237,7 @@ map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 " endif
 
 highlight Comment ctermfg=green guifg=green
+highlight Visual cterm=reverse ctermbg=NONE
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 
 command -nargs=1 C :',. w! $HOME/.vimbuf
