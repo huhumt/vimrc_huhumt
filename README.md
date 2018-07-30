@@ -1,5 +1,5 @@
 # vimrc_huhumt
-my own vimrc and tux_conf file
+my own vimrc and tmux_conf file
 ![alt text](https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/demo.png)
 
 DEPENDENCY
@@ -34,7 +34,7 @@ first to make the script executable. Or you can run "sh auto_install.sh" directl
 2. enter into vim and install plugins by ":PlugInstall"
 3. all okay, enjoy your new vim
 
-GOOD NEW:
+GOOD NEWS:
     Now you can do all the procedure simply by running:  
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/auto_install.sh)"
 
