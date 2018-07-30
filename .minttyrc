@@ -1,0 +1,14 @@
+BoldAsFont=-1
+BackgroundColour=51,0,51
+ThemeFile=base16-eighties-mod
+Transparency=low
+Locale=C
+Charset=UTF-8
+FontHeight=12
+RightClickAction=paste
+Language=en_US
+Font=Consolas
+Rows=24
+ForegroundColour=168,168,168
+BellType=0
+CursorType=block
