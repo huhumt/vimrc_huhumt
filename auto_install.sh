@@ -51,9 +51,9 @@ then
     # DO NOT RUN UPDATE PACKAGE COMMAND HERE
     #cn_update_package
     curl -fLo $usr_local_bin_path/cn_update_package.sh \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/cn_update_package.sh
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/cn_update_package.sh
     curl -fLo /usr/share/mintty/themes/base16-eighties-mod \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/base16-eighties-mod
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/base16-eighties-mod
     mintty -c base16-eighties-mod
 else
     old_string="trans_bin = \"$usr_local_bin_path\""
@@ -86,13 +86,13 @@ wget -nc -nv -P $usr_local_bin_path/ git.io/trans
 #    ./code_format_clang.sh \
 #    $usr_local_bin_path
 curl -fLo $usr_local_bin_path/code_backup.sh \
-        https://github.com/huhumt/vimrc_huhumt/blob/master/code_backup.sh
+        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/code_backup.sh
 curl -fLo $usr_local_bin_path/ctags_cscope_update.sh \
-        https://github.com/huhumt/vimrc_huhumt/blob/master/ctags_cscope_update.sh
+        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/ctags_cscope_update.sh
 curl -fLo $usr_local_bin_path/string_replace.sh \
-        https://github.com/huhumt/vimrc_huhumt/blob/master/string_replace.sh
+        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/string_replace.sh
 curl -fLo $usr_local_bin_path/code_format_clang.sh \
-        https://github.com/huhumt/vimrc_huhumt/blob/master/code_format_clang.sh
+        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/code_format_clang.sh
 
 chmod 755 $usr_local_bin_path/code_backup.sh \
           $usr_local_bin_path/ctags_cscope_update.sh \
@@ -103,19 +103,19 @@ chmod 755 $usr_local_bin_path/code_backup.sh \
 if [[ "$kernel_name" = *"mingw"* ]] || [[ "$os_name" = *"msys"* ]]
 then
     curl -fLo /etc/pacman.d/mirrorlist.mingw32.bak \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.mingw32.bak
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.mingw32.bak
     curl -fLo /etc/pacman.d/mirrorlist.mingw32.cn \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.mingw32.cn
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.mingw32.cn
 
     curl -fLo /etc/pacman.d/mirrorlist.mingw64.bak \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.mingw64.bak
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.mingw64.bak
     curl -fLo /etc/pacman.d/mirrorlist.mingw64.cn \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.mingw64.cn
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.mingw64.cn
 
     curl -fLo /etc/pacman.d/mirrorlist.msys.bak \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.msys.bak
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.msys.bak
     curl -fLo /etc/pacman.d/mirrorlist.msys.cn \
-            https://github.com/huhumt/vimrc_huhumt/blob/master/demo/mirrorlist.msys.cn
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.msys.cn
 
     cn_update_package
 fi

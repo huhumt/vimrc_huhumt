@@ -36,7 +36,7 @@ first to make the script executable. Or you can run "sh auto_install.sh" directl
 
 GOOD NEW:
     Now you can do all the procedure simply by running:  
-    sh -c "$(curl -fsSL https://github.com/huhumt/vimrc_huhumt/blob/master/auto_install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/auto_install.sh)"
 
 UPDATE
 
@@ -69,4 +69,4 @@ problem of the MSYS2 Mintty terminal. So wish you good luck.
 I have added some small scripts for my own use.
 
 20180730: Inspired by oh-my-zsh, now you can install it by:  
-    sh -c "$(curl -fsSL https://github.com/huhumt/vimrc_huhumt/blob/master/auto_install.sh)"
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/auto_install.sh)"
