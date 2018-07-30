@@ -54,6 +54,7 @@ then
             https://github.com/huhumt/vimrc_huhumt/blob/master/cn_update_package.sh
     curl -fLo /usr/share/mintty/themes/base16-eighties-mod \
             https://github.com/huhumt/vimrc_huhumt/blob/master/demo/base16-eighties-mod
+    mintty -c base16-eighties-mod
 else
     old_string="trans_bin = \"$usr_local_bin_path\""
     usr_local_bin_path="$home_directory/.local/bin"
