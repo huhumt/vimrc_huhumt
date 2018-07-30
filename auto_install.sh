@@ -79,7 +79,8 @@ fi
 # nc: if file exist, do not download
 # nv: do not print that much log
 # P: re-direct to given directory
-wget -nc -nv -P $usr_local_bin_path/ git.io/trans
+# wget -nc -nv -P $usr_local_bin_path/ git.io/trans
+curl -fLo $usr_local_bin_path/trans git.io/trans
 
 # cp ./code_backup.sh \
 #    ./ctags_cscope_update.sh \
