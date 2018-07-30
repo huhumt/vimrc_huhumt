@@ -34,7 +34,7 @@ sed -i '0,/silent %!xxd/ s/silent %!xxd/silent %!xxd -g1/' $hexmode_plugin_direc
 # mkdir -p $home_directory/.config/pip
 # cp pip.conf $home_directory/.config/pip/
 curl -fLo $home_directory/.config/pip/pip.conf --create-dirs \
-        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.pip.conf
+        https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/pip.conf
 
 usr_local_bin_path="/usr/local/bin"
 # get system info of kernal and os in lowercase
@@ -54,7 +54,8 @@ then
             https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/cn_update_package.sh
     curl -fLo /usr/share/mintty/themes/base16-eighties-mod \
             https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/base16-eighties-mod
-    mintty -c base16-eighties-mod
+    curl -fLo $home_directory/.minttyrc \
+            https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.minttyrc
 else
     old_string="trans_bin = \"$usr_local_bin_path\""
     usr_local_bin_path="$home_directory/.local/bin"
