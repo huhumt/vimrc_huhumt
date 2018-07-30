@@ -119,5 +119,5 @@ then
     curl -fLo /etc/pacman.d/mirrorlist.msys.cn \
             https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/demo/mirrorlist.msys.cn
 
-    cn_update_package
+    cn_update_package.sh
 fi
