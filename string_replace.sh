@@ -24,6 +24,11 @@ do_replace()
     check_type $filename
     if [ $? -eq 0 ]
     then
+        if [ "$method" = "--whole-line-mode" ]
+        then
+            src_str=".*$src_str.*"
+        fi
+
         if [ "$dst_str" = "EmPtYeMpTy" ]
         then
             #sed -i 's/'"$src_str"'//g' $filename
@@ -107,13 +112,22 @@ main()
 
 if [ $# -lt 3 ]
 then
-    printf "Usage: string_replace.sh src dst filename/directory\n"
+    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode\n"
+    printf "'--whole-line-mode' is optional for replace whole line including src with dst\n"
     exit
 fi
 
 src_str=$1
 dst_str=$2
 dst_dir=$3
+method=$4
+
+if [ "${src_str:0:1}" = "-" ] || [ "${dst_str:0:1}" = "-" ] || [ "${dst_dir:0:1}" = "-" ]
+then
+    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode\n"
+    printf "'--whole-line-mode' is optional for replace whole line including src with dst\n"
+    exit
+fi
 
 if [ "$src_str" = "" ]
 then
