@@ -403,9 +403,7 @@ Plug 'ervandew/supertab'
 Plug 'Raimondi/delimitMate'
 
 " auto format code using clang style
-" Plug 'Chiel92/vim-autoformat'
-Plug 'google/vim-maktaba'
-Plug 'google/vim-codefmt'
+Plug 'Chiel92/vim-autoformat'
 
 " fuzzy search using Ctrl-P
 " Plug 'ctrlpvim/ctrlp.vim'
@@ -419,6 +417,9 @@ Plug 'echuraev/translate-shell.vim'
 
 " use easy motion for fast jump
 Plug 'easymotion/vim-easymotion'
+
+" use reversion manage tool
+Plug 'vim-scripts/vcscommand.vim'
 
 
 
