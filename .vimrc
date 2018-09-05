@@ -235,7 +235,6 @@ map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 
 "
 " endif
-
 highlight Comment ctermfg=green guifg=green
 highlight Visual cterm=reverse ctermbg=NONE
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
@@ -358,6 +357,10 @@ let g:EasyMotion_smartcase = 1
 map <Leader>j <Plug>(easymotion-j)
 map <Leader>k <Plug>(easymotion-k)
 
+" exclude some filetype when do diff
+let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out"
+let g:DirDiffIgnore = "Id:,Revision:,Date:" 
+
 
 
 
@@ -417,6 +420,9 @@ Plug 'easymotion/vim-easymotion'
 
 " use reversion manage tool
 Plug 'vim-scripts/vcscommand.vim'
+
+" use dirdiff tool to do diff and merge
+Plug 'will133/vim-dirdiff'
 
 
 
