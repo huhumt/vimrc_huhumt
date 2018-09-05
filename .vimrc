@@ -236,7 +236,9 @@ map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 "
 " endif
 highlight Comment ctermfg=green guifg=green
-highlight Visual cterm=reverse ctermbg=NONE
+highlight Visual cterm=reverse ctermbg=none
+" refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
+highlight DiffChange cterm=bold ctermfg=10 ctermbg=37 gui=none guifg=bg guibg=Red
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 
 command -nargs=1 C :',. w! $HOME/.vimbuf
@@ -359,7 +361,8 @@ map <Leader>k <Plug>(easymotion-k)
 
 " exclude some filetype when do diff
 let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out"
-let g:DirDiffIgnore = "Id:,Revision:,Date:" 
+let g:DirDiffIgnore = "Id:,Revision:,Date:"
+let g:DirDiffWindowSize = 5
 
 
 
