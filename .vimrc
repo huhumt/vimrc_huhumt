@@ -238,7 +238,11 @@ map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 highlight Comment ctermfg=green guifg=green
 highlight Visual cterm=reverse ctermbg=none
 " refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
-highlight DiffChange cterm=bold ctermfg=10 ctermbg=37 gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+highlight DiffAdd    cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+highlight DiffDelete cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+highlight DiffText   cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 
 command -nargs=1 C :',. w! $HOME/.vimbuf
@@ -363,6 +367,8 @@ map <Leader>k <Plug>(easymotion-k)
 let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out"
 let g:DirDiffIgnore = "Id:,Revision:,Date:"
 let g:DirDiffWindowSize = 5
+nnoremap <Leader><Leader>g :diffget<CR>
+nnoremap <Leader><Leader>p :diffput<CR>
 
 
 
