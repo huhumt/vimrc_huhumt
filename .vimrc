@@ -407,6 +407,7 @@ Plug 'majutsushi/tagbar'
 " Plug 'vim-scripts/AutoComplPop'
 " Plug 'Valloric/YouCompleteMe'
 Plug 'ervandew/supertab'
+Plug 'justmao945/vim-clang'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
