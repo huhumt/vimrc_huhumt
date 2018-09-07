@@ -237,16 +237,25 @@ map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
 " endif
 highlight Comment ctermfg=green guifg=green
 highlight Visual cterm=reverse ctermbg=none
+highlight Search cterm=none ctermfg=grey ctermbg=blue
 " refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
-highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
-highlight DiffAdd    cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
-highlight DiffDelete cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
-highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
-highlight DiffText   cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+highlight DiffAdd    cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+highlight DiffDelete cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+highlight DiffText   cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+" highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+" highlight DiffAdd    cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+" highlight DiffDelete cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+" highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
+" highlight DiffText   cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 
 command -nargs=1 C :',. w! $HOME/.vimbuf
 command -nargs=0 P :r $HOME/.vimbuf
+
+
+
 
 
 " Support Plug NerdTree
@@ -373,6 +382,10 @@ nnoremap <Leader><Leader>p :diffput<CR>
 
 
 
+
+
+
+
 " Specify a directory for plugins (for Neovim: ~/.local/share/nvim/plugged)
 call plug#begin('~/.vim/plugged')
 "
@@ -399,15 +412,11 @@ Plug 'bronson/vim-trailing-whitespace'
 " use mini-buffer window to display select function
 Plug 'fholgado/minibufexpl.vim'
 
-" ust tagbar to display current status
+" use tagbar to display current status
 Plug 'majutsushi/tagbar'
 
 " auto complete code usging SuperTab
-" Plug 'ervandew/supertab'
-" Plug 'vim-scripts/AutoComplPop'
-" Plug 'Valloric/YouCompleteMe'
 Plug 'ervandew/supertab'
-Plug 'justmao945/vim-clang'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
