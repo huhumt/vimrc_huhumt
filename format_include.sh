@@ -52,8 +52,8 @@ do_format()
                 do
                     dst+="/${filename_list[$i]}"
                 done
-                echo $src $dst $root_directory
-                # sh /usr/local/bin/string_replace.sh "include \"$src\"" "include \"$dst\"" $root_directory
+                # echo $src $dst $root_directory
+                sh /usr/local/bin/string_replace.sh "include \"$src\"" "include \"$dst\"" $root_directory
             fi
         fi
     done
