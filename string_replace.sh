@@ -31,14 +31,16 @@ do_replace()
 
         if [ "$dst_str" = "EmPtYeMpTy" ]
         then
-            #sed -i 's/'"$src_str"'//g' $filename
+            # sed -i 's/'"$src_str"'//g' $filename
             sed -i "s#$src_str##g" "$filename"
+            printf "replace $src_str with \"\" in $filename\n"
         else
-            #sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
+            # sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
             sed -i "s#$src_str#$dst_str#g" "$filename"
+            printf "replace $src_str with $dst_str in $filename\n"
         fi
     else
-        printf "Unsupport file type\n"
+        printf "$filename: Unsupport file type\n"
     fi
 }
 
@@ -144,5 +146,4 @@ else
     dst_str=$(str_handle "$dst_str")
 fi
 
-printf "replace $src_str with $dst_str in $dst_dir\n"
 main $src_str $dst_str $dst_dir
