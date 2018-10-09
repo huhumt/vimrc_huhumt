@@ -17,7 +17,7 @@ check_type()
     return 1
 }
 
-do_format()
+str_delete_last_char()
 {
     local dir_name=$1
     local tail=${dir_name: -1}
@@ -25,7 +25,12 @@ do_format()
     then
         dir_name=${dir_name: 0: -1}
     fi
+    echo "$dir_name"
+}
 
+do_format()
+{
+    local dir_name=$(str_delete_last_char "$1")
     local dirlist=$(ls $dir_name)
     local dir
     for dir in ${dirlist[@]}
@@ -41,8 +46,14 @@ do_format()
             then
                 local filename_list=(${filename//// })
                 local src=${filename_list[-1]}
-                local dst="../include/${filename_list[-2]}/$src"
-                sh /usr/local/bin/string_replace.sh "include \"$src\"" "include \"$dst\"" $root_directory
+                local dst="."
+                local length=${#filename_list[@]}
+                for ((i=2; i<length; i++))
+                do
+                    dst+="/${filename_list[$i]}"
+                done
+                echo $src $dst $root_directory
+                # sh /usr/local/bin/string_replace.sh "include \"$src\"" "include \"$dst\"" $root_directory
             fi
         fi
     done
@@ -54,5 +65,5 @@ then
     exit
 fi
 
-root_directory=$1
+root_directory=$(str_delete_last_char "$1")
 do_format $@
