@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+# check whether vim exist
+type vim > /dev/null
+if [ $? -gt 0 ]
+then
+    print "Make sure you have successfully installed vim"
+fi
+
+# check whether curl exist
+type curl > /dev/null
+if [ $? -gt 0 ]
+then
+    print "This script heavily rely on curl to download file, install it first"
+fi
+
 # get current user's home directory
 home_directory=$(eval echo ~${SUDO_USER})
 
