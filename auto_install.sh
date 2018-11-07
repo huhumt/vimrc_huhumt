@@ -42,7 +42,7 @@ vim -c "silent PlugInstall" -c "qa"
 
 hexmode_plugin_directory="$home_directory/.vim/plugged/hexmode/plugin/hexmode.vim"
 # replace the first xxd command to xxd -g1, print one byte instead of two per group
-sed -i '0,/silent %!xxd/ s/silent %!xxd/silent %!xxd -g1/' $hexmode_plugin_directory
+sed -i '0,/%!xxd/ s/%!xxd/%!xxd -g1/' $hexmode_plugin_directory
 
 # use ustc mirror to speed up python-pip
 # mkdir -p $home_directory/.config/pip
