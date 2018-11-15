@@ -161,5 +161,5 @@ else
         dst_str=$(str_handle "$dst_str")
     fi
 
-    main $src_str $dst_str $dst_dir
+    main "$src_str" "$dst_str" "$dst_dir"
 fi
