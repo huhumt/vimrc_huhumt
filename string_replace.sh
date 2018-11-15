@@ -20,23 +20,26 @@ check_type()
 do_replace()
 {
     local filename=$1
+    local src_str_tmp
 
     check_type $filename
     if [ $? -eq 0 ]
     then
         if [ "$method" = "--whole-line-mode" ]
         then
-            src_str=".*$src_str.*"
+            src_str_tmp=".*$src_str.*"
+        else
+            src_str_tmp="$src_str"
         fi
 
         if [ "$dst_str" = "EmPtYeMpTy" ]
         then
             # sed -i 's/'"$src_str"'//g' $filename
-            sed -i "s#$src_str##g" "$filename"
+            sed -i "s#$src_str_tmp##g" "$filename"
             printf "replace $src_str with \"\" in $filename\n"
         else
             # sed -i 's/'"$src_str"'/'"$dst_str"'/g' $filename
-            sed -i "s#$src_str#$dst_str#g" "$filename"
+            sed -i "s#$src_str_tmp#$dst_str#g" "$filename"
             printf "replace $src_str with $dst_str in $filename\n"
         fi
     else
@@ -71,6 +74,9 @@ str_add_escape_char()
         if [ "$i" = "\\" ]
         then
             str_output+="\\\\"
+        elif [ "$i" = "#" ]
+        then
+            str_output+="\\#"
         else
             str_output+=$i
         fi
