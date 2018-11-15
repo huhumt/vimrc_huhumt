@@ -7,7 +7,7 @@ do_format()
     do
         header_file_split_array=(${header_file//\// })
         header_filename=${header_file_split_array[-1]}
-        sh "/usr/local/bin/string_replace.sh" "$header_filename" "\#include \"$header_file\"" "$2" "--whole-line-mode"
+        sh "/usr/local/bin/string_replace.sh" "$header_filename" "#include \"$header_file\"" "$2" "--whole-line-mode"
     done
 }
 
