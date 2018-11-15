@@ -61,24 +61,29 @@ def do_replace(src, dst, filename, whole_line_mode):
     if check_support_file(filename) is False:
         return 0
 
-    read_fd = open(filename, 'r')
+    read_fd = open(filename, 'rb')
     write_filename = filename + ".tmp"
-    write_fd = open(write_filename, 'w')
+    write_fd = open(write_filename, 'wb')
     replace_list = []
     line_number = 0
     try:
-        for line in read_fd:
+        for binary_line in read_fd:
             line_number += 1
-            if src in line:
-                if whole_line_mode is True:
-                    write_fd.write(replace_whole_line_mode(line, dst))
-                    replace_list.append([line_number, line, dst])
+            try:
+                line = binary_line.decode('utf-8')
+                if src in line:
+                    if whole_line_mode is True:
+                        write_fd.write(replace_whole_line_mode(line, dst).encode('utf-8'))
+                        replace_list.append([line_number, line, dst])
+                    else:
+                        line_replaced = line.replace(src, dst)
+                        write_fd.write(line_replaced.encode('utf-8'))
+                        replace_list.append([line_number, line, line_replaced])
                 else:
-                    line_replaced = line.replace(src, dst)
-                    write_fd.write(line_replaced)
-                    replace_list.append([line_number, line, line_replaced])
-            else:
-                write_fd.write(line)
+                    write_fd.write(line.encode('utf-8'))
+            except UnicodeDecodeError:
+                write_fd.write(binary_line)
+                pass
     finally:
         read_fd.close()
         write_fd.close()
