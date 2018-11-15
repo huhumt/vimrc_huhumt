@@ -48,7 +48,7 @@ def replace_whole_line_mode(ori, newest):
     if ori[-2:] == "\r\n" or ori[-2:] == "\n\r":
         return newest + ori[-2:]
     elif ori[-1] == "\r" or ori[-1] == "\n":
-        return newest + ori[:-1]
+        return newest + ori[-1]
     else:
         return newest
 
@@ -66,7 +66,6 @@ def do_replace(src, dst, filename, whole_line_mode):
     write_fd = open(write_filename, 'wb')
     replace_list = []
     line_number = 0
-    print(src, dst, filename)
     try:
         for binary_line in read_fd:
             line_number += 1
@@ -74,12 +73,11 @@ def do_replace(src, dst, filename, whole_line_mode):
                 line = binary_line.decode('utf-8')
                 if src in line:
                     if whole_line_mode is True:
-                        write_fd.write(replace_whole_line_mode(line, dst).encode('utf-8'))
-                        replace_list.append([line_number, line, dst])
+                        line_replaced = replace_whole_line_mode(line, dst)
                     else:
                         line_replaced = line.replace(src, dst)
-                        write_fd.write(line_replaced.encode('utf-8'))
-                        replace_list.append([line_number, line, line_replaced])
+                    write_fd.write(line_replaced.encode('utf-8'))
+                    replace_list.append([line_number, line, line_replaced])
                 else:
                     write_fd.write(line.encode('utf-8'))
             except UnicodeDecodeError:
