@@ -3,7 +3,7 @@
 check_type()
 {
     local par1=$1
-    local support_type=( c cc cpp h hpp )
+    local support_type=( c cc cpp h hpp txt )
     local file_type="${par1##*.}"
     local type
 
@@ -114,8 +114,9 @@ main()
 
 if [ $# -lt 3 ]
 then
-    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode\n"
+    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode --with-python\n"
     printf "'--whole-line-mode' is optional for replace whole line including src with dst\n"
+    printf "'--with-python' is optional to use python to do replace\n"
     exit
 fi
 
@@ -124,10 +125,11 @@ dst_str=$2
 dst_dir=$3
 method=$4
 
-if [ "${src_str:0:1}" = "-" ] || [ "${dst_str:0:1}" = "-" ] || [ "${dst_dir:0:1}" = "-" ]
+if [ "${src_str:0:2}" = "--" ] || [ "${dst_str:0:2}" = "--" ] || [ "${dst_dir:0:2}" = "--" ]
 then
-    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode\n"
+    printf "Usage: string_replace.sh src dst filename/directory --whole-line-mode --with-python\n"
     printf "'--whole-line-mode' is optional for replace whole line including src with dst\n"
+    printf "'--with-python' is optional to use python to do replace\n"
     exit
 fi
 
@@ -135,15 +137,23 @@ if [ "$src_str" = "" ]
 then
     printf "source string can't be empty\n"
     exit
+fi
+
+if [ "$5" = "--with-python" ]
+then
+    python3 "/usr/local/bin/python_replace.py" $1 $2 $3 $4
+elif [ "$4" = "--with-python" ]
+then
+    python3 "/usr/local/bin/python_replace.py" $1 $2 $3
 else
     src_str=$(str_handle "$src_str")
-fi
 
-if [ "$dst_str" = "" ]
-then
-    dst_str="EmPtYeMpTy"
-else
-    dst_str=$(str_handle "$dst_str")
-fi
+    if [ "$dst_str" = "" ]
+    then
+        dst_str="EmPtYeMpTy"
+    else
+        dst_str=$(str_handle "$dst_str")
+    fi
 
-main $src_str $dst_str $dst_dir
+    main $src_str $dst_str $dst_dir
+fi
