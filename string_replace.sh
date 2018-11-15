@@ -147,10 +147,10 @@ fi
 
 if [ "$5" = "--with-python" ]
 then
-    python3 "/usr/local/bin/python_replace.py" $1 $2 $3 $4
+    python3 "/usr/local/bin/python_replace.py" "$1" "$2" "$3" "$4"
 elif [ "$4" = "--with-python" ]
 then
-    python3 "/usr/local/bin/python_replace.py" $1 $2 $3
+    python3 "/usr/local/bin/python_replace.py" "$1" "$2" "$3"
 else
     src_str=$(str_handle "$src_str")
 
