@@ -66,6 +66,7 @@ def do_replace(src, dst, filename, whole_line_mode):
     write_fd = open(write_filename, 'wb')
     replace_list = []
     line_number = 0
+    print(src, dst, filename)
     try:
         for binary_line in read_fd:
             line_number += 1
@@ -124,9 +125,12 @@ if __name__ == "__main__":
     main entry for the program
     '''
 
-    if len(sys.argv) < 3:
+    parameter_len = len(sys.argv)
+    if parameter_len < 3:
         print("Usage: Python3 python_replace.py src dst filename/directory whole_line_mode=True/False")
         print("whole_line_mode is opitional to replace whole line with src by src")
         exit(0)
-
-    string_replace(sys.argv[1], sys.argv[2], sys.argv[3])
+    elif parameter_len > 4:
+        string_replace(sys.argv[1], sys.argv[2], sys.argv[3], True)
+    else:
+        string_replace(sys.argv[1], sys.argv[2], sys.argv[3])
