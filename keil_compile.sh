@@ -8,7 +8,8 @@ eval $compile_project
 mv "../mcu/keil/output.txt" "./compile.log"
 
 latest_bin=$(ls -t ../mcu/output/*Ref*app.bin | head -1)
-if [ -f "*app.bin" ]
+check_bin=$(find ./ -name "*app.bin" | wc -l)
+if [ $check_bin -gt 0 ]
 then
     rm -f "./*app.bin"
 fi
