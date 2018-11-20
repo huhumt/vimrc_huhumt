@@ -5,12 +5,12 @@ target=$(find ../ -iname "*.uvproj")
 compile_project="\"$cc\" -b \"$target\" -o output.txt"
 
 eval $compile_project
-mv "../mcu/keil/output.txt" "./compile.log"
+mv ../mcu/keil/output.txt ./compile.log
 
 latest_bin=$(ls -t ../mcu/output/*Ref*app.bin | head -1)
 check_bin=$(find ./ -name "*app.bin" | wc -l)
 if [ $check_bin -gt 0 ]
 then
-    rm -f "./*app.bin"
+    rm -f ./*app.bin
 fi
-cp "$latest_bin" "./"
+cp "$latest_bin" ./
