@@ -262,7 +262,7 @@ command -nargs=0 P :r $HOME/.vimbuf
 let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
 let g:NERDTreeDirArrowExpandable = "▸"
 let g:NERDTreeDirArrowCollapsible = "▾"
-map <Leader>n :NERDTreeTabsToggle<CR>
+map <Leader><Leader>n :NERDTreeTabsToggle<CR>
 " let g:nerdtree_tabs_open_on_console_startup = 1
 " let g:nerdtree_tabs_smart_startup_focus = 2
 
@@ -373,11 +373,25 @@ map <Leader>j <Plug>(easymotion-j)
 map <Leader>k <Plug>(easymotion-k)
 
 " exclude some filetype when do diff
-let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out"
+let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out, *.git, *.svn"
 let g:DirDiffIgnore = "Id:,Revision:,Date:"
 let g:DirDiffWindowSize = 5
 nnoremap <Leader><Leader>g :diffget<CR>
 nnoremap <Leader><Leader>p :diffput<CR>
+
+" change indent display color
+let g:indentLine_color_term = 239
+
+" enable rainbow plugin default
+let g:rainbow_active = 1
+
+" shortkey for easy aligin plugin
+" Start interactive EasyAlign in visual mode (e.g. vipga)
+xmap ga <Plug>(EasyAlign)
+" Start interactive EasyAlign for a motion/text object (e.g. gaip)
+nmap ga <Plug>(EasyAlign)
+
+
 
 
 
@@ -442,6 +456,20 @@ Plug 'vim-scripts/vcscommand.vim'
 
 " use dirdiff tool to do diff and merge
 Plug 'will133/vim-dirdiff'
+
+" use mark to display color
+Plug 'vim-scripts/Mark'
+
+" display indent
+Plug 'Yggdroot/indentLine'
+
+" display quote, blanket in different color
+Plug 'luochen1990/rainbow'
+
+" easy align code
+Plug 'junegunn/vim-easy-align'
+
+
 
 
 
