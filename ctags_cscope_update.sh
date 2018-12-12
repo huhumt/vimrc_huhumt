@@ -5,13 +5,14 @@ update_ctags_cscope()
     echo ""
 
     # generate ctags
-    ctags -Rnf ./tags.new
+    # ctags -Rnf ./tags.new
+    ctags -R --languages=C,C++ --c++-kinds=+p --fields=+iaS --extras=+q .
 
     # generate cscope
-    cscope -Rbk
+    cscope -Rbkq
 
     # overwrite old file with newest one
-    mv tags.new tags
+    # mv tags.new tags
     # mv cscope.out.new cscope.out
 
     # take effect on vim
