@@ -352,8 +352,8 @@ let g:Lf_WildIgnore = {
             \]
         \}
 " https://github.com/ggreer/the_silver_searcher/blob/850e2b3887f0daa873fe2098f3f215b2c36000e1/tests/list_file_types.t
-" let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor -g ""'
-let g:Lf_ExternalCommand = 'ag %s -l --cc --cpp --silent --nocolor -g ""'
+" let g:Lf_ExternalCommand = 'ag %s -l --cc --cpp --silent --nocolor -g ""'
+let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor -g ""'
 let g:Lf_Ctags = "/usr/bin/ctags"
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 
@@ -439,6 +439,7 @@ Plug 'majutsushi/tagbar'
 Plug 'ervandew/supertab'
 Plug 'vim-scripts/AutoComplPop'
 Plug 'vim-scripts/OmniCppComplete'
+Plug 'vim-scripts/autoproto.vim'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
