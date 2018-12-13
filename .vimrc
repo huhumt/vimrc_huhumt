@@ -334,6 +334,8 @@ let g:autoformat_remove_trailing_spaces = 0
 "   \ 'file': '\v\.(exe|so|dll|swp|tmp)$',
 "   \ 'link': 'some_bad_symbolic_links',
 "   \ }
+" let g:ctrlp_user_command = 'ag %s -l --nocolor --hidden -g ""'
+" let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:10,results:10'
 let g:Lf_ShortcutF = '<C-P>'
 let g:Lf_HideHelp = 1
 let g:Lf_RootMarkers = [
@@ -349,7 +351,11 @@ let g:Lf_WildIgnore = {
             \ '*.tmp','tags','*.out'
             \]
         \}
-let g:Lf_DefaultExternalTool = "ag"
+" https://github.com/ggreer/the_silver_searcher/blob/850e2b3887f0daa873fe2098f3f215b2c36000e1/tests/list_file_types.t
+" let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor -g ""'
+let g:Lf_ExternalCommand = 'ag %s -l --cc --cpp --silent --nocolor -g ""'
+let g:Lf_Ctags = "/usr/bin/ctags"
+let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -431,6 +437,8 @@ Plug 'majutsushi/tagbar'
 
 " auto complete code usging SuperTab
 Plug 'ervandew/supertab'
+Plug 'vim-scripts/AutoComplPop'
+Plug 'vim-scripts/OmniCppComplete'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
