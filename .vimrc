@@ -231,7 +231,7 @@ set list
 set listchars=tab:>-
 
 set tag=tags
-map <Leader>u :!ctags -Rn<CR>:!cscope -Rbk<CR>:cs reset<CR><CR>
+map <Leader>u :!ctags_cscope_update.sh<CR><CR>
 
 "
 " endif
@@ -312,6 +312,11 @@ let g:tagbar_iconchars = ['▸', '▾']
 " if has("autocmd")
 "     autocmd VimEnter * nested :TagbarOpen
 " endif " if has("autocmd")
+
+" for better performance in AutoComplPop
+filetype plugin on
+set omnifunc=syntaxcomplete#Complete
+let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
 
 " Support Auto-Format plugin
 nnoremap <Leader>f :Autoformat<CR>
@@ -439,7 +444,7 @@ Plug 'majutsushi/tagbar'
 Plug 'ervandew/supertab'
 Plug 'vim-scripts/AutoComplPop'
 Plug 'vim-scripts/OmniCppComplete'
-Plug 'vim-scripts/autoproto.vim'
+" Plug 'vim-scripts/autoproto.vim'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
