@@ -317,6 +317,7 @@ let g:tagbar_iconchars = ['▸', '▾']
 filetype plugin on
 set omnifunc=syntaxcomplete#Complete
 let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
+let g:completekey = "<C-y>"
 
 " Support Auto-Format plugin
 nnoremap <Leader>f :Autoformat<CR>
@@ -444,7 +445,7 @@ Plug 'majutsushi/tagbar'
 Plug 'ervandew/supertab'
 Plug 'vim-scripts/AutoComplPop'
 Plug 'vim-scripts/OmniCppComplete'
-" Plug 'vim-scripts/autoproto.vim'
+Plug 'mbbill/code_complete'
 
 " auto add delimite
 Plug 'Raimondi/delimitMate'
