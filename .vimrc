@@ -353,18 +353,15 @@ let g:Lf_RootMarkers = [
         \ '.project*', 'README*',
         \'.git', '.svn', '.hg'
         \]
-let g:Lf_WildIgnore = {
-        \ 'dir': ['.svn','.git','.hg'],
-        \ 'file': [
-            \ '*.sw?','~$*','*.bak','*.exe',
-            \ '*.o','*.so','*.py[co]','*.dll',
-            \ '*.tmp','tags','*.out'
-            \]
-        \}
 " https://github.com/ggreer/the_silver_searcher/blob/850e2b3887f0daa873fe2098f3f215b2c36000e1/tests/list_file_types.t
 " let g:Lf_ExternalCommand = 'ag %s -l --cc --cpp --silent --nocolor -g ""'
-let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor -g ""'
-let g:Lf_Ctags = "/usr/bin/ctags"
+let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor --ignore={
+            \"*.sw?","~$*",
+            \"*.o","*.so","*.dll","*.a","*.obj",
+            \"*.tmp","tags","*.out*","*.bak","*.log",
+            \"*.bin","*.hex","*.exe","*.py[co]","*.cache"
+        \} -g ""'
+let g:Lf_Ctags = "/mingw64/bin/ctags"
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 
 " Support Hexmode plugin
