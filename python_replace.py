@@ -126,7 +126,7 @@ if __name__ == "__main__":
     parameter_len = len(sys.argv)
     if parameter_len < 3:
         print("Usage: Python3 python_replace.py src dst filename/directory whole_line_mode=True/False")
-        print("whole_line_mode is opitional to replace whole line with src by src")
+        print("whole_line_mode is opitional to replace src with dst for the whole line")
         exit(0)
     elif parameter_len > 4:
         string_replace(sys.argv[1], sys.argv[2], sys.argv[3], True)
