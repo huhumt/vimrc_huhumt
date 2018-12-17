@@ -317,7 +317,11 @@ let g:tagbar_iconchars = ['▸', '▾']
 filetype plugin on
 set omnifunc=syntaxcomplete#Complete
 let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
-let g:completekey = "<C-y>"
+" SuperTab has occupied <C-p> and <C-n> key in insert mode
+" release <tab> key binding from SuperTab and use it for code_complete
+let g:SuperTabMappingForward = '<nul>'
+let g:SuperTabMappingBackward = '<nul>'
+let g:SuperTabMappingTabLiteral = '<nul>'
 
 " Support Auto-Format plugin
 nnoremap <Leader>f :Autoformat<CR>
