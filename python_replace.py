@@ -91,7 +91,7 @@ def do_replace(src, dst, filename, whole_line_mode):
         print("\nIn %s:" % (filename))
         for (i, ori, newest) in replace_list:
             print("\tLine %d ---> replace %s with %s" \
-                    % (i, print_string_without_newline(ori), print_string_without_newline(newest)))
+                    % (i, print_string_without_newline(ori.encode('utf-8')), print_string_without_newline(newest.encode('utf-8'))))
 
     os.remove(filename)
     os.rename(write_filename, filename)
