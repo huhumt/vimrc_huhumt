@@ -258,6 +258,9 @@ command -nargs=0 P :r $HOME/.vimbuf
 
 
 
+" Compile Keil project in vim
+nnoremap <Leader>cc :!keil_compile.sh<CR><CR>
+
 " Support Plug NerdTree
 let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
 let g:NERDTreeDirArrowExpandable = "▸"
@@ -317,6 +320,8 @@ let g:tagbar_iconchars = ['▸', '▾']
 filetype plugin on
 set omnifunc=syntaxcomplete#Complete
 let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
+set completeopt=menu
+let g:OmniCpp_SelectFirstItem = 1
 " SuperTab has occupied <C-p> and <C-n> key in insert mode
 " release <tab> key binding from SuperTab and use it for code_complete
 let g:SuperTabMappingForward = '<nul>'
@@ -338,15 +343,14 @@ let g:autoformat_remove_trailing_spaces = 0
 
 " let g:ctrlp_working_path_mode = 'ra'
 " let g:ctrlp_root_markers = ['pom.xml', '.p4ignore', 'README.md', 'tags', 'cscope.out']
-
 " let g:ctrlp_custom_ignore = {
 "   \ 'dir':  '\v[\/]\.(git|hg|svn)$',
-"   \ 'file': '\v\.(exe|so|dll|swp|tmp)$',
+"   \ 'file': '\v\.(exe|so|dll|swp|tmp|out|log|bin|hex)$',
 "   \ 'link': 'some_bad_symbolic_links',
 "   \ }
 " let g:ctrlp_user_command = 'ag %s -l --nocolor --hidden -g ""'
 " let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:10,results:10'
-let g:Lf_ShortcutF = '<C-P>'
+let g:Lf_ShortcutF = '<C-p>'
 let g:Lf_HideHelp = 1
 let g:Lf_RootMarkers = [
         \ 'tags', 'cscope.out',
@@ -361,7 +365,7 @@ let g:Lf_ExternalCommand = 'ag %s -l --silent --nocolor --ignore={
             \"*.tmp","tags","*.out*","*.bak","*.log",
             \"*.bin","*.hex","*.exe","*.py[co]","*.cache"
         \} -g ""'
-let g:Lf_Ctags = "/mingw64/bin/ctags"
+let g:Lf_Ctags = "/usr/bin/ctags"
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 
 " Support Hexmode plugin
@@ -484,6 +488,8 @@ Plug 'luochen1990/rainbow'
 
 " easy align code
 Plug 'junegunn/vim-easy-align'
+
+
 
 
 
