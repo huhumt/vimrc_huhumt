@@ -321,7 +321,7 @@ filetype plugin on
 set omnifunc=syntaxcomplete#Complete
 let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
 set completeopt=menu
-let g:OmniCpp_SelectFirstItem = 1
+let g:OmniCpp_SelectFirstItem = 2
 " SuperTab has occupied <C-p> and <C-n> key in insert mode
 " release <tab> key binding from SuperTab and use it for code_complete
 let g:SuperTabMappingForward = '<nul>'
@@ -331,7 +331,8 @@ let g:SuperTabMappingTabLiteral = '<nul>'
 " Support Auto-Format plugin
 nnoremap <Leader>f :Autoformat<CR>
 vnoremap <Leader>f :Autoformat<CR>
-let g:formatdef_my_custom_cs = '"clang-format -style=file"'
+" let g:formatdef_my_custom_cs = '"clang-format -style=file"'
+let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
 let g:formatters_cs = ['my_custom_cs']
 let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
