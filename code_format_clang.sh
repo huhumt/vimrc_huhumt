@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+detect_formatter()
+{
+    local formatter_list=( astyle clang-format )
+
+    for formatter in ${formatter_list[@]}
+    do
+        type $formatter >/dev/null 2>&1
+        if [ $? -eq 0 ]
+        then
+            echo "--with-$formatter"
+            break
+        fi
+    done
+}
+
 check_type()
 {
     local par1=$1
@@ -22,14 +37,17 @@ format_method()
     local filename=$1
     local method=$2
 
-    if [ "$method" = "clang-format-vim" ]
-    then
-        vim $filename -c "silent Autoformat" -c "wq"
-    elif [ "$method" = "clang-format-file" ]
+    if [ "$method" = "--with-clang-format-file" ]
     then
         clang-format -style=file -i $filename
-    else
+    elif [ "$method" = "--with-clang-format--llvm" ]
+    then
         clang-format -style=llvm -i $filename
+    elif [ "$method" = "--with-astyle-file" ]
+    then
+        astyle --options=$root_directory/.astylerc $filename >/dev/null 2>&1
+    else
+        vim $filename -c "silent Autoformat" -c "wq"
     fi
 }
 
@@ -74,29 +92,24 @@ format_code()
 main()
 {
     local name=$1
-    local method="clang-format"
+    local method=$(detect_formatter)
 
-    if [ "$2" = "--with-vim" ]
+    if [ "$method" = "--with-astyle" ]
     then
-        method+="-vim"
-    else
-        if [ ! -f ~/.clang-format ]
+        if [ -f $root_directory/.astylerc ]
         then
-            printf "Download clang-format rules from github...\n"
-            wget -q -P ~/ https://raw.githubusercontent.com/huhumt/vimrc_huhumt/master/.clang-format
+            method+="-file"
         fi
-
-        if [ ! -f ./.clang-format ]
-        then
-            cp ~/.clang-format ./
-        fi
-
+    elif [ "$method" = "--with-clang-format" ]
+    then
         if [ -f ./.clang-format ]
         then
             method+="-file"
         else
             method+="-llvm"
         fi
+    else
+        method="--with-vim"
     fi
 
     if [ -f $name ]
@@ -111,7 +124,8 @@ main()
             name=${name:0:len-1}
         fi
         format_code $name $method
-        printf "\nTotally has $sum_of_file files with $sum_of_line lines\n"
+        printf "Success format $name with $method\n"
+        printf "Totally has $sum_of_file files with $sum_of_line lines\n"
     fi
 
     if [ -f ./.clang-format ]
@@ -122,13 +136,13 @@ main()
 
 sum_of_file="0"
 sum_of_line="0"
+root_directory=$(eval echo ~${SUDO_USER})
 if [ $# -eq 0 ]
 then
     printf "Plese give directory or file to do format\n"
-    printf "Usage: code_format_clang filename/directory --with-vim\n"
-    printf "appendix '--with-vim' is optional to use vim clang plugin,\n"
-    printf "otherwise, use system clang-format instead\n"
+    printf "Usage: code_format_clang filename/directory\n"
     exit
+else
+    echo $root_directory
+    main $@
 fi
-
-main $@
