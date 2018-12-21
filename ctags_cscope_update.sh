@@ -102,10 +102,10 @@ main()
         update_ctags_cscope
     fi
 
-    if [ ! -f ./.clang-format ]
-    then
-        cp $HOME/.clang-format ./
-    fi
+    # if [ ! -f ./.clang-format ]
+    # then
+    #     cp $HOME/.clang-format ./
+    # fi
 }
 
 main $@
