@@ -31,6 +31,26 @@ set history=50      " keep 50 lines of command line history
 set ruler           " show the cursor position all the time
 set showcmd         " display incomplete commands
 set incsearch       " do incremental searching
+set autoread
+" Turn on the Wild menu
+set wildmenu
+
+" Ignore compiled files
+set wildignore=*.o,*~,*.pyc
+if has("win16") || has("win32")
+    set wildignore+=.git\*,.hg\*,.svn\*
+else
+    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
+endif
+
+" Height of the command bar
+set cmdheight=2
+
+" A buffer becomes hidden when it is abandoned
+set hid
+
+" Don't redraw while executing macros (good performance config)
+set lazyredraw 
 
 " For Win32 GUI: remove 't' flag from 'guioptions': no tearoff menu entries
 " let &guioptions = substitute(&guioptions, "t", "", "g")
@@ -317,7 +337,6 @@ let g:tagbar_iconchars = ['▸', '▾']
 " endif " if has("autocmd")
 
 " for better performance in AutoComplPop
-filetype plugin on
 set omnifunc=syntaxcomplete#Complete
 let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
 set completeopt=menu
