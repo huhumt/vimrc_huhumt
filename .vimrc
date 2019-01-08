@@ -50,7 +50,7 @@ set cmdheight=2
 set hid
 
 " Don't redraw while executing macros (good performance config)
-set lazyredraw 
+set lazyredraw
 
 " For Win32 GUI: remove 't' flag from 'guioptions': no tearoff menu entries
 " let &guioptions = substitute(&guioptions, "t", "", "g")
@@ -230,6 +230,12 @@ function! CurDir()
     return curdir
 endfunction
 
+set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
+
+command -nargs=1 C :',. w! $HOME/.vimbuf
+command -nargs=0 P :r $HOME/.vimbuf
+
+
 " modified by TinyFish on 2016.3.18 to enable show line number
 "
 set encoding=utf-8
@@ -251,7 +257,7 @@ set list
 set listchars=tab:>-
 
 set tag=tags
-map <Leader>u :!ctags_cscope_update.sh<CR><CR>
+map <Leader>u :!ctags_cscope_update.sh<CR>:cs reset<CR><CR>
 
 "
 " endif
@@ -269,12 +275,6 @@ highlight DiffText   cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg
 " highlight DiffDelete cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 " highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 " highlight DiffText   cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
-set statusline=\ %F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
-
-command -nargs=1 C :',. w! $HOME/.vimbuf
-command -nargs=0 P :r $HOME/.vimbuf
-
-
 
 
 
