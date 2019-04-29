@@ -23,8 +23,9 @@
 --break-closing-braces # in if-else condition, else in a newline
 --break-one-line-headers # break 1 line if to 2 line
 --add-braces # auto add brace in 1 line if statement line
+--attach-return-type # move function declaration to the same line with type
 --convert-tabs # convert tab into space
---max-code-length=80 # 1 line with more than 80 char will break into multi line
+#--max-code-length=80 # 1 line with more than 80 char will break into multi line
 --suffix=none # overwrite original file after formatted
 --quiet # only display error message
 --lineend=windows # end with \r\n
