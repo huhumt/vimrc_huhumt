@@ -355,7 +355,7 @@ let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
 let g:formatters_cs = ['my_custom_cs']
 let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
-let g:autoformat_remove_trailing_spaces = 0
+" let g:autoformat_remove_trailing_spaces = 0
 
 " Support Ctrl-P plugin
 " let g:ctrlp_map = '<c-p>'
@@ -410,7 +410,7 @@ map <Leader>j <Plug>(easymotion-j)
 map <Leader>k <Plug>(easymotion-k)
 
 " exclude some filetype when do diff
-let g:DirDiffExcludes = "CVS,*.class,*.exe,.*.swp,*.o,tags,*.out, *.git, *.svn"
+let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
 let g:DirDiffIgnore = "Id:,Revision:,Date:"
 let g:DirDiffWindowSize = 5
 nnoremap <Leader><Leader>g :diffget<CR>
