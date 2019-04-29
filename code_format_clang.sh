@@ -92,7 +92,12 @@ format_code()
 main()
 {
     local name=$1
-    local method=$(detect_formatter)
+    local method=$2
+
+    if [ "$2" = "" ]
+    then
+        method=$(detect_formatter)
+    fi
 
     if [ "$method" = "--with-astyle" ]
     then
@@ -140,7 +145,8 @@ root_directory=$(eval echo ~${SUDO_USER})
 if [ $# -eq 0 ]
 then
     printf "Plese give directory or file to do format\n"
-    printf "Usage: code_format_clang filename/directory\n"
+    printf "Usage: code_format_clang filename/directory --with-vim\n"
+    printf "'--with-vim' is optional to use vim plugin to do format\n"
     exit
 else
     echo $root_directory
