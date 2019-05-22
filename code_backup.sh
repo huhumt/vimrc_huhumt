@@ -37,7 +37,7 @@ backup_tar_gz()
 
     # get current user's home directory
     dest_dir=$1
-    if [ "$dest_dir" == "" ]
+    if [ "$dest_dir" = "" ]
     then
         dest_dir=$(eval echo ~${SUDO_USER})
     fi
