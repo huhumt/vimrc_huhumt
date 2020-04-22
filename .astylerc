@@ -29,3 +29,4 @@
 --suffix=none # overwrite original file after formatted
 --quiet # only display error message
 --lineend=windows # end with \r\n
+--delete-empty-lines # delete extra lines to only one
