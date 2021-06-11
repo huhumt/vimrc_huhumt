@@ -390,6 +390,7 @@ let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
+let g:hexmode_xxd_options = '-g 1'
 
 " Support for Vim-Dict plugin
 let g:trans_bin = "/usr/local/bin"
@@ -428,7 +429,8 @@ xmap ga <Plug>(EasyAlign)
 " Start interactive EasyAlign for a motion/text object (e.g. gaip)
 nmap ga <Plug>(EasyAlign)
 
-
+" bug fix for code color plugin
+let c_no_curly_error = 1
 
 
 
@@ -508,6 +510,9 @@ Plug 'luochen1990/rainbow'
 
 " easy align code
 Plug 'junegunn/vim-easy-align'
+
+" color for c/c++ code
+Plug 'octol/vim-cpp-enhanced-highlight'
 
 
 
