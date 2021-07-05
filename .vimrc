@@ -523,4 +523,3 @@ Plug 'octol/vim-cpp-enhanced-highlight'
 "
 " Initialize plugin system
 call plug#end()
-
