@@ -20,12 +20,7 @@ set nocompatible
 
 " allow backspacing over everything in insert mode
 set backspace=indent,eol,start
-
-if has("vms")
-    set nobackup " do not keep a backup file, use versions instead
-else
-    set nobackup " keep a backup file
-endif
+set nobackup " do not keep a backup file, use versions instead
 
 set history=50      " keep 50 lines of command line history
 set ruler           " show the cursor position all the time
@@ -35,13 +30,21 @@ set autoread
 " Turn on the Wild menu
 set wildmenu
 
+set ttimeout		" time out for key codes
+set ttimeoutlen=100	" wait up to 100ms after Esc for special key
+
+" Show @@@ in the last line if it is truncated.
+set display=truncate
+
+" Show a few lines of context around the cursor.  Note that this makes the
+" text scroll if you mouse-click near the start or end of the window.
+set scrolloff=5
+
+" Do not recognize octal numbers for Ctrl-A and Ctrl-X, most users find it confusing.
+set nrformats-=octal
+
 " Ignore compiled files
-set wildignore=*.o,*~,*.pyc
-if has("win16") || has("win32")
-    set wildignore+=.git\*,.hg\*,.svn\*
-else
-    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
-endif
+set wildignore=*.o,*~,*.pyc,*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
 
 " Height of the command bar
 set cmdheight=2
@@ -54,6 +57,9 @@ set lazyredraw
 
 " For Win32 GUI: remove 't' flag from 'guioptions': no tearoff menu entries
 " let &guioptions = substitute(&guioptions, "t", "", "g")
+if has('win32')
+    set guioptions-=t
+endif
 
 " Don't use Ex mode, use Q for formatting
 map Q gq
@@ -67,11 +73,14 @@ map Q gq
 if &t_Co > 2 || has("gui_running")
     syntax on
     set hlsearch
+
+    " I like highlighting strings inside C comments.
+    " Revert with ":unlet c_comment_strings".
+    let c_comment_strings=1
 endif
 
 " Only do this part when compiled with support for autocommands.
 if has("autocmd")
-
     " Enable file type detection.
     " Use the default filetype settings, so that mail gets 'tw' set to 72,
     " 'cindent' is on in C files, etc.
@@ -79,20 +88,20 @@ if has("autocmd")
     filetype plugin indent on
 
     " Put these in an autocmd group, so that we can delete them easily.
-    augroup vimrcEx
+    augroup vimStartup
         au!
 
         " For all text files set 'textwidth' to 78 characters.
         autocmd FileType text setlocal textwidth=78
 
         " When editing a file, always jump to the last known cursor position.
-        " Don't do it when the position is invalid or when inside an event handler
-        " (happens when dropping a file on gvim).
+        " Don't do it when the position is invalid, when inside an event handler
+        " (happens when dropping a file on gvim) and for a commit message (it's
+        " likely a different one than last time).
         autocmd BufReadPost *
-                    \ if line("'\"") > 0 && line("'\"") <= line("$") |
-                    \   exe "normal g`\"" |
-                    \ endif
-
+            \ if line("'\"") >= 1 && line("'\"") <= line("$") && &ft !~# 'commit'
+            \ |   exe "normal! g`\""
+            \ | endif
     augroup END
 
     augroup qf
@@ -102,11 +111,6 @@ if has("autocmd")
         autocmd QuickFixCmdPost * copen 20
 
     augroup END
-
-else
-
-    set autoindent " always set autoindenting on
-
 endif " has("autocmd")
 
 " CSCOPE settings for vim
@@ -176,27 +180,6 @@ if has("cscope")
     nmap <Leader><Leader>e :cs find e <C-R>=expand("<cword>")<CR><CR>
     " nmap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
     " nmap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
-
-
-    """"""""""""" key map timeouts
-    " By default Vim will only wait 1 second for each keystroke in a mapping.
-    " You may find that too short with the above typemaps.  If so, you should
-    " either turn off mapping timeouts via 'notimeout'.
-    "set notimeout
-    " Or, you can keep timeouts, by uncommenting the timeoutlen line below,
-    " with your own personal favorite value (in milliseconds):
-    "set timeoutlen=4000
-    " Either way, since mapping timeout settings by default also set the
-    " timeouts for multicharacter 'keys codes' (like <F1>), you should also
-    " set ttimeout and ttimeoutlen: otherwise, you will experience strange
-    " delays as vim waits for a keystroke after you hit ESC (it will be
-    " waiting to see if the ESC is actually part of a key code like <F1>).
-    "set ttimeout
-    " personally, I find a tenth of a second to work well for key code
-    " timeouts. If you experience problems and have a slow terminal or network
-    " connection, set it higher.  If you don't set ttimeoutlen, the value for
-    " timeoutlent (default: 1000 = 1 second, which is sluggish) is used.
-    "set ttimeoutlen=100
 
 endif
 
@@ -430,8 +413,13 @@ xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 " bug fix for code color plugin
-let c_no_curly_error = 1
-
+" let c_no_curly_error = 1
+" Enable highlighting of C++11 attributes
+let g:cpp_attributes_highlight = 1
+" Highlight struct/class member variables (affects both C and C++ files)
+let g:cpp_member_highlight = 1
+" Put all standard C and C++ keywords under Vim's highlight group 'Statement', (affects both C and C++ files)
+let g:cpp_simple_highlight = 1
 
 
 
@@ -441,8 +429,8 @@ let c_no_curly_error = 1
 
 " Specify a directory for plugins (for Neovim: ~/.local/share/nvim/plugged)
 call plug#begin('~/.vim/plugged')
-"
-" " Make sure you use single quotes
+
+" Make sure you use single quotes
 
 " Manage your project looks like a tree-list
 Plug 'scrooloose/nerdtree'
@@ -512,7 +500,8 @@ Plug 'luochen1990/rainbow'
 Plug 'junegunn/vim-easy-align'
 
 " color for c/c++ code
-Plug 'octol/vim-cpp-enhanced-highlight'
+" Plug 'octol/vim-cpp-enhanced-highlight'
+Plug 'bfrg/vim-cpp-modern'
 
 
 
@@ -520,6 +509,6 @@ Plug 'octol/vim-cpp-enhanced-highlight'
 
 
 
-"
+
 " Initialize plugin system
 call plug#end()
