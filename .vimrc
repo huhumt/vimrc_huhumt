@@ -259,6 +259,12 @@ highlight DiffText   cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg
 " highlight DiffChange cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 " highlight DiffText   cterm=bold ctermfg=none ctermbg=119 gui=none guifg=bg guibg=Red
 
+" add crosshair style cursor
+highlight CursorLine   cterm=NONE ctermbg=darkgray ctermfg=NONE guibg=darkgray guifg=NONE
+highlight CursorColumn cterm=NONE ctermbg=brown ctermfg=NONE guibg=brown guifg=NONE
+set cursorline    " enable the horizontal line
+set cursorcolumn  " enable the vertical line
+
 
 
 " Compile Keil project in vim
