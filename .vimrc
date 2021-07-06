@@ -264,6 +264,9 @@ highlight CursorLine   cterm=NONE ctermbg=darkgray ctermfg=NONE guibg=darkgray g
 highlight CursorColumn cterm=NONE ctermbg=brown ctermfg=NONE guibg=brown guifg=NONE
 set cursorline    " enable the horizontal line
 set cursorcolumn  " enable the vertical line
+" refer to https://vim.fandom.com/wiki/Xterm256_color_names_for_console_Vim?file=Xterm-color-table.png
+highlight ColorColumn ctermbg=60
+set colorcolumn=80
 
 
 
@@ -311,10 +314,10 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 
 " support minibufexpl plugin
-let g:miniBufExplMapWindowNavVim = 1
-let g:miniBufExplMapWindowNavArrows = 1
-let g:miniBufExplMapCTabSwitchBufs = 1
-let g:miniBufExplModSelTarget = 1
+" let g:miniBufExplMapWindowNavVim = 1
+" let g:miniBufExplMapWindowNavArrows = 1
+" let g:miniBufExplMapCTabSwitchBufs = 1
+" let g:miniBufExplModSelTarget = 1
 
 " Support tagbar plugin
 nmap <Leader>t :TagbarToggle<CR>
