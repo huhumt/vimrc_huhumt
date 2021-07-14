@@ -268,6 +268,9 @@ set cursorcolumn  " enable the vertical line
 highlight ColorColumn ctermbg=60
 set colorcolumn=80
 
+" highlight line number
+highlight LineNr term=bold cterm=NONE ctermfg=DarkGrey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
+
 
 
 " Compile Keil project in vim
@@ -511,6 +514,9 @@ Plug 'junegunn/vim-easy-align'
 " color for c/c++ code
 " Plug 'octol/vim-cpp-enhanced-highlight'
 Plug 'bfrg/vim-cpp-modern'
+
+" use % to match keywords
+Plug 'andymass/vim-matchup'
 
 
 
