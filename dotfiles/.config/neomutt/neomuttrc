@@ -1,0 +1,125 @@
+source ~/.config/neomutt/colours
+source ~/.config/neomutt/keybindings
+
+set from="test@test.co.uk"
+set realname="test"
+set use_from=yes
+# Automatically log in to this mailbox at startup
+set spoolfile="imaps://test@mail.test.co.uk/INBOX"
+# Define the = shortcut, and the entry point for the folder browser (c?)
+set folder="imaps://test@mail.test.co.uk/"
+# set folder=~/Public/Mail
+set smtp_url=smtp://test@mail.test.co.uk:587
+set smtp_authenticators="plain"
+set record="+Sent"
+set postponed="+Drafts"
+set trash="+Trash"
+# activate TLS if available on the server
+set ssl_starttls=yes
+# always use SSL when connecting to a server
+set ssl_force_tls=yes
+# Don't wait to enter mailbox manually
+unset imap_passive
+# Automatically poll subscribed mailboxes for new mail (new in 1.5.11)
+set imap_check_subscribed
+# Reduce polling frequency to a sane level
+set mail_check=60
+# And poll the current mailbox more often (not needed with IDLE in post 1.5.11)
+set timeout=300
+# keep a cache of headers for faster loading (1.5.9+?)
+# set header_cache=~/.hcache
+# Display download progress every 5K
+set net_inc=5
+set sort=date-received
+alternates test@test.co.uk
+
+set mask="!^\\.[^.]"
+auto_view text/x-vcard text/html text/enriched
+# https://web.archive.org/web/20200601023956/https://wcaleb.org/blog/mutt-tips
+set editor="vim -c 'set spell' -c 'setlocal fo+=aw'"
+# set header_cache="+.cache"
+
+# set up the sidebar
+set sidebar_width=17
+set sidebar_visible=yes
+set sidebar_delim_chars='|'
+set sidebar_sort_method=alpha
+
+set rfc2047_parameters
+
+# Show inbox and sent items
+# mailboxes +Sent +Draft +Trash
+
+# Alter these colours as needed for maximum bling
+# color sidebar_new yellow default
+# color normal white default
+# color hdrdefault brightcyan default
+# color signature green default
+# color attachment brightyellow default
+# color quoted green default
+# color quoted1 white default
+# color tilde blue default
+
+# ctrl-n, ctrl-p to select next, prev folder
+# ctrl-o to open selected folder
+# bind index \Cp sidebar-prev
+# bind index \Cn sidebar-next
+# bind index \Co sidebar-open
+# bind pager \Cp sidebar-prev
+# bind pager \Cn sidebar-next
+# bind pager \Co sidebar-open
+
+# ctrl-b toggles sidebar visibility
+# macro index,pager \Cb 'toggle sidebar_visible' 'toggle sidebar'
+
+# esc-m Mark new messages as read
+# macro index m "T~N;WNT~O;WO\CT~T" "mark all messages read"
+
+# Collapsing threads
+# macro index [ "" "collapse/uncollapse thread"
+# macro index ] ""    "collapse/uncollapse all threads"
+
+# threads containing new messages
+# uncolor index "~(~N)"
+# color index brightblue default "~(~N)"
+
+# new messages themselves
+# uncolor index "~N"
+# color index brightyellow default "~N"
+
+# GPG/PGP integration
+# this set the number of seconds to keep in memory the passphrase used to encrypt/sign
+# set pgp_timeout=1800
+
+# automatically sign and encrypt with PGP/MIME
+# set pgp_autosign=yes     # autosign all outgoing mails
+# set pgp_replysign=yes    # autosign replies to signed
+# set pgp_auto_decode=yes  # decode attachments
+# set fcc_clear=no         # Keep encrypted copy of sent encrypted mail
+# set smime_is_default=no
+
+# set alias_file=~/.config/neomutt/alias
+set signature ="~/.config/neomutt/signatur"
+set abort_key = "<Esc>"
+set attach_save_dir = "~/Downloads"
+set menu_scroll=yes
+# set pager_context = 5
+set text_flowed=yes
+
+set query_command = "abook --datafile ~/.config/neomutt/test_addressbook --mutt-query '%s'"
+# macro index,pager  A "<pipe-message>abook --add-email-quiet --datafile ~/.config/neomutt/test_addressbook<return>" "Add this sender to Abook"
+macro index,pager  A "<pipe-message>~/.config/neomutt/update_abook.sh<return><return>" "Add this sender to Abook"
+bind editor        <Tab> complete-query
+set display_filter = "pee '~/.config/neomutt/update_abook.sh' 'cat -'"
+set mark_old=no
+set edit_headers = yes
+
+# --------------------------------------------------------------------------
+# COMMANDS – shown with an example argument
+# --------------------------------------------------------------------------
+# After $timeout seconds of inactivity, run this NeoMutt command
+timeout-hook 'exec sync-mailbox'
+# When NeoMutt first loads, run this NeoMutt command
+# startup-hook 'exec sync-mailbox'
+# When NeoMutt quits, run this NeoMutt command
+# shutdown-hook 'exec sync-mailbox'

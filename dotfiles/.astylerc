@@ -1,0 +1,32 @@
+# this is a code formatter file for c
+# got any problem refers to "http://astyle.sourceforge.net/astyle.html"
+
+--style=allman # brace in newline
+--indent=spaces=4 # replace indent with 4 spaces
+--attach-closing-while # move while in do...while to the end of end brace
+--indent-classes # auto indent for class
+--indent-switches # auto indent for case in switch statement
+--indent-namespaces # auto indent namespacesA
+--indent-after-parens # auto indent new line parameter
+--indent-labels # auto indent for goto labelA
+--indent-preproc-block # auto indent ifdef block
+--indent-preproc-define # auto indent define function
+--indent-col1-comments # auto indent comment
+--min-conditional-indent=0 # auto indent in newline condition
+--break-blocks # add new lin before and after if/for/while statement
+--pad-oper # insert white space around operator +/-...
+--pad-comma # insert white space around ,
+--pad-header # insert white space around if/for/while statement
+--unpad-paren # remove unwanted space
+--align-pointer=name # alian */&/^ with name, ie. char *a not char* a
+--align-reference=name
+--break-closing-braces # in if-else condition, else in a newline
+--break-one-line-headers # break 1 line if to 2 line
+--add-braces # auto add brace in 1 line if statement line
+--attach-return-type # move function declaration to the same line with type
+--convert-tabs # convert tab into space
+#--max-code-length=80 # 1 line with more than 80 char will break into multi line
+--suffix=none # overwrite original file after formatted
+--quiet # only display error message
+--lineend=windows # end with \r\n
+--delete-empty-lines # delete extra lines to only one

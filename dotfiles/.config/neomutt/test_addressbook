@@ -1,0 +1,15 @@
+# abook addressbook file
+
+[format]
+program=abook
+version=0.6.1
+
+
+[0]
+name=test001
+email=test001@test.com,test001@test.co.uk,test.001@test.co.uk
+
+[1]
+name=test002
+email=test002@test.com,test002@test.co.uk,test.002@test.co.uk
+mobile=0123456789
