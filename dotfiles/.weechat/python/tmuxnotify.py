@@ -66,23 +66,24 @@ def update_weechat_log(msg, filename="/tmp/weechat_msg.txt", delete_en=False):
                 if gcalcli_mark in head:
                     # last message in file
                     pre_ts = re.findall(r"\d{1,2}:\d{1,2}", head)[0]
-                    pre_report = datetime.strptime(pre_ts, "%H:%M")
-                    allowed_report = (pre_report + timedelta(minutes=10)).time()
                     pre_m_d = (head.split("reported at")[-1]
                                .split(pre_ts)[0].strip())
                     today_m_d = datetime.today().strftime("%a %b %d")
-                    pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
-                    if tail_flag and pre_event_ts and pre_m_d == today_m_d:
-                        pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
-                    else:
-                        pre_event = datetime.now()
-                    allowed_event = (pre_event + timedelta(seconds=30)).time()
-                    # current message
-                    first_line = msg.split(os.linesep, 1)[0]
-                    ts = re.findall(r"\d{1,2}:\d{1,2}", first_line)[0]
-                    report = datetime.strptime(ts, "%H:%M").time()
-                    if report < allowed_event and report < allowed_report:
-                        update_file_flag = False
+                    if pre_m_d == today_m_d:
+                        pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
+                        if tail_flag and pre_event_ts:
+                            pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
+                        else:
+                            pre_event = datetime.now()
+                        allowed_event = (pre_event + timedelta(seconds=30)).time()
+                        pre_report = datetime.strptime(pre_ts, "%H:%M")
+                        allowed_report = (pre_report + timedelta(minutes=10)).time()
+                        # current message
+                        first_line = msg.split(os.linesep, 1)[0]
+                        ts = re.findall(r"\d{1,2}:\d{1,2}", first_line)[0]
+                        report = datetime.strptime(ts, "%H:%M").time()
+                        if report < allowed_event and report < allowed_report:
+                            update_file_flag = False
             else:  # normal weechat message
                 if tail_flag:
                     update_file_flag = False
