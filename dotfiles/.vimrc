@@ -403,16 +403,24 @@ let g:gutentags_project_root = ['.root', '.project', 'tags']
 " https://www.zachpfeffer.com/single-post/2018/02/20/generate-ctags-files-for-cc-source-files
 let g:gutentags_ctags_extra_args_dict = {
             \ 'c': [
+                \ '--recurse',
                 \ '--fields=+ailmnS',
                 \ '--languages=C,C++',
                 \ '--c++-kinds=+p',
                 \ '--extras=+q'
                 \ ],
             \ 'cpp': [
+                \ '--recurse',
                 \ '--fields=+ailmnS',
                 \ '--languages=C,C++',
                 \ '--c++-kinds=+p',
                 \ '--extras=+q'
+                \ ],
+            \ 'python': [
+                \ '--recurse',
+                \ '--fields=+ln',
+                \ '--languages=python',
+                \ '--python-kinds=-iv',
                 \ ],
             \ }
 " let g:gutentags_cscope_executable = 'cscope -Rbkq'
@@ -572,7 +580,7 @@ inoremap <nowait><expr> <C-d> "\<c-r>=coc#float#scroll(0, 4)\<cr>"
 let g:coc_global_extensions = [
         \ "coc-json", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs",
+        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-java",
         \]
 
 

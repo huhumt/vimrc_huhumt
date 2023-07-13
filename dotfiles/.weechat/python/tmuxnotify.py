@@ -46,59 +46,68 @@ gcalcli_mark = "From gcalcli agenda"
 def update_weechat_log(msg, filename="/tmp/weechat_msg.txt", delete_en=False):
     update_file_flag = True
     display_msg = msg
-    try:
+
+    head = ""
+    tail = ""
+    date_flag = False
+    tail_flag = False
+
+    if os.path.isfile(filename):
         r_fd = open(filename, "r")
         content = r_fd.readlines()
         r_fd.close()
 
         head = content[0]
+        if gcalcli_mark in head:
+            # last message in file
+            pre_ts = re.findall(r"\d{1,2}:\d{1,2}", head)[0]
+            pre_m_d = (head.split("reported at")[-1]
+                       .split(pre_ts)[0].strip())
+            today_m_d = datetime.today().strftime("%a %b %d")
+            date_flag = (pre_m_d == today_m_d)
+
         tail = content[-1]
         tail_flag = "[" in tail and "]" in tail
-
-        if delete_en:
-            if tail_flag:
-                msg = "".join(content[:-1])
-                display_msg = ""
-            else:
-                update_file_flag = False
+        pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
+        if tail_flag and pre_event_ts:
+            pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
         else:
-            if gcalcli_mark in msg:  # gcalcli message
-                if gcalcli_mark in head:
-                    # last message in file
-                    pre_ts = re.findall(r"\d{1,2}:\d{1,2}", head)[0]
-                    pre_m_d = (head.split("reported at")[-1]
-                               .split(pre_ts)[0].strip())
-                    today_m_d = datetime.today().strftime("%a %b %d")
-                    if pre_m_d == today_m_d:
-                        pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
-                        if tail_flag and pre_event_ts:
-                            pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
-                        else:
-                            pre_event = datetime.now()
-                        allowed_event = (pre_event + timedelta(seconds=30)).time()
-                        pre_report = datetime.strptime(pre_ts, "%H:%M")
-                        allowed_report = (pre_report + timedelta(minutes=10)).time()
-                        # current message
-                        first_line = msg.split(os.linesep, 1)[0]
-                        ts = re.findall(r"\d{1,2}:\d{1,2}", first_line)[0]
-                        report = datetime.strptime(ts, "%H:%M").time()
-                        if report < allowed_event and report < allowed_report:
-                            update_file_flag = False
-            else:  # normal weechat message
-                if tail_flag:
+            pre_event = datetime.now()
+        allowed_event = (pre_event + timedelta(seconds=30)).time()
+
+    if delete_en:
+        if tail_flag:
+            msg = "".join(content[:-1])
+            display_msg = ""
+        else:
+            update_file_flag = False
+    else:
+        if gcalcli_mark in msg:  # gcalcli message
+            if date_flag:
+                pre_report = datetime.strptime(pre_ts, "%H:%M")
+                allowed_report = (pre_report + timedelta(minutes=10)).time()
+                # current message
+                first_line = msg.split(os.linesep, 1)[0]
+                ts = re.findall(r"\d{1,2}:\d{1,2}", first_line)[0]
+                report = datetime.strptime(ts, "%H:%M").time()
+                if report < allowed_event and report < allowed_report:
                     update_file_flag = False
+        else:  # normal weechat message
+            if date_flag and tail_flag and datetime.now().time() < allowed_event:
+                update_file_flag = False
+            else:
+                msg_list = msg.split("<--->", 1)
+                m = msg_list[-1].split("\t", 1)
+                name = m[0].strip()
+                message = m[1].replace("'", "")[:64].strip()
+                if name == "*":
+                    name = message.split()[0]
+                display_msg = (f"{msg_list[0]}{message}\n"
+                               + f"    ---messge from: [{name}]")
+                if gcalcli_mark in head:
+                    msg = f"{head}{display_msg}"
                 else:
-                    msg_list = msg.split("<--->", 1)
-                    m = msg_list[-1].split("\t", 1)
-                    name = m[0].strip()
-                    message = m[1].replace("'", "")[:64].strip()
-                    if name == "*":
-                        name = message.split(max=1)[0]
-                    display_msg = (f"{msg_list[0]}{message}\n"
-                                   + f"    ---messge from: [{name}]")
-                    msg = f"{head}" + f"{display_msg}"
-    except:
-        pass
+                    msg = display_msg
 
     if update_file_flag:
         if display_msg.strip():

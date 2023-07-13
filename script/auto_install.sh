@@ -6,7 +6,7 @@ check_dependencies() {
     do
         if ! type -p "$deps_app" > /dev/null
         then
-            print "Make sure you have successfully installed $deps_app"
+            printf "Make sure you have successfully installed $deps_app\n"
             exit
         fi
     done

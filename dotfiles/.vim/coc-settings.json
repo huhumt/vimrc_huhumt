@@ -9,5 +9,8 @@
     "rust-analyzer.updates.prompt": false,
     "cSpell.language": "en-GB",
     "cSpell.numSuggestions": 4,
-    "cSpell.allowCompoundWords": true
+    "cSpell.allowCompoundWords": true,
+    "[java]": {
+        "semanticTokens.enable": true
+    }
 }
