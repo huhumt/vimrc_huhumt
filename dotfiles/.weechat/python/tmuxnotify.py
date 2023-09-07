@@ -12,10 +12,10 @@
 # Original author: lavaramano <lavaramano AT gmail DOT com>
 
 import weechat
-import string
 import os
 import re
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 
 weechat.register("tmuxnotify", "lukaszkorecki", "0.1", "GPL",
                  "tmuxnotify: weechat notifications in tmux", "", "")
@@ -40,122 +40,124 @@ weechat.hook_signal("input_text_changed", "notify_show", "delete file")
 weechat.hook_timer(180 * 1000, 60, 0, "cron_timer_cb", "")
 
 
-gcalcli_mark = "From gcalcli agenda"
+@dataclass
+class WeechatLogData:
+    key: str
+    value: str
+    header: str
 
 
-def update_weechat_log(msg, filename="/tmp/weechat_msg.txt", delete_en=False):
-    update_file_flag = True
-    display_msg = msg
+def delete_weechat_log(filename="/tmp/weechat_msg.txt"):
+    try:
+        with open(filename, "r+") as f:
+            content = f.readlines()
+            if len(content) > 1:
+                f.seek(0)
+                f.write(content[0])
+                f.truncate()
+    except FileNotFoundError:
+        pass
 
-    head = ""
-    tail = ""
-    date_flag = False
-    tail_flag = False
 
-    if os.path.isfile(filename):
-        r_fd = open(filename, "r")
-        content = r_fd.readlines()
-        r_fd.close()
+def update_weechat_log(weechat_log_data, filename="/tmp/weechat_msg.txt"):
+    today_m_d = datetime.today().strftime("%a %b %d")
+    now_h_m = datetime.now().time()
+    msg_list = [f'{weechat_log_data.header}: reported at ',
+                f'{today_m_d} {now_h_m.strftime("%H:%M")}\n']
+    new_msg = f"{weechat_log_data.key}: {weechat_log_data.value}"
+    tail_msg = new_msg
 
-        head = content[0]
-        if gcalcli_mark in head:
-            # last message in file
-            pre_ts = re.findall(r"\d{1,2}:\d{1,2}", head)[0]
-            pre_m_d = (head.split("reported at")[-1]
-                       .split(pre_ts)[0].strip())
-            today_m_d = datetime.today().strftime("%a %b %d")
-            date_flag = (pre_m_d == today_m_d)
-
-        tail = content[-1]
-        tail_flag = "[" in tail and "]" in tail
-        pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
-        if tail_flag and pre_event_ts:
-            pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
-        else:
-            pre_event = datetime.now()
-        allowed_event = (pre_event + timedelta(seconds=30)).time()
-
-    if delete_en:
-        if tail_flag:
-            msg = "".join(content[:-1])
-            display_msg = ""
-        else:
-            update_file_flag = False
+    try:
+        with open(filename, "r") as f:
+            content = f.readlines()
+    except FileNotFoundError:
+        pass
     else:
-        if gcalcli_mark in msg:  # gcalcli message
-            if date_flag:
-                pre_report = datetime.strptime(pre_ts, "%H:%M")
-                allowed_report = (pre_report + timedelta(minutes=10)).time()
-                # current message
-                first_line = msg.split(os.linesep, 1)[0]
-                ts = re.findall(r"\d{1,2}:\d{1,2}", first_line)[0]
-                report = datetime.strptime(ts, "%H:%M").time()
-                if report < allowed_event and report < allowed_report:
-                    update_file_flag = False
-        else:  # normal weechat message
-            if date_flag and tail_flag and datetime.now().time() < allowed_event:
-                update_file_flag = False
-            else:
-                msg_list = msg.split("<--->", 1)
-                m = msg_list[-1].split("\t", 1)
-                name = m[0].strip()
-                message = m[1].replace("'", "")[:64].strip()
-                if name == "*":
-                    name = message.split()[0]
-                display_msg = (f"{msg_list[0]}{message}\n"
-                               + f"    ---messge from: [{name}]")
-                if gcalcli_mark in head:
-                    msg = f"{head}{display_msg}"
-                else:
-                    msg = display_msg
+        head = content[0]
+        # last report timestamp in file
+        pre_report_ts = re.findall(r"\d{1,2}:\d{1,2}", head)[0]
+        pre_report_m_d = (head.split("reported at")[-1].split(
+            pre_report_ts)[0].strip())
+        date_flag = (pre_report_m_d == today_m_d)
 
-    if update_file_flag:
-        if display_msg.strip():
-            os.popen("tmux set display-time {0} && tmux display-message '{1}' &"
-                     .format(5 * 1000,
-                         re.sub(' +', ' ',
-                                display_msg.replace(os.linesep, " "))))
-        with open(filename, "w") as f:
-            f.write(f"{msg}")
+        tail = content[-1].strip()
+        tail_flag = tail.startswith("[") and tail.endswith("]")
+
+        if date_flag and tail_flag:
+            if "From gcalcli agenda" in head:
+                pre_event_ts = re.findall(r"\d{1,2}:\d{1,2}", tail)
+                pre_event = datetime.strptime(pre_event_ts[0], "%H:%M")
+                allowed_event = (pre_event + timedelta(seconds=30)).time()
+                allow_report_flag = (now_h_m > allowed_event)
+            else:
+                allow_report_flag = True
+
+            if allow_report_flag:
+                msg_list += content[1:-1]
+                msg_list.append(f"{tail[1:-1]}\n")
+            else:
+                if weechat_log_data.header == "From gcalcli agenda":
+                    return
+                else:
+                    msg_list = content[:-1]
+                    msg_list.append(f"{tail_msg}\n")
+                    tail_msg = tail[1:-1]
+
+    os.popen(
+        "tmux set display-time {0} && tmux display-message '{1}' &".format(
+            5 * 1000, re.sub(' +', ' ', new_msg)
+        )
+    )
+
+    msg_list.append(f"[{tail_msg}]")
+    with open(filename, "w") as f:
+        f.write("".join(msg_list))
+
+
+def parse_today_event(filename="/tmp/gcalcli_agenda.txt"):
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    today_m_d = datetime.strptime(
+        datetime.today().strftime("%a %b %d"), "%a %b %d")
+    today_event_dict = {}
+    today_flag = False
+
+    try:
+        with open(filename, "r") as r_fd:
+            for line in r_fd:
+                line_remove_colour = ansi_escape.sub("", line)
+                date = " ".join(line_remove_colour.split()[:3])
+                try:
+                    m_d = datetime.strptime(date, "%a %b %d")
+                except ValueError:
+                    pass
+                else:
+                    if m_d == today_m_d:
+                        today_flag = True
+                    elif m_d > today_m_d:
+                        return today_event_dict
+
+                time_list = re.findall(r"\d{1,2}:\d{1,2}", line_remove_colour)
+                if time_list:
+                    time = time_list[-1].strip()
+                    cal_list = line_remove_colour.split(time)
+                    event = re.sub(" +", " ", cal_list[-1].strip())
+                    if today_flag and time and event:
+                        today_event_dict[time] = event
+    except FileNotFoundError:
+        pass
+    return today_event_dict
 
 
 def cron_timer_cb(data, remaining_calls):
-    r_filename = "/tmp/gcalcli_agenda.txt"
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    today_m_d = datetime.today().strftime("%a %b %d")
     now_h_m = datetime.now().time()
-    today_event_dict = {}
-    today_flag = False
-    if os.path.isfile(r_filename):
-        with open(r_filename, "r") as r_fd:
-            for line in r_fd:
-                line_remove_colour = ansi_escape.sub("", line)
-                try:
-                    date = " ".join(line_remove_colour.split()[:3])
-                    datetime.strptime(date, "%a %b %d")
-                    if today_flag and date != today_m_d:
-                        break
-                    if date == today_m_d:
-                        today_flag = True
-                except ValueError:
-                    pass
-                time_list = re.findall(r"\d{1,2}:\d{1,2}", line_remove_colour)
-                if not line_remove_colour.strip() or not time_list:
-                    continue
-                time = time_list[-1].strip()
-                cal_list = line_remove_colour.split(time)
-                event = re.sub(" +", " ", cal_list[-1].strip())
-                if today_flag and time and event:
-                    today_event_dict[time] = event
-        for key, value in today_event_dict.items():
-            event_time = datetime.strptime(key, "%H:%M")
-            reminder = (event_time - timedelta(minutes=10)).time()
-            if now_h_m > reminder and now_h_m < event_time.time():
-                msg = (f'{gcalcli_mark}: reported at '
-                       + f'{today_m_d} {now_h_m.strftime("%H:%M")}\n'
-                       + f'    [{key} {value}]')
-                update_weechat_log(msg)
-                break
+    today_event_dict = parse_today_event()
+    for key, value in today_event_dict.items():
+        event_time = datetime.strptime(key, "%H:%M")
+        reminder = (event_time - timedelta(minutes=10)).time()
+        if now_h_m > reminder and now_h_m < event_time.time():
+            update_weechat_log(WeechatLogData(key, value,
+                                              "From gcalcli agenda"))
+            return weechat.WEECHAT_RC_OK
     return weechat.WEECHAT_RC_OK
 
 # Functions
@@ -163,20 +165,19 @@ def cron_timer_cb(data, remaining_calls):
 
 def notify_show(data, signal, message):
     """Sends highlight message to be printed on notification"""
-    display_message_flag = False
-    delete_flag = False
 
-    if (weechat.config_get_plugin('show_hilights') == "on"
-            and signal == "weechat_pv"):
-        display_message_flag = True
-    if (weechat.config_get_plugin('show_priv_msg') == "on"
-            and signal == "weechat_highlight"):
-        display_message_flag = True
-    if (weechat.config_get_plugin('dele_msg_file') == "on"
+    if ((weechat.config_get_plugin('show_hilights') == "on"
+         and signal == "weechat_pv")
+            or (weechat.config_get_plugin('show_priv_msg') == "on"
+                and signal == "weechat_highlight")):
+        m = message.split("\t", 1)
+        name = m[0].strip()
+        msg = m[1].replace("'", "")[:64].strip()
+        if name == "*":
+            name = msg.split()[0]
+        update_weechat_log(WeechatLogData(name, msg,
+                                          f"{str(data)} from {name}"))
+    elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
-        display_message_flag = True
-        delete_flag = True
-
-    if display_message_flag:
-        update_weechat_log(f"{str(data)}<--->{message}", delete_en=delete_flag)
+        delete_weechat_log()
     return weechat.WEECHAT_RC_OK
