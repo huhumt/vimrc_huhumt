@@ -175,6 +175,8 @@ def notify_show(data, signal, message):
         msg = m[1].replace("'", "")[:64].strip()
         if name == "*":
             name = msg.split()[0]
+        elif name == "*status":
+            return weechat.WEECHAT_RC_OK
         update_weechat_log(WeechatLogData(name, msg,
                                           f"{str(data)} from {name}"))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
