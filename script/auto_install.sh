@@ -35,9 +35,13 @@ config_vim() {
     echo "Installing vim plugins..."
     vim -c "silent PlugInstall" -c "qa"
 
-    vim_mark_plugin_dir="$home_directory/.vim/plugged/Mark/plugin/mark.vim"
+    vim_mark_plugin_dir="$home_directory/.vim/plugged/Mark"
     sed -i 's/hi MarkWord1  ctermbg=Cyan    /hi MarkWord1  ctermbg=LightRed/' \
-        "$vim_mark_plugin_dir"
+        "$vim_mark_plugin_dir/plugin/mark.vim"
+
+    minibufexpl_plugin_dir="$home_directory/.vim/plugged/minibufexpl.vim"
+    sed -i 's/call <SID>Buf/silent! call <SID>Buf/' \
+        "$minibufexpl_plugin_dir/plugin/minibufexpl.vim"
 
     sed -i "s#let g:trans_bin.*#let g:trans_bin = \"$local_bin_path\"#" \
         "$home_directory/.vimrc"
