@@ -30,6 +30,7 @@ set autoread
 " Turn on the Wild menu
 set wildmenu
 set completeopt=menu
+set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
 set ttimeout        " time out for key codes
 set ttimeoutlen=100 " wait up to 100ms after Esc for special key
@@ -297,7 +298,7 @@ let g:fern#default_hidden = 1
 let g:fern#drawer_width = 40
 " let g:fern_auto_preview = 1
 map <Leader><Leader>n :Fern . -drawer -toggle<CR>
-let g:fern#renderer#default#root_symbol      = '~ '
+let g:fern#renderer#default#root_symbol = '~ '
 
 function! FernPreviewSetMargins() abort
     return g:fern#drawer_width
@@ -370,8 +371,8 @@ augroup END
 
 " Support tagbar plugin
 nmap <Leader>t :TagbarToggle<CR>
-let g:tagbar_ctags_bin='/usr/bin/ctags'
-let g:tagbar_width=35 " default is 40
+let g:tagbar_ctags_bin = '/usr/bin/ctags'
+let g:tagbar_width = 35 " default is 40
 let g:tagbar_iconchars = ['▸', '▾']
 " if has("autocmd")
 "     autocmd VimEnter * nested :TagbarOpen
@@ -468,7 +469,6 @@ let g:Lf_ShortcutF = '<C-p>'
 let g:Lf_HideHelp = 1
 let g:Lf_RootMarkers = [
         \ 'tags', 'cscope.out',
-        \ '.project*', 'README*',
         \ '.git', '.svn', '.hg'
         \]
 " https://github.com/ggreer/the_silver_searcher/blob/850e2b3887f0daa873fe2098f3f215b2c36000e1/tests/list_file_types.t
@@ -519,8 +519,8 @@ let g:ctrlsf_mapping = {
     \ "popenf"  : "",
     \ "quit"    : "q",
     \ "stop"    : "",
-    \ "next"    : ["<C-N>", "j"],
-    \ "prev"    : ["<C-P>", "k"],
+    \ "next"    : ["<C-N>"],
+    \ "prev"    : ["<C-P>"],
     \ "nfile"   : "",
     \ "pfile"   : "",
     \ "chgmode" : "",
@@ -541,8 +541,8 @@ let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
 let g:hexmode_xxd_options = '-g 1'
 
 " Support for Vim-Dict plugin
-let g:trans_bin = "/usr/bin/"
-nnoremap <silent> <leader><leader>t :Trans<CR>
+" let g:trans_bin = "/usr/bin"
+nnoremap <silent> <Leader><Leader>t :Trans<CR>
 
 " exclude some filetype when do diff
 let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
@@ -554,7 +554,12 @@ nnoremap <Leader><Leader>p :diffput<CR>
 " vim-lion squeeze extra whitespace
 let g:lion_squeeze_spaces = 1
 
+" disable markdown on polyglot
+let g:polyglot_disabled = ['markdown']
+
 " change indent display color
+let g:vim_json_conceal = 0
+let g:markdown_syntax_conceal = 0
 let g:indentLine_color_term = 239
 let g:indentLine_char_list = ['|', '¦', '┆', '┊']
 
@@ -583,11 +588,26 @@ autocmd BufEnter *.md let g:table_mode_corner='|'
 " let g:lsp_cxx_hl_use_text_props = 1
 inoremap <nowait><expr> <C-f> "\<c-r>=coc#float#scroll(1, 4)\<cr>"
 inoremap <nowait><expr> <C-d> "\<c-r>=coc#float#scroll(0, 4)\<cr>"
+nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
+" vmap <leader>a <Plug>(coc-codeaction-selected)
+" nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
         \ "coc-json", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-java",
+        \ "coc-pyright", "coc-clangd", "coc-pairs",
         \]
+" Remove plugins not explicitly defined in g:coc_global_extensions
+" Ignore special case: friendly-snippets, coc-vim-source-requirements
+function! CocClean() abort
+  let g:extensions_to_clean = CocAction("loadedExtensions")
+      \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
+      \ ->filter({idx, extension -> extension !~ 'coc-vim-source-requirements'})
+      \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
+  if len(g:extensions_to_clean)
+    exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
+  endif
+endfunction
+command! -nargs=0 CocClean :call CocClean()
 
 
 
@@ -634,7 +654,7 @@ Plug 'majutsushi/tagbar'
 " Plug 'ervandew/supertab'
 " Plug 'vim-scripts/AutoComplPop'
 " Plug 'vim-scripts/OmniCppComplete'
-Plug 'mbbill/code_complete'
+" Plug 'mbbill/code_complete'
 " Plug 'ycm-core/YouCompleteMe'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 " Plug 'jackguo380/vim-lsp-cxx-highlight'
@@ -714,6 +734,7 @@ Plug 'AndrewRadev/splitjoin.vim'
 
 
 
+
 " Initialize plugin system
 call plug#end()
 
@@ -765,3 +786,4 @@ highlight User3 ctermbg=240 ctermfg=168 guibg=black guifg=grey
 highlight User4 ctermbg=8   ctermfg=156 guibg=black guifg=lightgreen
 
 highlight SpecialKey ctermfg=239 guibg=black
+highlight CocInlayHint ctermfg=10 ctermbg=242 guifg=#15aabf guibg=Grey

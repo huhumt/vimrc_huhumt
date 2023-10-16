@@ -11,16 +11,17 @@ Wrap openvpn to run across two network namespaces:
        "port fail", and ValdikSS's asymmetric routing trick.
 """
 
-import argparse
-import base64
-import logging
-import os
-import os.path
-import re
-import subprocess
-import sys
-import tempfile
 from collections import defaultdict
+import subprocess
+import argparse
+import tempfile
+import logging
+import signal
+import base64
+import time
+import sys
+import os
+import re
 
 VERSION = '0.6.0'
 
@@ -295,6 +296,11 @@ def parse_validate_args(cl_args):
     # XXX implement --help "manually" so as to always display the program version
     parser = argparse.ArgumentParser(usage='%(prog)s [OPTIONS] OPENVPN_ARGS...', add_help=False)
     parser.add_argument(
+        "--clean",
+        help="""Clean namespace and kill openvpn""",
+        default=False, action="store_true"
+    )
+    parser.add_argument(
         "--namespace",
         help="""Name of target network namespace (default: `%s`). For the root namespace,
         pass the empty string.""" % (DEFAULT_NAMESPACE,),
@@ -313,6 +319,10 @@ def parse_validate_args(cl_args):
     parser.add_argument(
         "--disable-ipv4", action='store_true',
         help="Disable IPv4 addresses and routes pushed by the server"
+    )
+    parser.add_argument(
+        "--disable-ssh", default=False, action='store_true',
+        help="Disable ssh connection"
     )
     parser.add_argument(
         '-h', '--help',
@@ -377,7 +387,40 @@ def main():
 
     local_user =  os.environ.get("SUDO_USER")
     namespace = args.namespace if args.namespace != "" else '""'
+
+    ip_cmd_list = [
+        'ip', 'netns', 'exec', namespace,
+        'sudo', '-u', local_user
+    ]
+
+    ssh_key = os.path.join(
+        os.path.expanduser(f'~{local_user}'), ".ssh/test_key"
+    )
+    ssh_cmd_list = [
+        'ssh', 'test@test.co.uk',
+        '-p', '2222', '-i', ssh_key, '-L', '5901:localhost:5901'
+    ]
+
     try:
+        if args.clean or (not args.disable_ssh):
+            ssh_cmd = " ".join(ssh_cmd_list)
+            process_id_list = subprocess.check_output(f"pgrep -f '{ssh_cmd}'", shell=True).decode().splitlines()
+        ip_cmd_list.append("-i")
+    except subprocess.CalledProcessError:
+        ip_cmd_list += ssh_cmd_list
+        process_id_list = []
+
+    if args.clean:
+        print("Clean namespace and openvpn")
+        for process_id in process_id_list:
+            os.kill(int(process_id), signal.SIGTERM)
+        subprocess.run(["pkill", "openvpn"])
+        subprocess.run(["ip", "netns", "delete", args.namespace])
+        return 0
+
+    pid_filename = "/run/openvpn-client/vpn.pid"
+    try:
+        print(f"setup namespace {args.namespace}")
         setup_namespace(args.namespace)
     except Exception as e:
         print(f"{e}\nOpen bash only\n")
@@ -390,21 +433,35 @@ def main():
         # there's no legitimate use case for `script-security 3` client-side
         execv_args += ['--script-security', '2']
         execv_args += ['--daemon']
-        execv_args += ['--config', os.path.join(os.path.expanduser(f'~{local_user}'), ".ssh/test.ovpn")]
-        execv_args += ['--writepid', '/run/openvpn-client/vpn.pid']
+        execv_args += [
+            '--config', os.path.join(
+                os.path.expanduser(f'~{local_user}'), ".ssh/test.ovpn"
+            )
+        ]
+        execv_args += ['--writepid', pid_filename]
         # pass our own path as the route-up, with some extra data
-        disable_arg = serialize_disableargs(args.disable_ipv4, args.disable_ipv6)
+        disable_arg = serialize_disableargs(
+            args.disable_ipv4, args.disable_ipv6
+        )
         script_name = os.path.abspath(__file__)
         execv_args += [
             '--route-up',
-            '%s %s %s %s %s' % (script_name, namespace, args.dns, preexisting_routeup, disable_arg)
+            '%s %s %s %s %s' % (
+                script_name, namespace, args.dns,
+                preexisting_routeup, disable_arg
+            )
         ]
 
-        if not os.path.isfile("/run/openvpn-client/vpn.pid"):
+        if not os.path.isfile(pid_filename):
             subprocess.check_call(execv_args)
+            time.sleep(5)
     finally:
-        cmd = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user, '-i']
-        os.execv(IP_CMD, cmd)
+        if os.path.isfile(pid_filename):
+            os.execv(IP_CMD, ip_cmd_list)
+        else:
+            print("Failed to authentication with given username and password")
+            subprocess.run(["pkill", "openvpn"])
+            subprocess.run(["ip", "netns", "delete", args.namespace])
 
 
 if __name__ == '__main__':

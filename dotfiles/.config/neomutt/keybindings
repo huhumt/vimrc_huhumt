@@ -53,6 +53,7 @@ bind generic,pager,editor,index W noop
 bind generic,pager,editor,index X noop
 bind generic,pager,editor,index Y noop
 bind generic,pager,editor,index Z noop
+bind generic,pager,editor,index | noop
 
 bind generic,pager,editor,index <Tab>      noop
 bind generic,pager,editor,index <Space>    noop
@@ -300,6 +301,7 @@ bind generic,index,pager <PageDown> next-page
 # Other oddds and ends
 bind generic,index,pager / search
 bind generic,index,pager n search-next
+bind generic,index,pager N search-opposite
 bind generic,index,pager : enter-command
 
 ### Browser bindings ###
@@ -327,15 +329,16 @@ macro index h "c?\t" "Go back to the list of mailboxes"
 
 # Reply/forward/etc.
 bind index m mail
-bind index \Cr reply
-bind index r group-reply # Control-r
-bind index R list-reply
+bind index r reply
+bind index R group-reply # Control-r
+# bind index \Cr list-reply
 bind index b bounce-message
 bind index f forward-message
 
 # Delete / junk
 bind  index d delete-message
-bind  index D delete-thread
+# bind  index D delete-thread
+bind  index D undelete-message
 # macro index j s=INBOX.junk\n   "Move to junk"
 
 # Odds and ends
@@ -344,6 +347,9 @@ bind  index <Right> display-message
 macro index <Left> "c?\t"
 bind  index l display-message
 macro index h "c?\t"
+macro index A \
+    "<tag-pattern>~N<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" \
+    "mark all new as read"
 # bind  index @ display-address
 # bind  index x toggle-read
 # bind  index a create-alias
@@ -364,9 +370,9 @@ bind pager j next-line
 
 # Reply/forward/etc.
 bind pager m mail
-bind pager \Cr reply
-bind pager r group-reply # Control-r
-bind pager R list-reply
+bind pager r reply
+bind pager R group-reply # Control-r
+# bind pager \Cr list-reply
 bind pager b bounce-message
 bind pager f forward-message
 
@@ -387,6 +393,8 @@ bind pager l  view-attachments
 bind pager h  exit
 # bind pager n       next-entry
 # bind pager N       next-unread
+bind pager \Cp       previous-entry
+bind pager \Cn       next-entry
 bind pager h       display-toggle-weed
 bind pager gg      top
 bind pager G       bottom

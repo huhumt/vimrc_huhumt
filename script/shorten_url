@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from collections import OrderedDict
+import argparse
+import datetime
+import string
+import sys
+import ast
+import re
+
+SHORTEN_URL_MIN_LENGTH = 80
+SHORTEN_URL_MAX_NUMBER = 500
+SHORTEN_URL_FILENAME = "/tmp/shorten_url.list"
+SHORTEN_URL_HOSTNAME = "http://localhost:8001"
+
+# regex are based on urlbar.py, written by xt
+# Extended to reflect RFC3986/3987 by MacGyver
+url_scheme = r'[a-zA-Z][a-zA-Z0-9+\-.]*'
+
+url_octet = r'(?:2(?:[0-4]\d|5[0-5])|1\d\d|\d{1,2})'
+url_ipaddr = r'%s(?:\.%s){3}' % (url_octet, url_octet)
+
+url_hexdig = r'[0-9a-fA-F]'
+url_h16 = r'%s{1,4}' % (url_hexdig)
+url_ls32 = r'(?:%s:%s|%s)' % (url_h16, url_h16, url_ipaddr)
+url_ip6addr = [r'(?:%s:){6}%s' % (url_h16, url_ls32),
+               r'::(?:%s:){5}%s' % (url_h16, url_ls32),
+               r'%s?::(?:%s:){4}%s' % (url_h16, url_h16, url_ls32),
+               r'(?:(?:%s:){0,1}%s)?::(?:%s:){3}%s' % (url_h16, url_h16,
+                                                       url_h16, url_ls32),
+               r'(?:(?:%s:){0,2}%s)?::(?:%s:){2}%s' % (url_h16, url_h16,
+                                                       url_h16, url_ls32),
+               r'(?:(?:%s:){0,3}%s)?::(?:%s:)%s' % (url_h16, url_h16, url_h16,
+                                                    url_ls32),
+               r'(?:(?:%s:){0,4}%s)?::%s' % (url_h16, url_h16, url_ls32),
+               r'(?:(?:%s:){0,5}%s)?::%s' % (url_h16, url_h16, url_h16),
+               r'(?:(?:%s:){0,6}%s)?::' % (url_h16, url_h16)]
+url_ip6addr = "(?:" + ")|(?:".join(url_ip6addr) + ")"
+url_iplit = r'\[(?:%s)\]' % (url_ip6addr)  # We're ignoring the IPvFuture
+
+url_gendelims = r'[:/?#\[\]@]'
+url_subdelims = r"[!$&'()*+,;=]"
+url_reserved = r'(?:%s|%s)' % (url_gendelims, url_subdelims)
+url_iunreserved = r'[\w\-.~]'
+
+url_pctencoded = r'%%%s{2}' % (url_hexdig)
+
+url_iregname = r'(?:%s|%s|%s)*' % (url_iunreserved, url_pctencoded,
+                                   url_subdelims)
+
+url_iuserinfo = r'(?:%s|%s|%s|:)*' % (url_iunreserved, url_pctencoded,
+                                      url_subdelims)
+url_ihost = r'(?:%s|%s|%s)' % (url_iplit, url_ipaddr, url_iregname)
+url_iauth = r'(?:%s@)?%s(?::\d*)?' % (url_iuserinfo, url_ihost)
+
+url_ipchar = r'(?:%s|%s|%s|:|@)' % (url_iunreserved, url_pctencoded,
+                                    url_subdelims)
+url_ipath_abempty = r'(?:/%s*)*' % (url_ipchar)
+
+# Some complex stuff about reserved parts of the UCS namespace we're not doing
+# in iquery, so iquery == ifragment.
+# It seems that [ and ] are not used as delimiters in iquery and ifragment, so
+# allow them in these segments.
+url_iquery = r'(?:%s|/|\?|\[\])*' % (url_ipchar)
+url_ifragment = url_iquery
+
+# Grab one additional character (if present) so that we can later determine
+# whether the user knew what they were doing.
+url_full = r'(?P<url>(?:%s)://(?:%s)(?:%s)(?:\?%s)?(?:#%s)?)(?P<trailer>.)?' % (
+    url_scheme, url_iauth, url_ipath_abempty, url_iquery, url_ifragment)
+
+
+def base62_encode(number):
+    """Encode a number in base62 (all digits + a-z + A-Z)."""
+    base62chars = string.digits + string.ascii_letters
+    l = []
+    while number > 0:
+        remainder = number % 62
+        number = number // 62
+        l.insert(0, base62chars[remainder])
+    return ''.join(l) or '0'
+
+
+def urlserver_short_url(number):
+    """Return short URL with number."""
+    return '%s/%s' % (SHORTEN_URL_HOSTNAME, base62_encode(number))
+
+
+def parse_url(message, url_min_length):
+    """Update urls list and return a list of short urls for message."""
+    url_list = []
+    url_full_regex = re.compile(url_full, re.IGNORECASE)
+    for match in url_full_regex.finditer(message):
+        url = match.group('url')
+        trailer = match.group('trailer')
+
+        # Heuristics for dealing with valid URI characters used as URI
+        # delimiters.
+        if url[-1] == ',':
+            # Does the URL contain other commas? If so, don't strip.
+            # Is the URL followed by a space? If not, don't strip.
+            if trailer == ' ' and url[:-1].count(',') == 0:
+                url = url[:-1]
+
+        if url[-1] == '.':
+            # Strip if the URL is followed by whitespace *or* nothing.
+            # Nothing seems to use a . at the end, and it's a natural
+            # sentence terminator.
+            if trailer is None or trailer == ' ':
+                url = url[:-1]
+
+        if url[-1] in [')', ']']:
+            # Tough one. First check whether the URL is followed by
+            # a space or end of line.
+            if trailer is None or trailer == ' ':
+                closer = url[-1]
+                opener = '(' if closer == ')' else '['
+                # Check if the brackets would be balanced inside the URL.
+                opening = url.count(opener)
+                closing = url.count(closer)
+                if opening < closing:
+                    match_start, match_end = match.span('url')
+                    # Is the URL *immediately* preceded by an opener?
+                    prior = message[:match_start]
+                    if prior and prior[-1] == opener:
+                        url = url[:-1]
+                    else:
+                        after = message[match_end:]
+                        # Are brackets outside of the URL unbalanced?
+                        opening = prior.count(opener) + after.count(opener)
+                        closing = prior.count(closer) + after.count(closer)
+                        if opening > closing:
+                            url = url[:-1]
+
+        if url[-1] in ['"', "'"]:
+            # Another doozy. Can't really work with balance because of
+            # contractions such as "can't".
+            # So let's simply check for enclosing, but only if there's not
+            # another delimiter.
+            if trailer is None or trailer == ' ':
+                match_start = match.start('url')
+                if match_start > 0 and message[match_start - 1] in ['"', "'"]:
+                    url = url[:-1]
+        # End heuristics
+
+        if url not in url_list and len(url) > url_min_length:
+            url_list.append(url)
+
+    return url_list
+
+
+def update_shorten_url_file(url_list):
+    """update shorten url file"""
+
+    try:
+        urls_dict = OrderedDict(
+            ast.literal_eval(open(SHORTEN_URL_FILENAME, 'r').read())
+        )
+        total_number = list(urls_dict.values())[-1][0] + 1
+        url_map = dict([(val[-2], val[-3]) for val in urls_dict.values()])
+    except:
+        urls_dict = OrderedDict()
+        url_map = {}
+        total_number = 0
+
+    short_url_dict = {}
+    for url in url_list:
+        if url.startswith(SHORTEN_URL_HOSTNAME):  # already shorten url
+            short_url_dict[url] = url
+        elif url in url_map.keys():  # known url from saved file
+            short_url_dict[url] = url_map[url]
+        else:  # new url
+            total_number += 1
+            if total_number > SHORTEN_URL_MAX_NUMBER:
+                total_number = 1
+
+            short_url = urlserver_short_url(total_number)
+            short_url_dict[url] = short_url
+            ts = datetime.datetime.now().strftime('%d/%m-%H:%M:%S:%f')
+            urls_dict[ts] = (
+                (
+                    total_number,
+                    short_url,
+                    url
+                )
+            )
+            if len(urls_dict) > SHORTEN_URL_MAX_NUMBER:
+                urls_dict.popitem(last=False)
+
+    content = '{\n%s\n}\n' % '\n'.join([
+        '  "%s": %s,' % (key, val) for key, val in urls_dict.items()
+    ])
+    open(SHORTEN_URL_FILENAME, 'w').write(content)
+
+    return short_url_dict
+
+
+def output_short_url(message, short_url_dict, update_message=False, sep='\n'):
+    """update message or output short url only"""
+    if update_message:
+        for url, short_url in short_url_dict.items():
+            display_len = SHORTEN_URL_MIN_LENGTH // 3
+            display_long_url = f"{url[:display_len]}...{url[-display_len:]}"
+            short_url = f"[{display_long_url}]( {short_url} )"
+            # message = re.sub(fr'{url}([.,\s]|$)', fr'{short_url}\1', message)
+            message = message.replace(url, short_url)
+        return message
+    else:
+        return sep.join([short_url for short_url in short_url_dict.values()])
+
+
+def main(message, url_min_length, update_message=False):
+    """main entry"""
+    if "://" in message:
+        url_list = parse_url(message, url_min_length)
+        short_url_dict = update_shorten_url_file(url_list)
+        if short_url_dict:
+            return output_short_url(message, short_url_dict, update_message)
+    return message if update_message else None
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Shorten url to localhost:8001")
+    parser.add_argument(
+        "message", type=str,
+        help="input message to be parse")
+    parser.add_argument(
+        "--update-message", dest="update_message", action="store_true",
+        help="Update input message with shortened url")
+    parser.add_argument(
+        "--url-min-length", dest="url_min_length",
+        type=int, default=SHORTEN_URL_MIN_LENGTH,
+        help="Threshold to shorten url")
+
+    args = parser.parse_args()
+    print(main(args.message, args.url_min_length, args.update_message))
