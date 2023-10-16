@@ -155,8 +155,9 @@ def cron_timer_cb(data, remaining_calls):
         event_time = datetime.strptime(key, "%H:%M")
         reminder = (event_time - timedelta(minutes=10)).time()
         if now_h_m > reminder and now_h_m < event_time.time():
-            update_weechat_log(WeechatLogData(key, value,
-                                              "From gcalcli agenda"))
+            update_weechat_log(
+                WeechatLogData(key, value, "From gcalcli agenda")
+            )
             return weechat.WEECHAT_RC_OK
     return weechat.WEECHAT_RC_OK
 
@@ -175,10 +176,11 @@ def notify_show(data, signal, message):
         msg = m[1].replace("'", "")[:64].strip()
         if name == "*":
             name = msg.split()[0]
-        elif name == "*status":
+        elif (name == "*status") or (name == "--" and msg.startswith("irc:")):
             return weechat.WEECHAT_RC_OK
-        update_weechat_log(WeechatLogData(name, msg,
-                                          f"{str(data)} from {name}"))
+        update_weechat_log(
+            WeechatLogData(name, msg, f"{str(data)} from {name}")
+        )
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         delete_weechat_log()
