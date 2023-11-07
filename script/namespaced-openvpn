@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
+import time
 
 VERSION = '0.6.0'
 
@@ -377,6 +378,7 @@ def main():
 
     local_user =  os.environ.get("SUDO_USER")
     namespace = args.namespace if args.namespace != "" else '""'
+    pid_filename = "/run/openvpn/vpn.pid"
     try:
         setup_namespace(args.namespace)
     except Exception as e:
@@ -391,7 +393,7 @@ def main():
         execv_args += ['--script-security', '2']
         execv_args += ['--daemon']
         execv_args += ['--config', os.path.join(os.path.expanduser(f'~{local_user}'), ".ssh/test.ovpn")]
-        execv_args += ['--writepid', '/run/openvpn-client/vpn.pid']
+        execv_args += ['--writepid', pid_filename]
         # pass our own path as the route-up, with some extra data
         disable_arg = serialize_disableargs(args.disable_ipv4, args.disable_ipv6)
         script_name = os.path.abspath(__file__)
@@ -400,11 +402,16 @@ def main():
             '%s %s %s %s %s' % (script_name, namespace, args.dns, preexisting_routeup, disable_arg)
         ]
 
-        if not os.path.isfile("/run/openvpn-client/vpn.pid"):
+        if not os.path.isfile(pid_filename):
             subprocess.check_call(execv_args)
+            time.sleep(5)
     finally:
-        cmd = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user, '-i']
-        os.execv(IP_CMD, cmd)
+        if os.path.isfile(pid_filename):
+            cmd = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user, '-i']
+            os.execv(IP_CMD, cmd)
+        else:
+            print("Failed to authentication with given username and password")
+            subprocess.run(["pkill", "openvpn"])
 
 
 if __name__ == '__main__':
