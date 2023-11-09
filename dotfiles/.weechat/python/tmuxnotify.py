@@ -168,9 +168,9 @@ def notify_show(data, signal, message):
     """Sends highlight message to be printed on notification"""
 
     if ((weechat.config_get_plugin('show_hilights') == "on"
-         and signal == "weechat_pv")
+         and signal == "weechat_highlight")
             or (weechat.config_get_plugin('show_priv_msg') == "on"
-                and signal == "weechat_highlight")):
+                and signal == "weechat_pv")):
         m = message.split("\t", 1)
         name = m[0].strip()
         msg = m[1].replace("'", "")[:64].strip()
