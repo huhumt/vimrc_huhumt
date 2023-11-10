@@ -554,6 +554,9 @@ nnoremap <Leader><Leader>p :diffput<CR>
 " vim-lion squeeze extra whitespace
 let g:lion_squeeze_spaces = 1
 
+" disable markdown on polyglot
+let g:polyglot_disabled = ['markdown']
+
 " change indent display color
 let g:indentLine_color_term = 239
 let g:indentLine_char_list = ['|', '¦', '┆', '┊']

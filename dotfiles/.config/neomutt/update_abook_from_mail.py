@@ -16,6 +16,7 @@ def read_abook(abook_filename):
     abook_dict = {}
     person_dict = {}
     email = ""
+    abook_len = 0
     for line in fd:
         if start_flag > 0:
             key = line.split("=")[0].strip()
@@ -28,8 +29,10 @@ def read_abook(abook_filename):
                         email = person_email.lower().replace(" ", "")
                         break
 
-        if re.match(r"\[([0-9]+)\]", line):  # match [1234]
+        num_list = re.findall(r"\[([0-9]+)\]", line)  # find [1234]
+        if num_list:
             start_flag = 1
+            abook_len = int(num_list[0]) + 1
         elif not line.strip():
             start_flag = 0
             if email.strip():
@@ -37,7 +40,7 @@ def read_abook(abook_filename):
             person_dict = {}
             email = ""
     fd.close()
-    return abook_dict
+    return abook_dict, abook_len
 
 
 def read_email(email_text):
@@ -59,22 +62,21 @@ def read_email(email_text):
     return email_list
 
 
-def update_abook(abook_filename, abook_dict, email_list):
+def update_abook(abook_filename, abook_dict, abook_len, email_list):
     """
     update abook based on email_list
     """
 
-    num = len(abook_dict.keys())
     new_string = ""
     for email in email_list:
         email_alphabet = re.sub("[ .]", "", email)
         abook_key_alphabet = [re.sub("[ .]", "", s) for s in abook_dict.keys()]
         if email_alphabet not in abook_key_alphabet:
-            new_string = f"[{num}]\n"
+            new_string += f"[{abook_len}]\n"
             name = email.split("@")[0].replace(".", " ").title()
             new_string += f"name={name}\n"
             new_string += f"email={email}\n\n"
-            num += 1
+            abook_len += 1
 
     if new_string:
         fd = open(abook_filename, "a", encoding="utf-8")
@@ -89,6 +91,6 @@ if __name__ == "__main__":
 
     home = os.path.expanduser("~")
     filename = os.path.join(home, ".config/neomutt/test_addressbook")
-    abook_dict = read_abook(filename)
+    abook_dict, abook_len = read_abook(filename)
     email_list = read_email(sys.argv[1])
-    update_abook(filename, abook_dict, email_list)
+    update_abook(filename, abook_dict, abook_len, email_list)
