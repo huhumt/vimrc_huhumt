@@ -137,11 +137,11 @@ def parse_today_event(filename="/tmp/gcalcli_agenda.txt"):
                         return today_event_dict
 
                 time_list = re.findall(r"\d{1,2}:\d{1,2}", line_remove_colour)
-                if time_list:
-                    time = time_list[-1].strip()
+                if today_flag and time_list:
+                    time = time_list[0].strip()
                     cal_list = line_remove_colour.split(time)
                     event = re.sub(" +", " ", cal_list[-1].strip())
-                    if today_flag and time and event:
+                    if time and event:
                         today_event_dict[time] = event
     except FileNotFoundError:
         pass
