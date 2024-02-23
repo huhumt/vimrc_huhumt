@@ -519,8 +519,8 @@ let g:ctrlsf_mapping = {
     \ "popenf"  : "",
     \ "quit"    : "q",
     \ "stop"    : "",
-    \ "next"    : ["<C-N>", "j"],
-    \ "prev"    : ["<C-P>", "k"],
+    \ "next"    : ["<C-N>"],
+    \ "prev"    : ["<C-P>"],
     \ "nfile"   : "",
     \ "pfile"   : "",
     \ "chgmode" : "",
@@ -586,10 +586,11 @@ autocmd BufEnter *.md let g:table_mode_corner='|'
 " let g:lsp_cxx_hl_use_text_props = 1
 inoremap <nowait><expr> <C-f> "\<c-r>=coc#float#scroll(1, 4)\<cr>"
 inoremap <nowait><expr> <C-d> "\<c-r>=coc#float#scroll(0, 4)\<cr>"
+nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 let g:coc_global_extensions = [
         \ "coc-json", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-java",
+        \ "coc-pyright", "coc-clangd", "coc-pairs",
         \]
 
 
@@ -768,3 +769,4 @@ highlight User3 ctermbg=240 ctermfg=168 guibg=black guifg=grey
 highlight User4 ctermbg=8   ctermfg=156 guibg=black guifg=lightgreen
 
 highlight SpecialKey ctermfg=239 guibg=black
+highlight CocInlayHint ctermfg=10 ctermbg=242 guifg=#15aabf guibg=Grey

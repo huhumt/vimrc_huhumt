@@ -1,5 +1,6 @@
 {
     "suggest.noselect": true,
+    "inlayHint.display": false,
     "clangd.path": "/usr/bin/clangd-13",
     "clangd.disableDiagnostics": false,
     "python.pythonPath": "/usr/bin/python3",
