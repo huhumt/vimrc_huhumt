@@ -83,33 +83,19 @@ def delete_weechat_log(report_source):
             f.write("\n".join(content_list) + "\n" if content_list else "")
 
 
-def update_gcalcli_log(new_msg, content, today_m_d, now_h_m):
+def update_gcalcli_log(new_msg, content):
     head = content[0].strip()
     if head.startswith("<") and head.endswith(">"):
-        pre_report_ts = re.findall(r"\d{1,2}:\d{1,2}", content[1])[-1]
-        pre_report_m_d = (content[1].split("reported at: ")[-1].split(
-            pre_report_ts)[0].strip())
-        pre_event = datetime.strptime(pre_report_ts, "%H:%M")
-        allowed_event = (pre_event + timedelta(seconds=30)).time()
-        if pre_report_m_d == today_m_d and now_h_m < allowed_event:
-            return None
-        else:
-            return f"{new_msg}{''.join(content[2:])}"
+        return None
     else:
         return f"{new_msg}\n\n{''.join(content)}"
 
 
-def update_irc_log(new_msg, content, today_m_d):
+def update_irc_log(new_msg, content):
     tail = content[-1].strip()
     if tail.startswith("[") and tail.endswith("]"):
-        pre_report_ts = re.findall(r"\d{1,2}:\d{1,2}", content[-2])[-1]
-        pre_report_m_d = (content[-2].split("reported at: ")[-1].split(
-            pre_report_ts)[0].strip())
-        if pre_report_m_d == today_m_d:
-            old_msg = re.sub(r'[\[\]]', "", "".join(content[-2:]))
-            return f"{''.join(content[:-2])}{old_msg}{new_msg}"
-        else:
-            return f"{''.join(content)}{new_msg}"
+        old_msg = re.sub(r'[\[\]]', "", "".join(content[-2:]))
+        return f"{''.join(content[:-2])}{old_msg}{new_msg}"
     else:
         return f"{''.join(content)}\n\n{new_msg}"
 
@@ -135,10 +121,9 @@ def update_weechat_log(weechat_log_data):
     else:
         if content:
             if weechat_log_data.source == FROM_GCALCLI:
-                out_msg = update_gcalcli_log(
-                    out_msg, content, today_m_d, now_h_m)
+                out_msg = update_gcalcli_log(out_msg, content)
             else:
-                out_msg = update_irc_log(out_msg, content, today_m_d)
+                out_msg = update_irc_log(out_msg, content)
 
     if out_msg:
         with open(WEECHAT_LOG_FILENAME, "w") as f:
@@ -175,6 +160,8 @@ def parse_today_event():
                 else:
                     if w_m_d == today_w_m_d:
                         today_flag = True
+                    else:
+                        return None, None
 
                 time_list = re.findall(r"\d{1,2}:\d{1,2}", line_remove_colour)
                 if today_flag and time_list:
@@ -182,9 +169,11 @@ def parse_today_event():
                     cal_list = line_remove_colour.split(time)
                     event = re.sub(" +", " ", cal_list[-1].strip())
                     event_time = datetime.strptime(time, "%H:%M")
-                    reminder = (event_time - timedelta(minutes=10)).time()
-                    if (time and event and now_h_m > reminder
-                            and now_h_m < event_time.time()):
+                    reminder_s = (event_time - timedelta(minutes=10)).time()
+                    reminder_e = (event_time + timedelta(minutes=5)).time()
+                    if (time and event
+                            and now_h_m > reminder_s
+                            and now_h_m < reminder_e):
                         return time, event
     except FileNotFoundError:
         pass
