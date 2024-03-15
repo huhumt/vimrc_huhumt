@@ -337,7 +337,8 @@ bind index f forward-message
 
 # Delete / junk
 bind  index d delete-message
-bind  index D delete-thread
+# bind  index D delete-thread
+bind  index D undelete-message
 # macro index j s=INBOX.junk\n   "Move to junk"
 
 # Odds and ends
@@ -389,6 +390,8 @@ bind pager l  view-attachments
 bind pager h  exit
 # bind pager n       next-entry
 # bind pager N       next-unread
+bind pager \Cp       previous-entry
+bind pager \Cn       next-entry
 bind pager h       display-toggle-weed
 bind pager gg      top
 bind pager G       bottom

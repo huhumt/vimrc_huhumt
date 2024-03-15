@@ -128,12 +128,8 @@ def update_weechat_log(weechat_log_data):
     if out_msg:
         with open(WEECHAT_LOG_FILENAME, "w") as f:
             f.write(out_msg)
-
-    os.popen(
-        "tmux set display-time {0} && tmux display-message '{1}' &".format(
-            5 * 1000, re.sub(' +', ' ', new_msg)
-        )
-    )
+        TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
+        os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
 
 
 def parse_today_event():
@@ -161,7 +157,8 @@ def parse_today_event():
                     if w_m_d == today_w_m_d:
                         today_flag = True
                     else:
-                        return None, None
+                        if today_flag:
+                            return None, None
 
                 time_list = re.findall(r"\d{1,2}:\d{1,2}", line_remove_colour)
                 if today_flag and time_list:
