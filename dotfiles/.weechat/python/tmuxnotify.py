@@ -44,6 +44,7 @@ GCALCLI_LOG_FILENAME = "/tmp/gcalcli_agenda.txt"
 FROM_GCALCLI, FROM_IRC = range(2)
 GCALCLI_HEADER = "--- From gcalcli agenda, reported at: "
 IRC_HEADER = "--- From irc message, reported at: "
+GCALCLI_IRC_SEP = "\n\n"
 
 
 @dataclass
@@ -58,29 +59,29 @@ def delete_weechat_log(report_source):
     try:
         with open(WEECHAT_LOG_FILENAME, "r") as f:
             content = f.read()
-            content_list = content.splitlines()
+            content_list = content.split(GCALCLI_IRC_SEP, 1)
     except FileNotFoundError:
         pass
     else:
         if report_source == FROM_GCALCLI:  # remove head
             if GCALCLI_HEADER in content:
                 if IRC_HEADER in content:
-                    content_list = content_list[4:]
+                    remains = content_list[-1].strip()
                 else:
-                    content_list = content_list[2:]
+                    remains = None
             else:
                 return True
         else:  # remove tail
             if IRC_HEADER in content:
                 if GCALCLI_HEADER in content:
-                    content_list = content_list[:2]
+                    remains = content_list[0].strip()
                 else:
-                    content_list = []
+                    remains = None
             else:
                 return True
 
         with open(WEECHAT_LOG_FILENAME, "w") as f:
-            f.write("\n".join(content_list) + "\n" if content_list else "")
+            f.write(f"{remains}\n" if remains else "")
 
 
 def update_gcalcli_log(new_msg, content):
@@ -88,16 +89,15 @@ def update_gcalcli_log(new_msg, content):
     if head.startswith("<") and head.endswith(">"):
         return None
     else:
-        return f"{new_msg}\n\n{''.join(content)}"
+        return f"{new_msg}{GCALCLI_IRC_SEP}{''.join(content)}"
 
 
 def update_irc_log(new_msg, content):
     tail = content[-1].strip()
     if tail.startswith("[") and tail.endswith("]"):
-        old_msg = re.sub(r'[\[\]]', "", "".join(content[-2:]))
-        return f"{''.join(content[:-2])}{old_msg}{new_msg}"
+        return f"{''.join(content[:-1])}{new_msg}"
     else:
-        return f"{''.join(content)}\n\n{new_msg}"
+        return f"{''.join(content)}{GCALCLI_IRC_SEP}{new_msg}"
 
 
 def update_weechat_log(weechat_log_data):
@@ -109,9 +109,9 @@ def update_weechat_log(weechat_log_data):
     )
 
     if weechat_log_data.source == FROM_GCALCLI:
-        out_msg = f"<{new_msg[:32]}>\n{header}\n"
+        out_msg = f"<{new_msg[:32]}>\n{header}\n{new_msg}\n"
     else:
-        out_msg = f"{header}\n[{new_msg[:32]}]\n"
+        out_msg = f"{header}\n{new_msg}\n[{new_msg[:32]}]\n"
 
     try:
         with open(WEECHAT_LOG_FILENAME, "r") as f:
@@ -201,7 +201,7 @@ def notify_show(data, signal, message):
 
         if name == "*":
             name = msg.split()[0]
-        elif (name == "*status") or (name == "--" and msg.startswith("irc:")):
+        elif (name == "*status") or (name == "--" and msg.startswith("irc")):
             return weechat.WEECHAT_RC_OK
         update_weechat_log(WeechatLogData(FROM_IRC, name, msg, IRC_HEADER))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"

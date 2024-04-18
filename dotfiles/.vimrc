@@ -30,6 +30,7 @@ set autoread
 " Turn on the Wild menu
 set wildmenu
 set completeopt=menu
+set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
 set ttimeout        " time out for key codes
 set ttimeoutlen=100 " wait up to 100ms after Esc for special key
@@ -541,7 +542,7 @@ let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
 let g:hexmode_xxd_options = '-g 1'
 
 " Support for Vim-Dict plugin
-let g:trans_bin = "/usr/bin/"
+" let g:trans_bin = "/usr/bin"
 nnoremap <silent> <leader><leader>t :Trans<CR>
 
 " exclude some filetype when do diff

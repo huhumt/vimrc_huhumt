@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict
+from datetime import datetime
 import subprocess
 import json
 import sys
@@ -16,7 +17,7 @@ DISPLAY_RUST_NEWS = "display-rust-news-to-tmux-flag"
 TRANS_DICT_NAME = "trans-local-dict"
 
 
-def update_dict(trans_string: str):
+def update_dict(trans_string: str) -> int:
     try:
         with open(JSON_FILENAME, "r", encoding="utf-8") as f:
             trans_dict = json.load(f, object_pairs_hook=OrderedDict)
@@ -27,28 +28,39 @@ def update_dict(trans_string: str):
             TRANS_DICT_NAME: OrderedDict(),
         }
 
-    trans_word = trans_string.splitlines()[0]
-    if trans_word in trans_dict.keys():
+    trans_word = trans_string.splitlines()[0].strip()
+    if trans_word in trans_dict[TRANS_DICT_NAME].keys():
         return 0
 
     trans_output = ""
-    for line in trans_string.splitlines():
+    for line in trans_string.splitlines()[1:]:
         if line == "Synonyms" or line == "Examples":
-            trans_dict[TRANS_DICT_NAME][trans_word] = trans_output.strip()
+            if trans_output.startswith("/"):
+                trans_output = f"{trans_word} {trans_output.strip()}"
+            else:
+                trans_output = f"{trans_word}\n{trans_output.rstrip()}"
+            trans_dict[TRANS_DICT_NAME][trans_word] = trans_output
             with open(JSON_FILENAME, "w", encoding="utf-8") as f:
                 json.dump(trans_dict, f, indent=4)
             return 0
-        else:
-            trans_output += f"{line}\n"
+        elif line:
+            trans_output += f"{line.rstrip().replace('  ', ' ')}\n"
+    return 0
 
 
 def python_trans(args: list) -> str:
     args_list = args
-    parent_dir = os.path.dirname(__file__)
-    args_list[0] = os.path.join(parent_dir, "trans_shell")
+    args_list[0] = os.path.join(FILE_PARENT_DIR, "trans_shell")
     args_list.insert(0, "bash")
     fd = subprocess.Popen(args_list, stdout=subprocess.PIPE)
     return fd.communicate()[0].decode("utf-8")
+
+
+def add_colour(normal_str: str) -> str:
+    # https://stackoverflow.com/a/28938235
+    COLOUR_OFF = '\033[0m'
+    COLOUR_CYAN = '\033[0;36m'
+    return f"{COLOUR_CYAN}{normal_str}{COLOUR_OFF}"
 
 
 def display_trans() -> str:
@@ -58,6 +70,7 @@ def display_trans() -> str:
         f.close()
 
         if trans_dict[DISPLAY_RUST_NEWS]:
+            trans_dict[DISPLAY_RUST_NEWS] = False
             output = subprocess.Popen(
                 "rustnews", stdout=subprocess.PIPE).communicate()[0].decode()
         else:
@@ -68,17 +81,24 @@ def display_trans() -> str:
                 trans_dict[DISPLAY_COUNT_KEY] = display_cnt + 1
             output = list(trans_dict[TRANS_DICT_NAME].values())[display_cnt]
 
-        trans_dict[DISPLAY_RUST_NEWS] = (not trans_dict[DISPLAY_RUST_NEWS])
+            now_hour = datetime.now().hour
+            # in working hour between 8:00 ~ 18:00
+            # display news after learning 10 words
+            # to avoid hitting the api request rate
+            if ((now_hour > 8 and now_hour < 18)
+                    and (display_cnt > 0 and display_cnt % 10 == 0)):
+                trans_dict[DISPLAY_RUST_NEWS] = True
         with open(JSON_FILENAME, "w", encoding="utf-8") as f:
             json.dump(trans_dict, f, indent=4)
-        return output
+        return output.rstrip()
     except FileNotFoundError:
         return f"{JSON_FILENAME} non-exist"
 
 
 def parse_args(args):
     if args[1] == "--display-from-local-dict":
-        print(f"\n{display_trans()}")
+        colour_out = add_colour(display_trans())
+        print(f"\n{colour_out}")
         exit(0)
 
 
