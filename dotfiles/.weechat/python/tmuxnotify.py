@@ -31,25 +31,27 @@ for option, default_value in settings.items():
     if weechat.config_get_plugin(option) == "":
         weechat.config_set_plugin(option, default_value)
 
+WEECHAT_LOG_FILENAME = "/tmp/weechat_msg.txt"
+GCALCLI_LOG_FILENAME = "/tmp/gcalcli_agenda.txt"
+FROM_GCALCLI, FROM_IRC = ("=== From gcalcli agenda, reported at: ",
+                          "=== From irc message, reported at: "
+                          )
+GCALCLI_IRC_SEP = f"\n{'='*80}\n"
+WEECHAT_CRON_INTERVAL = 3  # in minutes
+
 # Hook privmsg/hilights
 # https://weechat.org/files/doc/stable/weechat_plugin_api.en.html#_hook_signal
 weechat.hook_signal("weechat_pv", "notify_show", "private message: ")
 weechat.hook_signal("weechat_highlight", "notify_show", "highlight message: ")
 weechat.hook_signal("input_text_changed", "notify_show", "delete file")
 # https://weechat.org/files/doc/stable/weechat_plugin_api.en.html#_hook_timer
-weechat.hook_timer(180 * 1000, 60, 0, "cron_timer_cb", "")
-
-WEECHAT_LOG_FILENAME = "/tmp/weechat_msg.txt"
-GCALCLI_LOG_FILENAME = "/tmp/gcalcli_agenda.txt"
-FROM_GCALCLI, FROM_IRC = range(2)
-GCALCLI_HEADER = "--- From gcalcli agenda, reported at: "
-IRC_HEADER = "--- From irc message, reported at: "
-GCALCLI_IRC_SEP = "\n\n"
+weechat.hook_timer(
+    WEECHAT_CRON_INTERVAL * 60 * 1000, 60, 0, "cron_timer_cb", "")
 
 
 @dataclass
 class WeechatLogData:
-    source: int  # reported from gcalcli or irc
+    source: str  # reported from gcalcli or irc
     key: str     # timestamp for gcalcli, name for irc
     value: str   # event for gcalcli, message for irc
     header: str
@@ -64,16 +66,16 @@ def delete_weechat_log(report_source):
         pass
     else:
         if report_source == FROM_GCALCLI:  # remove head
-            if GCALCLI_HEADER in content:
-                if IRC_HEADER in content:
+            if FROM_GCALCLI in content:
+                if FROM_IRC in content:
                     remains = content_list[-1].strip()
                 else:
                     remains = None
             else:
                 return True
         else:  # remove tail
-            if IRC_HEADER in content:
-                if GCALCLI_HEADER in content:
+            if FROM_IRC in content:
+                if FROM_GCALCLI in content:
                     remains = content_list[0].strip()
                 else:
                     remains = None
@@ -84,12 +86,17 @@ def delete_weechat_log(report_source):
             f.write(f"{remains}\n" if remains else "")
 
 
-def update_gcalcli_log(new_msg, content):
+def update_gcalcli_log(new_msg, content, force_update=False):
     head = content[0].strip()
+    new_msg_lines = len(new_msg.splitlines())
     if head.startswith("<") and head.endswith(">"):
-        return None
+        if force_update:
+            irc_msg = ''.join(content[new_msg_lines:])
+            return f"{new_msg}{irc_msg}"
+        else:
+            return None
     else:
-        return f"{new_msg}{GCALCLI_IRC_SEP}{''.join(content)}"
+        return f"{new_msg}{GCALCLI_IRC_SEP}\n{''.join(content)}"
 
 
 def update_irc_log(new_msg, content):
@@ -97,7 +104,36 @@ def update_irc_log(new_msg, content):
     if tail.startswith("[") and tail.endswith("]"):
         return f"{''.join(content[:-1])}{new_msg}"
     else:
-        return f"{''.join(content)}{GCALCLI_IRC_SEP}{new_msg}"
+        return f"{''.join(content)}\n{GCALCLI_IRC_SEP}{new_msg}"
+
+
+def notify_cmd_hyperlink(message):
+    hyperlink = '<a href=\"{}\">{}</a>'
+    for url in re.findall(r'((https?|s?ftps?)://[^\s]+)', message):
+        if url[0][-1] in [",", ".", ")", "]", "}", "?", "'", '"']:
+            target_url = url[0][:-1]
+        else:
+            target_url = url[0]
+        message = message.replace(
+            target_url, hyperlink.format(target_url, target_url[:64]))
+    return message
+
+
+def notify_event(msg_from, new_msg):
+    TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
+    os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
+
+    NOTIFY_CMD = (f"notify-send -t 10000 -i 'user-idle' "
+                  f"'{msg_from}' "
+                  f"'{notify_cmd_hyperlink(new_msg)}'")
+    os.popen(NOTIFY_CMD)
+
+    TMUX_POPUP_CMD = (
+        f"tmux display-popup -E -B -xC -yS -w 30% -h 20% "
+        f"-s fg=colour220,bg=colour243 "
+        f"""'printf "{msg_from}\n  {new_msg}\n"; sleep 5' &"""
+    )
+    os.popen(TMUX_POPUP_CMD)
 
 
 def update_weechat_log(weechat_log_data):
@@ -121,15 +157,20 @@ def update_weechat_log(weechat_log_data):
     else:
         if content:
             if weechat_log_data.source == FROM_GCALCLI:
-                out_msg = update_gcalcli_log(out_msg, content)
+                event_minute = int(weechat_log_data.key.split(":")[-1].strip())
+                delta_minute = event_minute - now_h_m.minute
+                out_msg = update_gcalcli_log(
+                    out_msg,
+                    content,
+                    abs(delta_minute) < WEECHAT_CRON_INTERVAL
+                )
             else:
                 out_msg = update_irc_log(out_msg, content)
 
     if out_msg:
         with open(WEECHAT_LOG_FILENAME, "w") as f:
             f.write(out_msg)
-        TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
-        os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
+        notify_event(weechat_log_data.source, new_msg)
 
 
 def parse_today_event():
@@ -166,8 +207,12 @@ def parse_today_event():
                     cal_list = line_remove_colour.split(time)
                     event = re.sub(" +", " ", cal_list[-1].strip())
                     event_time = datetime.strptime(time, "%H:%M")
-                    reminder_s = (event_time - timedelta(minutes=10)).time()
-                    reminder_e = (event_time + timedelta(minutes=5)).time()
+                    reminder_s = (
+                        event_time -
+                        timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)).time()
+                    reminder_e = (
+                        event_time +
+                        timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)).time()
                     if (time and event
                             and now_h_m > reminder_s
                             and now_h_m < reminder_e):
@@ -181,7 +226,7 @@ def cron_timer_cb(data, remaining_calls):
     key, value = parse_today_event()
     if key and value:
         update_weechat_log(
-            WeechatLogData(FROM_GCALCLI, key, value, GCALCLI_HEADER)
+            WeechatLogData(FROM_GCALCLI, key, value, FROM_GCALCLI)
         )
     else:
         delete_weechat_log(FROM_GCALCLI)
@@ -203,7 +248,7 @@ def notify_show(data, signal, message):
             name = msg.split()[0]
         elif (name == "*status") or (name == "--" and msg.startswith("irc")):
             return weechat.WEECHAT_RC_OK
-        update_weechat_log(WeechatLogData(FROM_IRC, name, msg, IRC_HEADER))
+        update_weechat_log(WeechatLogData(FROM_IRC, name, msg, FROM_IRC))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         delete_weechat_log(FROM_IRC)
