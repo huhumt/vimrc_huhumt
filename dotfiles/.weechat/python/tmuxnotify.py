@@ -120,9 +120,6 @@ def notify_cmd_hyperlink(message):
 
 
 def notify_event(msg_from, new_msg):
-    TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
-    os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
-
     NOTIFY_CMD = (f"notify-send -t 10000 -i 'user-idle' "
                   f"'{msg_from}' "
                   f"'{notify_cmd_hyperlink(new_msg)}'")
@@ -131,9 +128,16 @@ def notify_event(msg_from, new_msg):
     TMUX_POPUP_CMD = (
         f"tmux display-popup -E -B -xC -yS -w 30% -h 20% "
         f"-s fg=colour220,bg=colour243 "
-        f"""'printf "{msg_from}\n  {new_msg}\n"; sleep 5' &"""
+        f"""'stty -echo;
+             echo "{msg_from}\n  {new_msg}";
+             sleep 5;
+             stty echo' &
+        """
     )
     os.popen(TMUX_POPUP_CMD)
+
+    TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
+    os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
 
 
 def update_weechat_log(weechat_log_data):
