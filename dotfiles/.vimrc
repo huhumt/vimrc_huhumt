@@ -559,6 +559,8 @@ let g:lion_squeeze_spaces = 1
 let g:polyglot_disabled = ['markdown']
 
 " change indent display color
+let g:vim_json_conceal = 0
+let g:markdown_syntax_conceal = 0
 let g:indentLine_color_term = 239
 let g:indentLine_char_list = ['|', '¦', '┆', '┊']
 
@@ -593,6 +595,17 @@ let g:coc_global_extensions = [
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
         \ "coc-pyright", "coc-clangd", "coc-pairs",
         \]
+" Remove plugins not explicitly defined in g:coc_global_extensions
+" Ignore special case: friendly-snippets
+function! CocClean() abort
+  let g:extensions_to_clean = CocAction("loadedExtensions")
+      \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
+      \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
+  if len(g:extensions_to_clean)
+    exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
+  endif
+endfunction
+command! -nargs=0 CocClean :call CocClean()
 
 
 
