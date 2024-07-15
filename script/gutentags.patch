@@ -1,7 +1,21 @@
-diff -ruN vim-gutentags/autoload/gutentags/cscope.vim vim-gutentags-new/autoload/gutentags/cscope.vim
---- vim-gutentags/autoload/gutentags/cscope.vim	2023-04-24 17:03:44.700504927 +0100
-+++ vim-gutentags-new/autoload/gutentags/cscope.vim	2023-04-24 17:03:35.328419942 +0100
-@@ -29,6 +29,7 @@
+diff --git a/autoload/gutentags.vim b/autoload/gutentags.vim
+index 1495b33..5ba2233 100644
+--- a/autoload/gutentags.vim
++++ b/autoload/gutentags.vim
+@@ -289,7 +289,7 @@ function! gutentags#setup_gutentags() abort
+             call gutentags#trace("no valid project root.. no gutentags support.")
+             return
+         endif
+-        if filereadable(b:gutentags_root . '/.notags')
++        if filereadable(b:gutentags_root . '/.notags') || !filereadable(b:gutentags_root . '/tags')
+             call gutentags#trace("'.notags' file found... no gutentags support.")
+             return
+         endif
+diff --git a/autoload/gutentags/cscope.vim b/autoload/gutentags/cscope.vim
+index 47f6bdf..1e0cc7a 100644
+--- a/autoload/gutentags/cscope.vim
++++ b/autoload/gutentags/cscope.vim
+@@ -29,6 +29,7 @@ endif
  
  let s:runner_exe = gutentags#get_plat_file('update_scopedb')
  let s:unix_redir = (&shellredir =~# '%s') ? &shellredir : &shellredir . ' %s'
@@ -9,7 +23,7 @@ diff -ruN vim-gutentags/autoload/gutentags/cscope.vim vim-gutentags-new/autoload
  let s:added_dbs = []
  
  function! gutentags#cscope#init(project_root) abort
-@@ -37,6 +38,7 @@
+@@ -37,6 +38,7 @@ function! gutentags#cscope#init(project_root) abort
      let b:gutentags_files['cscope'] = l:dbfile_path
  
      if g:gutentags_auto_add_cscope && filereadable(l:dbfile_path)
@@ -17,62 +31,22 @@ diff -ruN vim-gutentags/autoload/gutentags/cscope.vim vim-gutentags-new/autoload
          if index(s:added_dbs, l:dbfile_path) < 0
              call add(s:added_dbs, l:dbfile_path)
              silent! execute 'cs add ' . fnameescape(l:dbfile_path)
-@@ -45,28 +47,30 @@
+@@ -45,6 +47,10 @@ function! gutentags#cscope#init(project_root) abort
  endfunction
  
  function! gutentags#cscope#generate(proj_dir, tags_file, gen_opts) abort
--    let l:cmd = [s:runner_exe]
--    let l:cmd += ['-e', g:gutentags_cscope_executable]
--    let l:cmd += ['-p', a:proj_dir]
--    let l:cmd += ['-f', a:tags_file]
--    let l:file_list_cmd =
--        \ gutentags#get_project_file_list_cmd(a:proj_dir)
--    if !empty(l:file_list_cmd)
--        let l:cmd += ['-L', '"' . l:file_list_cmd . '"']
--    endif
--    if g:gutentags_cscope_build_inverted_index
--        let l:cmd += ['-I']
--    endif
--    let l:cmd = gutentags#make_args(l:cmd)
-+    if s:gutentags_cscope_enabled
-+        let l:cmd = [s:runner_exe]
-+        let l:cmd += ['-e', g:gutentags_cscope_executable]
-+        let l:cmd += ['-p', a:proj_dir]
-+        let l:cmd += ['-f', a:tags_file]
-+        let l:file_list_cmd =
-+            \ gutentags#get_project_file_list_cmd(a:proj_dir)
-+        if !empty(l:file_list_cmd)
-+            let l:cmd += ['-L', '"' . l:file_list_cmd . '"']
-+        endif
-+        if g:gutentags_cscope_build_inverted_index
-+            let l:cmd += ['-I']
-+        endif
-+        let l:cmd = gutentags#make_args(l:cmd)
- 
--    call gutentags#trace("Running: " . string(l:cmd))
--    call gutentags#trace("In:      " . getcwd())
--    if !g:gutentags_fake
--		let l:job_opts = gutentags#build_default_job_options('cscope')
--        let l:job = gutentags#start_job(l:cmd, l:job_opts)
--        call gutentags#add_job('cscope', a:tags_file, l:job)
--    else
--        call gutentags#trace("(fake... not actually running)")
-+        call gutentags#trace("Running: " . string(l:cmd))
-+        call gutentags#trace("In:      " . getcwd())
-+        if !g:gutentags_fake
-+            let l:job_opts = gutentags#build_default_job_options('cscope')
-+            let l:job = gutentags#start_job(l:cmd, l:job_opts)
-+            call gutentags#add_job('cscope', a:tags_file, l:job)
-+        else
-+            call gutentags#trace("(fake... not actually running)")
-+        endif
-     endif
- endfunction
- 
-diff -ruN vim-gutentags/autoload/gutentags/ctags.vim vim-gutentags-new/autoload/gutentags/ctags.vim
---- vim-gutentags/autoload/gutentags/ctags.vim	2023-04-24 17:03:44.700504927 +0100
-+++ vim-gutentags-new/autoload/gutentags/ctags.vim	2023-04-24 17:03:35.328419942 +0100
-@@ -9,6 +9,7 @@
++    if !s:gutentags_cscope_enabled
++        return
++    endif
++
+     let l:cmd = [s:runner_exe]
+     let l:cmd += ['-e', g:gutentags_cscope_executable]
+     let l:cmd += ['-p', a:proj_dir]
+diff --git a/autoload/gutentags/ctags.vim b/autoload/gutentags/ctags.vim
+index e5095c1..b88005b 100644
+--- a/autoload/gutentags/ctags.vim
++++ b/autoload/gutentags/ctags.vim
+@@ -9,6 +9,7 @@ let g:gutentags_ctags_auto_set_tags = get(g:, 'gutentags_ctags_auto_set_tags', 1
  let g:gutentags_ctags_options_file = get(g:, 'gutentags_ctags_options_file', '.gutctags')
  let g:gutentags_ctags_check_tagfile = get(g:, 'gutentags_ctags_check_tagfile', 0)
  let g:gutentags_ctags_extra_args = get(g:, 'gutentags_ctags_extra_args', [])
@@ -80,7 +54,7 @@ diff -ruN vim-gutentags/autoload/gutentags/ctags.vim vim-gutentags-new/autoload/
  let g:gutentags_ctags_post_process_cmd = get(g:, 'gutentags_ctags_post_process_cmd', '')
  
  let g:gutentags_ctags_exclude = get(g:, 'gutentags_ctags_exclude', [])
-@@ -240,6 +241,8 @@
+@@ -240,6 +241,8 @@ function! s:get_ctags_executable(proj_dir) abort
      let l:ftype = get(split(&filetype, '\.'), 0, '')
      let l:proj_info = gutentags#get_project_info(a:proj_dir)
      let l:type = get(l:proj_info, 'type', l:ftype)
@@ -89,26 +63,11 @@ diff -ruN vim-gutentags/autoload/gutentags/ctags.vim vim-gutentags-new/autoload/
      let exepath = exists('g:gutentags_ctags_executable_{l:type}')
          \ ? g:gutentags_ctags_executable_{l:type} : g:gutentags_ctags_executable
      return expand(exepath, 1)
-diff -ruN vim-gutentags/autoload/gutentags.vim vim-gutentags-new/autoload/gutentags.vim
---- vim-gutentags/autoload/gutentags.vim	2023-04-24 17:03:44.700504927 +0100
-+++ vim-gutentags-new/autoload/gutentags.vim	2023-04-24 17:03:35.328419942 +0100
-@@ -289,6 +289,11 @@
-             call gutentags#trace("no valid project root.. no gutentags support.")
-             return
-         endif
-+        if !filereadable(b:gutentags_root . '/tags')
-+            call gutentags#trace("no tags file found... no gutentags support.")
-+            let g:gutentags_enabled = 0
-+            return
-+        endif
-         if filereadable(b:gutentags_root . '/.notags')
-             call gutentags#trace("'.notags' file found... no gutentags support.")
-             return
-Binary files vim-gutentags/.git/index and vim-gutentags-new/.git/index differ
-diff -ruN vim-gutentags/plat/unix/update_scopedb.sh vim-gutentags-new/plat/unix/update_scopedb.sh
---- vim-gutentags/plat/unix/update_scopedb.sh	2023-04-24 17:03:44.704504962 +0100
-+++ vim-gutentags-new/plat/unix/update_scopedb.sh	2023-04-24 17:03:35.328419942 +0100
-@@ -72,37 +72,13 @@
+diff --git a/plat/unix/update_scopedb.sh b/plat/unix/update_scopedb.sh
+index b66d586..46d579e 100755
+--- a/plat/unix/update_scopedb.sh
++++ b/plat/unix/update_scopedb.sh
+@@ -72,39 +72,9 @@ if [ -d "$PROJECT_ROOT" ]; then
      cd "$PROJECT_ROOT"
  fi
  
@@ -124,7 +83,9 @@ diff -ruN vim-gutentags/plat/unix/update_scopedb.sh vim-gutentags-new/plat/unix/
 -        done > "${DB_FILE}.files"
 -    fi
 -else
--    find . -type f ! -name ${DB_FILE} | while read -r l; do
+-    find . -type f ! -name ${DB_FILE} \
+-        \( ! -iname "cscope*"  ! -iname "ncscope*" ! -iname "*.patch" \) \
+-        | while read -r l; do
 -        echo "\"${l}\""
 -    done > "${DB_FILE}.files"
 -fi
@@ -136,15 +97,15 @@ diff -ruN vim-gutentags/plat/unix/update_scopedb.sh vim-gutentags-new/plat/unix/
 -
 -CSCOPE_ARGS="${CSCOPE_ARGS} -i ${DB_FILE}.files"
 -
- if [ "$BUILD_INVERTED_INDEX" -eq 1 ]; then
-     CSCOPE_ARGS="$CSCOPE_ARGS -q"
- fi
- 
+-if [ "$BUILD_INVERTED_INDEX" -eq 1 ]; then
+-    CSCOPE_ARGS="$CSCOPE_ARGS -q"
+-fi
+-
  echo "Running cscope"
 -echo "$CSCOPE_EXE $CSCOPE_ARGS -b -k -f \"$DB_FILE.temp\""
 -"$CSCOPE_EXE" $CSCOPE_ARGS -v -b -k -f "$DB_FILE.temp"
-+echo "$CSCOPE_EXE $CSCOPE_ARGS -R -b -k -f \"$DB_FILE.temp\""
-+"$CSCOPE_EXE" $CSCOPE_ARGS -R -b -k -f "$DB_FILE.temp"
++echo "$CSCOPE_EXE -R -b -k -q -f \"$DB_FILE.temp\""
++"$CSCOPE_EXE" -R -b -k -q -f "$DB_FILE.temp"
  
  if [ -d "$PROJECT_ROOT" ]; then
      cd "$PREVIOUS_DIR"
