@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict
+import argparse
 import datetime
 import string
 import sys
@@ -140,16 +141,15 @@ def parse_url(message):
                     url = url[:-1]
         # End heuristics
 
-        if len(url) >= SHORTEN_URL_MIN_LENGTH and url not in url_list:
+        if url not in url_list:
             url_list.append(url)
 
     return url_list
 
 
-def update_shorten_url_file(url_list):
+def update_shorten_url_file(url_list, url_min_length):
     """update shorten url file"""
 
-    new_url_flag = False
     try:
         urls_dict = OrderedDict(
             ast.literal_eval(open(SHORTEN_URL_FILENAME, 'r').read())
@@ -164,15 +164,15 @@ def update_shorten_url_file(url_list):
     short_url_dict = {}
     for url in url_list:
         if url.startswith(SHORTEN_URL_HOSTNAME):
-            short_url = url
+            short_url_dict[url] = url
         elif url in url_map.keys():
-            short_url = url_map[url]
-        else:
-            new_url_flag = True
+            short_url_dict[url] = url_map[url]
+        elif len(url) > url_min_length:
             if total_number > SHORTEN_URL_MAX_NUMBER:
                 total_number = 0
 
             short_url = urlserver_short_url(total_number)
+            short_url_dict[url] = short_url
             timestamp = datetime.datetime.now().strftime('%d/%m-%H:%M:%S:%f')
             urls_dict[timestamp] = (
                 (
@@ -183,18 +183,16 @@ def update_shorten_url_file(url_list):
                 )
             )
             total_number += 1
-        short_url_dict[url] = short_url
+            if len(urls_dict) > SHORTEN_URL_MAX_NUMBER:
+                urls_dict.popitem(last=False)
 
-    if new_url_flag:
-        while len(urls_dict) > SHORTEN_URL_MAX_NUMBER:
-            urls_dict.popitem(last=False)
-
-        content = '{\n%s\n}\n' % '\n'.join([
-            '  "%s": %s,' % (key, val) for key, val in urls_dict.items()
-        ])
-        open(SHORTEN_URL_FILENAME, 'w').write(content)
+    content = '{\n%s\n}\n' % '\n'.join([
+        '  "%s": %s,' % (key, val) for key, val in urls_dict.items()
+    ])
+    open(SHORTEN_URL_FILENAME, 'w').write(content)
 
     return short_url_dict
+
 
 def output_short_url(message, short_url_dict, update_message=False, sep='\n'):
     """update message or output short url only"""
@@ -205,19 +203,33 @@ def output_short_url(message, short_url_dict, update_message=False, sep='\n'):
     else:
         return sep.join([short_url for short_url in short_url_dict.values()])
 
-def main(message, update_message=False):
+
+def main(message, url_min_length, update_message=False):
     """main entry"""
     if "://" not in message:
         return None
     else:
         url_list = parse_url(message)
-        short_url_dict = update_shorten_url_file(url_list)
+        short_url_dict = update_shorten_url_file(url_list, url_min_length)
         if short_url_dict:
             return output_short_url(message, short_url_dict, update_message)
         else:
             return None
 
-if len(sys.argv) > 2:
-    print(main(sys.argv[1], True))
-elif len(sys.argv) == 2:
-    print(main(sys.argv[1], False))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Shorten url to localhost:8001")
+    parser.add_argument(
+        "message", type=str,
+        help="input message to be parse")
+    parser.add_argument(
+        "--update-message", dest="update_message", action="store_true",
+        help="Update input message with shortened url")
+    parser.add_argument(
+        "--url-min-length", dest="url_min_length",
+        type=int, default=SHORTEN_URL_MIN_LENGTH,
+        help="Threshold to shorten url")
+
+    args = parser.parse_args()
+    print(main(args.message, args.url_min_length, args.update_message))
