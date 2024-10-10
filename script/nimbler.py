@@ -109,7 +109,8 @@ class WindowList():
 
         # Clear existing
         app_order_dict = {"Xfce4-terminal": 0, "Firefox-esr": 1, "Firefox": 2}
-        self.windows = [[None] * len(app_order_dict)] * self.workspace_count
+        self.windows = [[None] * len(app_order_dict)
+                        for _ in range(self.workspace_count)]
 
         # Get a list of windows
         for i in screen.get_windows():
