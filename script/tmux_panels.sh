@@ -33,8 +33,14 @@ tmux attach-session -d
 
 if ! tmux has-session -t "$session" 2>/dev/null
 then
-    for i in $(vncserver -list | grep 590 | cut -d' ' -f1)
+    for id in $(vncserver -list | grep 590 | cut -d' ' -f1)
     do
-        vncserver -kill ":$i"
+        vncserver -kill ":$id"
     done
+
+    for name in $(virsh list | grep running | tr -s  ' ' | cut -d' ' -f3)
+    do
+        virsh destroy "$name"
+    done
+    reset
 fi
