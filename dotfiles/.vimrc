@@ -589,6 +589,8 @@ autocmd BufEnter *.md let g:table_mode_corner='|'
 inoremap <nowait><expr> <C-f> "\<c-r>=coc#float#scroll(1, 4)\<cr>"
 inoremap <nowait><expr> <C-d> "\<c-r>=coc#float#scroll(0, 4)\<cr>"
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
+" vmap <leader>a <Plug>(coc-codeaction-selected)
+" nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
         \ "coc-json", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
