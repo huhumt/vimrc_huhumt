@@ -6,6 +6,7 @@ import os
 import time
 import string
 import signal
+import subprocess
 import configparser
 from xml.sax.saxutils import escape
 
@@ -90,8 +91,6 @@ class WindowList():
 
     def __init__(self, ignored_windows, always_show_windows,
                  ignored_window_types, icon_size, win_size):
-        self.windows = []
-        self.max_windows = 0
         self.ignored_windows = ignored_windows
         self.always_show_windows = always_show_windows
         self.ignored_window_types = ignored_window_types
@@ -103,14 +102,12 @@ class WindowList():
         screen = Wnck.Screen.get_default()
         screen.force_update()
 
-        self.workspace_count = screen.get_workspace_count()
         self.workspaces = screen.get_workspaces()
-        active_workspace = screen.get_active_workspace()
+        active_workspace_id = self.workspaces.index(screen.get_active_workspace())
 
         # Clear existing
-        app_order_dict = {"Xfce4-terminal": 0, "Firefox-esr": 1, "Firefox": 2}
-        self.windows = [[None] * len(app_order_dict)
-                        for _ in range(self.workspace_count)]
+        app_dict = {"Xfce4-terminal": 0, "Firefox-esr": 1, "Firefox": 2}
+        windows = {i: [{}] * len(app_dict) for i in range(len(self.workspaces))}
 
         # Get a list of windows
         for i in screen.get_windows():
@@ -119,62 +116,50 @@ class WindowList():
             class_group = str(i.get_class_group_name()).capitalize()
 
             # Filter out extraneous windows
-            if self.isWindowAlwaysShown(name):
-                pass
-            else:
+            if not self.isWindowAlwaysShown(name):
                 if i.get_window_type() in self.ignored_window_types:
                     continue
-
                 if self.isWindowIgnored(name):
                     continue
 
-            index = (self.workspaces.index(workspace)
-                     if workspace else active_workspace)
+            id = (self.workspaces.index(workspace)
+                     if workspace else active_workspace_id)
             cur_window_dict = {
                 'name': name,
                 'class_group': class_group,
-                'window_xid': i.get_xid(), 'rank': 0
+                'window_xid': i.get_xid(),
+                'rank': 0
             }
-            if (class_group in app_order_dict
-                    and not self.windows[index][app_order_dict[class_group]]):
-                self.windows[index][app_order_dict[class_group]
-                                    ] = cur_window_dict
+
+            if (class_group in app_dict
+                    and not windows[id][app_dict[class_group]]):
+                windows[id][app_dict[class_group]] = cur_window_dict
             else:
-                self.windows[index].append(cur_window_dict)
+                windows[id].append(cur_window_dict)
 
-        self.windows = list(
-            filter(
-                None, [list(filter(None, sublist)) for sublist in self.windows]
-            )
-        )
-        self.max_windows = max(len(i) for i in self.windows)
-
+        self.windows = {}
+        for k, v in windows.items():
+            valid_win = list(filter(None, v))
+            if valid_win:
+                self.windows[k] = valid_win
+        if active_workspace_id not in self.windows:
+            self.windows[active_workspace_id] = []
+        self.max_windows = len(max(self.windows.values(), key=len))
         # Merged correctly ordered list for switching purposes
         # Via http://stackoverflow.com/a/952952
         self.window_list_merged = [
-            item for sublist in self.windows for item in sublist]
+            item for sublist in self.windows.values() for item in sublist
+        ]
 
     @staticmethod
-    def get_window(window_xid):
+    def get_window_by_xid(window_xid):
         return Wnck.Window.get(window_xid)
 
     def get_icon(self, window_xid):
         if self.icon_size == 'default' or type(self.icon_size) is int:
-            return self.get_window(window_xid).get_icon()
+            return self.get_window_by_xid(window_xid).get_icon()
         elif self.icon_size == 'mini':
-            return self.get_window(window_xid).get_mini_icon()
-
-    def get(self):
-        return self.windows
-
-    def get_window_list_merged(self):
-        return self.window_list_merged
-
-    def get_max_windows(self):
-        return self.max_windows
-
-    def get_workspace_count(self):
-        return self.workspace_count
+            return self.get_window_by_xid(window_xid).get_mini_icon()
 
     def getHighestRanked(self):
         return (self.window_list_merged[0]
@@ -248,15 +233,14 @@ class NimblerWindow(Gtk.Window):
             config.icon_size,
             config.win_size
         )
-        self.windowList.refresh()
+        # self.windowList.refresh()
 
         # Register events
         self.connect("key-press-event", self.keypress)
 
     def populate(self):
-        window_list = self.windowList.windows
         self.window_counter = 0
-        self.num_workspaces = len(window_list)
+        self.num_workspaces = len(self.windowList.windows)
 
         dpi_scaling_factor = DPIScaling().scaling_factor
         i_label_width = dpi_scaling_factor
@@ -265,10 +249,8 @@ class NimblerWindow(Gtk.Window):
         j_row_height = min(int(dpi_scaling_factor * (
             self.windowList.win_size[1]/(self.windowList.max_windows+1))), 25)
 
-        for i in range(0, self.num_workspaces):
-            i_column_left = i * (i_column_width + 1)
-
-            i_workspace_name = i + 1
+        for i, (k, v) in enumerate(self.windowList.windows.items()):
+            i_workspace_name = k
             workspace_button = Gtk.Button(
                 label=f'Workspace {i_workspace_name}')
             workspace_button.set_size_request(i_column_width, j_row_height)
@@ -278,14 +260,14 @@ class NimblerWindow(Gtk.Window):
             workspace_button.connect(
                 'clicked', self.activate_workspace_via_button)
 
+            i_column_left = i * (i_column_width + 1)
             self.grid.attach(workspace_button, i_column_left+i_label_width, 0,
                              i_column_width, j_row_height)
 
-            for j in range(0, len(window_list[i])):
+            for j, win in enumerate(v):
                 j4grid_top = (j + 1) * j_row_height
-                name = window_list[i][j]['name']
-                icon = self.windowList.get_icon(
-                    window_list[i][j].get('window_xid'))
+                name = win['name']
+                icon = self.windowList.get_icon(win['window_xid'])
                 binding = self.numbering[self.window_counter]
 
                 # Shows what key to press
@@ -366,7 +348,7 @@ class NimblerWindow(Gtk.Window):
         button.override_background_color(0, rgba)
 
     def close_window(self, window_xid):
-        WindowList.get_window(window_xid).close(self.getXTime())
+        WindowList.get_window_by_xid(window_xid).close(self.getXTime())
 
     def close_window_via_number(self, window_number):
         self.toggle()
@@ -375,7 +357,7 @@ class NimblerWindow(Gtk.Window):
         )
 
     def presentWindow(self, window_xid):
-        window = WindowList.get_window(window_xid)
+        window = WindowList.get_window_by_xid(window_xid)
         workspace = window.get_workspace()
         if workspace is not None:
             workspace.activate(self.getXTime())
@@ -394,27 +376,24 @@ class NimblerWindow(Gtk.Window):
         )
 
     def presentByShortcut(self, event, keyval):
-        time.sleep(0.1)
-        self.getXTime()
+        # time.sleep(0.1)  # workaround to avoid switch window failure
+        # self.getXTime()
         # Workspace shortcuts
-        if keyval in self.function_keys_keyvals[:self.num_workspaces]:
-            self.activate_workspace(
-                self.keybindings.function_keys[
-                    self.keybindings.get_keyvals_from_name().index(keyval)
-                ]
-            )
-            return True
+        if keyval in self.function_keys_keyvals:
+            index = self.keybindings.get_keyvals_from_name().index(keyval)
+            if index < self.num_workspaces:
+                self.activate_workspace(self.keybindings.function_keys[index])
+                return True
         # Window shortcuts
-        elif keyval in self.numbering_keyvals[:self.window_counter]:
-            if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
-                self.close_window_via_number(
-                    self.numbering_keyvals.index(keyval))
-            else:
-                self.present_window_via_number(
-                    self.numbering_keyvals.index(keyval))
-            return True
-        else:
-            return False
+        elif keyval in self.numbering_keyvals:
+            index = self.numbering_keyvals.index(keyval)
+            if index < self.window_counter:
+                if event.get_state() & Gdk.ModifierType.CONTROL_MASK:
+                    self.close_window_via_number(index)
+                else:
+                    self.present_window_via_number(index)
+                return True
+        return False
 
     def presentHighestRanked(self):
         highestRanked = self.windowList.getHighestRanked()
@@ -427,7 +406,7 @@ class NimblerWindow(Gtk.Window):
             return
 
         index = indices[0]
-        windows = self.windowList.get_window_list_merged()
+        windows = self.windowList.window_list_merged
         if index < len(windows):
             self.toggle()
             self.presentWindow(windows[index]['window_xid'])
@@ -439,21 +418,13 @@ class NimblerWindow(Gtk.Window):
         # otherwise it simply returns event.keyval
         # Thanks to http://stackoverflow.com/a/103081
         event.keyval = self.keypad_numbers.get(event.keyval, event.keyval)
-
         # selected = self.appListView.get_selection().get_selected()
+
         if event.keyval == Gdk.KEY_Escape:
             self.toggle()
-        if (not self.enteredName.has_focus()
-                and self.presentByShortcut(event, event.keyval)):
-            return
-        elif event.keyval == Gdk.KEY_colon:
-            # Show input, thanks to http://stackoverflow.com/a/4956770
-            self.enteredName.show()
-            self.enteredName.grab_focus()
-            # Return True so the colon doesn't end up in the Entry box
             return True
-        # The text input has focus
-        else:
+
+        if self.enteredName.has_focus():
             if event.keyval == Gdk.KEY_Return:
                 # TODO do something!
                 text = self.enteredName.get_text()
@@ -463,14 +434,29 @@ class NimblerWindow(Gtk.Window):
                 if len(text) == 1:
                     number = ord(text)
                     keyval = Gdk.unicode_to_keyval(number)
-                    if self.presentByShortcut(event, keyval):
-                        return
+                    self.presentByShortcut(event, keyval)
+                elif len(text) > 3:
+                    if self.windowList.max_windows > 0:
+                        if self.windowList.window_list_merged[0]['rank'] > 0:
+                            self.present_window_via_number(0)
+                            return True
+                    self.toggle()
+                    subprocess.Popen(["xfce4-appfinder", "-c"], start_new_session=True)
+                return True
+        else:
+            # selected = self.appListView.get_selection().get_selected()
+            if event.keyval in (Gdk.KEY_colon, Gdk.KEY_slash, Gdk.KEY_question):
+                # Show input, thanks to http://stackoverflow.com/a/4956770
+                self.enteredName.show()
+                self.enteredName.grab_focus()
+                # Return True so the colon doesn't end up in the Entry box
+                return True
+            else:
+                return self.presentByShortcut(event, event.keyval)
 
     def toggle(self):
         if self.hidden:
             self.windowList.refresh()
-            self.max_windows = self.windowList.get_max_windows()  # change
-
             self.grid = Gtk.Grid()
             self.grid.set_column_homogeneous(False)
             self.grid.set_row_homogeneous(False)
@@ -482,16 +468,16 @@ class NimblerWindow(Gtk.Window):
             self.enteredName = Gtk.Entry()
             # Set up event
             self.enteredName.connect("changed", self.enteredNameChanged)
-            self.grid.attach(self.enteredName, 0, self.max_windows+1,
-                             len(self.windowList.get())*2, 1)
+            self.grid.attach(self.enteredName, 1, 0,
+                             self.windowList.win_size[0], 1)
             self.enteredName.set_no_show_all(True)
 
             # Register enteredName event
             self.enteredName.connect('changed', self.enteredNameChanged)
 
-            # Populate windows
             self.resize(self.windowList.win_size[0],
                         self.windowList.win_size[1])
+            # Populate windows
             self.populate()
 
             # Set state
@@ -504,9 +490,7 @@ class NimblerWindow(Gtk.Window):
 
             # Show our window with focus
             self.stick()
-
             time = self.getXTime()
-
             self.get_window().focus(time)
         else:
             self.hidden = True
@@ -654,15 +638,17 @@ def main():
     pidfile = "/tmp/nimbler.pid"
 
     if os.path.isfile(pidfile):
-        raise SystemExit(f"{os.path.basename(__file__)} already in running")
-    else:
+        pid = open(pidfile, 'r').read()
+        if os.path.exists(f"/proc/{pid}"):
+            raise SystemExit(f"{os.path.basename(__file__)} already in running")
+
+    try:
         open(pidfile, 'w').write(str(os.getpid()))
-        try:
-            nimbler()
-        except Exception as e:
-            print(e)
-        finally:
-            os.unlink(pidfile)
+        nimbler()
+    except Exception as e:
+        print(e)
+    finally:
+        os.unlink(pidfile)
 
 
 if __name__ == "__main__":
