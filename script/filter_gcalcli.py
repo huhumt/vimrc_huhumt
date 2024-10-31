@@ -27,11 +27,12 @@ def to_colour(event_dict: OrderedDict) -> str:
 
     for time, event in event_dict.items():
         if time == ALL_DAY_EVENT_KEY:
-            for key, val in event:
-                colour_event += (
-                    f"    {COLOUR_PURPLE}"
-                    f"{key} {val}{COLOUR_OFF}\n"
-                )
+            for key, val in event.items():
+                if key and val:
+                    colour_event += (
+                        f"    {COLOUR_PURPLE}"
+                        f"{key} {val}{COLOUR_OFF}\n"
+                    )
         else:
             event_time = datetime.strptime(time, "%H:%M")
             reminder_s = (event_time - timedelta(minutes=15)).time()
@@ -136,7 +137,8 @@ def parse_today_event(cal_log: str) -> None | OrderedDict:
                     stdout=subprocess.PIPE
                 ).stdout.decode('utf-8').strip()
                 description_url_list.append(short_url)
-            event_dict[event_time]["description_url"] = description_url_list
+            if description_url_list:
+                event_dict[event_time]["description_url"] = description_url_list
 
     return event_dict
 

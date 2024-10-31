@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import webbrowser
 import argparse
 import socket
 import base64
@@ -517,14 +518,15 @@ def urlserver_server_start():
     urlserver_server_status()
 
 
-def urlserver_server_stop():
+def urlserver_server_stop(stop_url):
     """Stop mini HTTP server."""
     global urlserver
     if urlserver['socket']:
-        if urlserver['socket']:
-            urlserver['socket'].close()
-            urlserver['socket'] = None
-        print('URL server stopped')
+        urlserver['socket'].close()
+        urlserver['socket'] = None
+    else:
+        webbrowser.open(stop_url, 2, False)
+    print('URL server stopped')
 
 
 def urlserver_read_urls(sort='-time'):
@@ -554,12 +556,6 @@ def urlserver_search_url(number):
     return None
 
 
-def urlserver_end():
-    """Script unloaded (oh no, why?)"""
-    urlserver_server_stop()
-    return 0
-
-
 if __name__ == '__main__':
     target_url = "%s:%s" % (
         urlserver_settings['http_hostname'], urlserver_settings['http_port']
@@ -574,9 +570,10 @@ if __name__ == '__main__':
         "--restart", dest="restart", action="store_true",
         help=f"restart urlserver {target_url}")
 
+    stop_url = f"{target_url}/stop"
     args = parser.parse_args()
     if args.stop or args.restart:
-        urlserver_server_stop()
+        urlserver_server_stop(stop_url)
     if args.restart or not args.stop:
         # start mini HTTP server
         urlserver_server_start()
@@ -587,4 +584,4 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             print("Terminated by keyboard interrupt, bye")
         finally:
-            urlserver_server_stop()
+            urlserver_server_stop(stop_url)
