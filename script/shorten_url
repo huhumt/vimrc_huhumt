@@ -157,8 +157,8 @@ def update_shorten_url_file(url_list):
         urls_dict = OrderedDict(
             ast.literal_eval(open(SHORTEN_URL_FILENAME, 'r').read())
         )
-        total_number = list(urls_dict.values())[-1][0] + 1
-        url_map = dict([(val[-2], val[-3]) for val in urls_dict.values()])
+        total_number = list(urls_dict.values())[-1][0]
+        url_map = dict([(val[-1], val[-2]) for val in urls_dict.values()])
     except:
         urls_dict = OrderedDict()
         url_map = {}
