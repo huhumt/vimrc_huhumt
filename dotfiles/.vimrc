@@ -532,9 +532,9 @@ nmap <Leader><Leader>e <Plug>CtrlSFCwordExec
 vmap <Leader><Leader>e <Plug>CtrlSFVwordExec
 
 " Support for easy motion
-nmap s <Plug>(easymotion-overwin-f2)
 let g:EasyMotion_do_mapping = 0 " Disable default mappings
 let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
+nmap s <Plug>(easymotion-sn)
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -592,9 +592,9 @@ nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 " vmap <leader>a <Plug>(coc-codeaction-selected)
 " nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
-        \ "coc-json", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
+        \ "coc-rome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs",
+        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json"
         \]
 " Remove plugins not explicitly defined in g:coc_global_extensions
 " Ignore special case: friendly-snippets, coc-vim-source-requirements
