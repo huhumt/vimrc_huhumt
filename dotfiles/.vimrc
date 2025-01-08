@@ -253,7 +253,7 @@ set statusline+=%4*\ %p%%                    " precentage
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Folding
-" """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "Enable folding, I find it very useful
 "set nofen
 "set fdl=0
@@ -300,9 +300,9 @@ let g:fern#drawer_width = 40
 map <Leader><Leader>n :Fern . -drawer -toggle<CR>
 let g:fern#renderer#default#root_symbol = '~ '
 
-function! FernPreviewSetMargins() abort
-    return g:fern#drawer_width
-endfunction
+" function! FernPreviewGetMargins() abort
+"     return g:fern#drawer_width
+" endfunction
 
 function! FernInit() abort
   nmap <buffer><expr>
@@ -317,10 +317,10 @@ function! FernInit() abort
   nmap <buffer> l <Plug>(fern-action-expand)
   nmap <buffer> <nowait> < <Plug>(fern-action-leave)
   nmap <buffer> <nowait> > <Plug>(fern-action-enter)
-  nmap <buffer> p <Plug>(fern-action-preview:toggle)
+  nmap <buffer> p <Plug>(fern-action-preview:auto:toggle)
   nmap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
   nmap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
-  let g:fern_preview_window_calculator.left = function('FernPreviewSetMargins')
+  " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
 endfunction
 
 augroup FernEvents
@@ -368,6 +368,7 @@ augroup END
 " let g:miniBufExplMapWindowNavArrows = 1
 " let g:miniBufExplMapCTabSwitchBufs = 1
 " let g:miniBufExplModSelTarget = 1
+let g:miniBufExplMaxSize = 3
 
 " Support tagbar plugin
 nmap <Leader>t :TagbarToggle<CR>
@@ -479,7 +480,9 @@ let g:Lf_RootMarkers = [
 "             \"*.tmp","tags","*.out*","*.bak","*.log",
 "             \"*.bin","*.hex","*.exe","*.py[co]","*.cache"
 "         \} -g ""'
-let g:Lf_ExternalCommand = 'ag %s -l --silent
+let g:Lf_ExternalCommand = 'ag %s -l --silent --hidden
+        \ --ignore ".git" --ignore ".svn" --ignore ".hg"
+        \ --ignore ".cache" --ignore ".npm"
         \ --ignore "*.sw?" --ignore "~$*"
         \ --ignore "*.o" --ignore "*.d" --ignore "*.su" --ignore "*.obj"
         \ --ignore "*.so" --ignore "*.dll" --ignore "*.a"
@@ -488,25 +491,23 @@ let g:Lf_ExternalCommand = 'ag %s -l --silent
         \ --ignore "*.bin" --ignore "*.hex" --ignore "*.exe"
         \ --ignore "*.py[co]" --ignore "*.cache"
         \ -g ""'
-let g:Lf_Ctags = "/usr/bin/ctags"
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 let g:Lf_ShowDevIcons = 0
 let g:Lf_PreviewInPopup = 0
 
 " Support ctrlsp plugin
-let g:ctrlsf_auto_preview = 1
-let g:ctrlsf_position = 'bottom'
-let g:ctrlsf_preview_position = 'inside'
-let g:ctrlsf_winsize = '50%'
+let g:ctrlsf_default_view_mode = 'compact'
+let g:ctrlsf_compact_winsize = '20%'
 let g:ctrlsf_context = '-C 0'
 let g:ctrlsf_case_sensitive = 'yes'
 let g:ctrlsf_default_root = 'cwd'
+let g:ctrlsf_auto_preview = 1
 let g:ctrlsf_indent = 2
 let g:ctrlsf_auto_focus = {
     \ "at": "start"
     \ }
 let g:ctrlsf_extra_backend_args = {
-    \ 'ag': '--word-regexp'
+    \ 'ag': '--silent --word-regexp'
     \ }
 let g:ctrlsf_mapping = {
     \ "open"    : ["<CR>", "o", "<2-LeftMouse>"],
@@ -519,8 +520,8 @@ let g:ctrlsf_mapping = {
     \ "popenf"  : "",
     \ "quit"    : "q",
     \ "stop"    : "",
-    \ "next"    : ["<C-N>"],
-    \ "prev"    : ["<C-P>"],
+    \ "next"    : ["<C-N>", "j"],
+    \ "prev"    : ["<C-P>", "k"],
     \ "nfile"   : "",
     \ "pfile"   : "",
     \ "chgmode" : "",
@@ -586,15 +587,20 @@ autocmd BufEnter *.md let g:table_mode_corner='|'
 
 " configuration for coc.nvim
 " let g:lsp_cxx_hl_use_text_props = 1
-inoremap <nowait><expr> <C-f> "\<c-r>=coc#float#scroll(1, 4)\<cr>"
-inoremap <nowait><expr> <C-d> "\<c-r>=coc#float#scroll(0, 4)\<cr>"
+nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<Right>"
+inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
+vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 " vmap <leader>a <Plug>(coc-codeaction-selected)
 " nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
         \ "coc-rome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json"
+        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go"
         \]
 " Remove plugins not explicitly defined in g:coc_global_extensions
 " Ignore special case: friendly-snippets, coc-vim-source-requirements
@@ -644,6 +650,7 @@ Plug 'tpope/vim-commentary'
 Plug 'bronson/vim-trailing-whitespace'
 
 " use mini-buffer window to display select function
+" this plugin broke command `20 split README.md`
 Plug 'fholgado/minibufexpl.vim'
 
 " use tagbar to display current status
@@ -735,6 +742,8 @@ Plug 'AndrewRadev/splitjoin.vim'
 
 
 
+
+
 " Initialize plugin system
 call plug#end()
 
@@ -787,3 +796,10 @@ highlight User4 ctermbg=8   ctermfg=156 guibg=black guifg=lightgreen
 
 highlight SpecialKey ctermfg=239 guibg=black
 highlight CocInlayHint ctermfg=10 ctermbg=242 guifg=#15aabf guibg=Grey
+
+highlight MarkWord1  ctermbg=DarkCyan     ctermfg=Black  guibg=#8CCBEA    guifg=Black
+highlight MarkWord2  ctermbg=Green        ctermfg=Black  guibg=#A4E57E    guifg=Black
+highlight MarkWord3  ctermbg=DarkYellow   ctermfg=Black  guibg=#FFDB72    guifg=Black
+highlight MarkWord4  ctermbg=LightRed     ctermfg=Black  guibg=#FF7272    guifg=Black
+highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black  guibg=#FFB3FF    guifg=Black
+highlight MarkWord6  ctermbg=Blue         ctermfg=Black  guibg=#9999FF    guifg=Black

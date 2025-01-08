@@ -1,0 +1,218 @@
+diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
+index 59aa399..d3b4990 100644
+--- a/autoload/ctrlsf.vim
++++ b/autoload/ctrlsf.vim
+@@ -12,6 +12,10 @@
+ " remember what user is searching
+ let s:current_mode = ''
+ let s:current_query = ''
++let s:preview_popup_win = {
++    \ 'bufnr' : -1,
++    \ 'winid' : 0,
++    \ }
+ 
+ " s:ExecSearch()
+ "
+@@ -254,6 +258,7 @@ func! ctrlsf#Quit() abort
+     endif
+ 
+     call s:Quit()
++    call s:JumpPreviewPopupWindow(2)
+ endf
+ 
+ " OpenLocList()
+@@ -332,6 +337,8 @@ func! ctrlsf#JumpTo(mode, ...) abort
+         call s:OpenFileInWindow(file, lnum, col, 1, 0)
+     elseif a:mode ==# 'open_background'
+         call s:OpenFileInWindow(file, lnum, col, 2, 0)
++    elseif a:mode ==# 'open_vsplit'
++        call s:OpenFileInWindow(file, lnum, col, 2, 2)
+     elseif a:mode ==# 'split'
+         call s:OpenFileInWindow(file, lnum, col, 1, 1)
+     elseif a:mode ==# 'vsplit'
+@@ -366,13 +373,12 @@ func! ctrlsf#NextMatch(forward, ...) abort
+             call ctrlsf#log#Notice("search hit TOP, continuing at BOTTOM")
+         else
+             call ctrlsf#log#Clear()
++            call cursor(vlnum, vcol)
++            normal! zv
+         endif
+ 
+-        call cursor(vlnum, vcol)
+-        normal! zv
+-
+         if g:ctrlsf_auto_preview
+-            call ctrlsf#JumpTo('preview')
++            call ctrlsf#JumpTo('open_vsplit')
+         endif
+     endif
+ endf
+@@ -417,31 +423,34 @@ endf
+ " '2' means split vertically
+ "
+ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
+-    if a:mode == 1
+-        " close preview window if file is opened in current tab
+-        call ctrlsf#preview#ClosePreviewWindow()
+-
+-        if ctrlsf#opt#AutoClose()
+-            call s:Quit()
++    " let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
++    " if (target_winnr == 0 || (target_winnr < 3 && target_winnr >= winnr('$') - 1)) && (a:split || (&modified && !&hidden))
++    let opened_win_len = len(filter(range(1, winnr('$')), 'empty(getwinvar(v:val, "&buftype"))'))
++    if opened_win_len < 2 && (a:split || (&modified && !&hidden))
++        call ctrlsf#win#FocusCallerWindow()
++        if a:split == 2
++            exec 'silent rightbelow vertical split ' . fnameescape(a:file)
++        else
++            exec 'silent split ' . fnameescape(a:file)
+         endif
+-    endif
+ 
+-    let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
+-    if target_winnr == 0
+-        exec 'silent split ' . fnameescape(a:file)
++        let s:preview_popup_win = {
++            \ 'bufnr' : ctrlsf#win#FindCallerBuf(),
++            \ 'winid' : win_getid(winnr()),
++            \ }
+     else
+-        exec target_winnr . 'wincmd w'
++        call s:JumpPreviewPopupWindow(0)
+ 
+         if bufname('%') !=# a:file
+-            if a:split || (&modified && !&hidden)
+-                if a:split == 2
+-                    exec 'silent vertical split ' . fnameescape(a:file)
+-                else
+-                    exec 'silent split ' . fnameescape(a:file)
+-                endif
+-            else
+-                exec 'silent edit ' . fnameescape(a:file)
+-            endif
++            exec 'silent edit ' . fnameescape(a:file)
++
++            " if a:mode > 1 && s:preview_popup_win.bufnr > 0
++            "     if exists('g:loaded_minibufexplorer')
++            "         exec 'silent! MBEbda ' . s:preview_popup_win.bufnr
++            "     else
++            "         exec 'silent! .,$bdelete'
++            "     endif
++            " endif
+         endif
+     endif
+ 
+@@ -450,6 +459,18 @@ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
+     if g:ctrlsf_selected_line_hl =~ 'o'
+         call ctrlsf#hl#HighlightSelectedLine()
+     endif
++
++    if a:mode == 1
++        if ctrlsf#opt#AutoClose()
++            call s:Quit()
++        else
++            " close preview window if file is opened in current tab
++            call ctrlsf#preview#ClosePreviewWindow()
++        endif
++        call s:JumpPreviewPopupWindow(1)
++    else
++        call ctrlsf#win#FocusMainWindow()
++    endif
+ endf
+ 
+ " OpenFileInTab()
+@@ -521,6 +542,31 @@ func! s:OpenAndDraw() abort
+     call ctrlsf#win#FocusFirstMatch()
+ endf
+ 
++" clear_flag:
++"   0: do not close preview window, do not clear popup_win flags
++"   1: do not close preview window, only clear popup_win flags
++"   2: close preview windows, and clear popup_win flags
++func! s:JumpPreviewPopupWindow(clear_flag) abort
++    if s:preview_popup_win.winid > 0
++        let popup_winnr = win_id2win(s:preview_popup_win.winid)
++        call ctrlsf#win#FocusWindow(popup_winnr)
++
++        if a:clear_flag > 0
++            let s:preview_popup_win = {
++                \ 'bufnr' : -1,
++                \ 'winid' : 0,
++                \ }
++
++            if a:clear_flag > 1
++                close
++            endif
++        endif
++    else
++        call ctrlsf#win#FocusCallerWindow()
++        let s:preview_popup_win.bufnr = ctrlsf#win#FindCallerBuf()
++    endif
++endf
++
+ " s:Quit()
+ "
+ func! s:Quit() abort
+diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
+index 22271e6..7014109 100644
+--- a/autoload/ctrlsf/view.vim
++++ b/autoload/ctrlsf/view.vim
+@@ -36,7 +36,7 @@ endf
+ func! s:Line(line) abort
+     let out = a:line.lnum . (a:line.matched() ? ':' : '-')
+     let out .= repeat(' ', ctrlsf#view#Indent() - len(out))
+-    let out .= a:line.content
++    let out .= trim(a:line.content)
+     return [out]
+ endf
+ 
+diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
+index 1bfd140..858dffd 100644
+--- a/autoload/ctrlsf/win.vim
++++ b/autoload/ctrlsf/win.vim
+@@ -94,7 +94,12 @@ func! ctrlsf#win#OpenMainWindow() abort
+ 
+     " open window
+     exec 'silent keepalt ' . openpos . winsize . 'split ' .
+-                \ (bufnr('__CtrlSF__') != -1 ? '+b'.bufnr('__CtrlSF__') : '__CtrlSF__')
++                \ (bufnr(s:MAIN_BUF_NAME) != -1 ? '+b'.bufnr(s:MAIN_BUF_NAME) : s:MAIN_BUF_NAME)
++
++    let delta_height = winsize - winheight(0)
++    if delta_height != 0
++        exec 'silent resize ' . delta_height
++    endif
+ 
+     call s:InitMainWindow()
+ 
+@@ -311,6 +316,10 @@ func! ctrlsf#win#FindCallerWindow() abort
+     return s:caller_win.winid > 0 ? win_id2win(s:caller_win.winid) : -1
+ endf
+ 
++func! ctrlsf#win#FindCallerBuf() abort
++    return s:caller_win.bufnr
++endf
++
+ " FocusCallerWindow()
+ "
+ func! ctrlsf#win#FocusCallerWindow() abort
+@@ -367,6 +376,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
+     " scroll up to top line
+     1normal! ^
+     call ctrlsf#NextMatch(1, 0)
++    call ctrlsf#win#FocusMainWindow()
+ endf
+ 
+ """""""""""""""""""""""""""""""""
+diff --git a/plugin/ctrlsf.vim b/plugin/ctrlsf.vim
+index 19fb9a2..aa0aab4 100644
+--- a/plugin/ctrlsf.vim
++++ b/plugin/ctrlsf.vim
+@@ -99,7 +99,7 @@ endif
+ if !exists('g:ctrlsf_auto_close')
+     let g:ctrlsf_auto_close = {
+         \ "normal" : 1,
+-        \ "compact": 0
++        \ "compact": 1
+         \ }
+ endif
+ " }}}

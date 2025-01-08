@@ -1,0 +1,35 @@
+diff --git a/autoload/fern_preview.vim b/autoload/fern_preview.vim
+index 4d1aed1..2e6623c 100644
+--- a/autoload/fern_preview.vim
++++ b/autoload/fern_preview.vim
+@@ -116,7 +116,7 @@ function! fern_preview#half_up() abort
+ endfunction
+ 
+ function! fern_preview#width_default_func() abort
+-  let width = float2nr(&columns * 0.8)
++  let width = float2nr((&columns - g:fern#drawer_width) * 0.8)
+   return width
+ endfunction
+ 
+@@ -126,7 +126,7 @@ function! fern_preview#height_default_func() abort
+ endfunction
+ 
+ function! fern_preview#left_default_func() abort
+-  let left = (&columns - call(g:fern_preview_window_calculator.width, [])) / 2
++  let left = g:fern#drawer_width
+   return left
+ endfunction
+ 
+diff --git a/autoload/vital/_fern_preview/VS/Vim/Window.vim b/autoload/vital/_fern_preview/VS/Vim/Window.vim
+index 5526634..1bf966d 100644
+--- a/autoload/vital/_fern_preview/VS/Vim/Window.vim
++++ b/autoload/vital/_fern_preview/VS/Vim/Window.vim
+@@ -57,7 +57,7 @@ else
+       let l:info = popup_getpos(a:winid)
+       return {
+       \   'width': l:info.width,
+-      \   'height': l:info.height,
++      \   'height': l:info.height - 2,
+       \   'topline': l:info.firstline
+       \ }
+     endif

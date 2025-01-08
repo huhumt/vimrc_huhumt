@@ -1,0 +1,90 @@
+diff --git a/plugin/minibufexpl.vim b/plugin/minibufexpl.vim
+index e2b3348..27ec750 100644
+--- a/plugin/minibufexpl.vim
++++ b/plugin/minibufexpl.vim
+@@ -93,6 +93,9 @@ endif
+ if !exists(':MBEbd')
+   command! -bang -nargs=* MBEbd call <SID>DeleteBuffer(0,'<bang>'=='!',<f-args>)
+ endif
++if !exists(':MBEbda')
++  command! -bang -nargs=* MBEbda call <SID>MBEDeleteBufferAndAfter(<f-args>)
++endif
+ if !exists(':MBEbw')
+   command! -bang -nargs=* MBEbw call <SID>DeleteBuffer(1,'<bang>'=='!',<f-args>)
+ endif
+@@ -285,7 +288,7 @@ endif
+ " Status Line Text for MBE window {{{
+ "
+ if !exists('g:miniBufExplStatusLineText')
+-  let g:miniBufExplStatusLineText = "-MiniBufExplorer-"
++  let g:miniBufExplStatusLineText = "%4*\-MiniBufExplorer-"
+ endif
+ 
+ " }}}
+@@ -391,9 +394,9 @@ augroup MiniBufExpl
+   autocmd!
+   autocmd VimEnter       * nested call <SID>VimEnterHandler()
+   autocmd TabEnter       * nested call <SID>TabEnterHandler()
+-  autocmd BufAdd         *        call <SID>BufAddHandler()
+-  autocmd BufEnter       * nested call <SID>BufEnterHandler()
+-  autocmd BufDelete      *        call <SID>BufDeleteHandler()
++  autocmd BufAdd         *        silent! call <SID>BufAddHandler()
++  autocmd BufEnter       * nested silent! call <SID>BufEnterHandler()
++  autocmd BufDelete      *        silent! call <SID>BufDeleteHandler()
+   autocmd CursorHold,CursorHoldI,BufWritePost    *
+     \ call <SID>DEBUG('Entering UpdateBufferStateDict AutoCmd', 10) |
+     \ call <SID>UpdateBufferStateDict(bufnr("%"),0) |
+@@ -669,7 +672,10 @@ function! <SID>StartExplorer(curBufNum)
+   nnoremap <buffer> v       :call <SID>MBESelectBuffer(2)<CR>:<BS>
+   " If you press d in the -MiniBufExplorer- then try to
+   " delete the selected buffer.
+-  nnoremap <buffer> d       :call <SID>MBEDeleteBuffer()<CR>:<BS>
++  nnoremap <buffer> d       :call <SID>MBEDeleteBuffer(1)<CR>:<BS>
++  " If you press D in the -MiniBufExplorer- then try to
++  " delete the all buffers after selected buffer.
++  nnoremap <buffer> D       :call <SID>MBEDeleteBuffer(0)<CR>:<BS>
+   " The following allow us to use regular movement keys to
+   " scroll in a wrapped single line buffer
+   nnoremap <buffer> k       gk
+@@ -2239,6 +2245,18 @@ function! <SID>MBESelectBuffer(split)
+   call <SID>DEBUG('Leaving MBESelectBuffer()',10)
+ endfunction
+ 
++function! <SID>MBEDeleteBufferAndAfter(...)
++  if a:0 == 0
++    call <SID>DEBUG('No buffer is given, use current buffer',5)
++    let l:selBuf = bufnr('%')
++  else
++    let l:selBuf = a:1
++  endif
++
++  let l:curBufIndex = max([2, index(s:BufList, l:selBuf)]) + 1
++  call call('<SID>DeleteBuffer', [0,0]+s:BufList[l:curBufIndex:])
++endfunction
++
+ " }}}
+ " MBEDeleteBuffer - From the MBE window, delete selected buffer from list {{{
+ "
+@@ -2247,7 +2265,8 @@ endfunction
+ " window, this routine will attempt to get different buffers into the
+ " windows that will be affected so that windows don't get removed.
+ "
+-function! <SID>MBEDeleteBuffer()
++" select_buf: 0 delete all buffers after selected, 1 only selected
++function! <SID>MBEDeleteBuffer(select_buf)
+   call <SID>DEBUG('Entering MBEDeleteBuffer()',10)
+ 
+   " Make sure we are in our window
+@@ -2260,7 +2279,11 @@ function! <SID>MBEDeleteBuffer()
+   let l:selBuf = <SID>GetSelectedBuffer()
+ 
+   if l:selBuf != -1
+-    call <SID>DeleteBuffer(0,0,l:selBuf)
++    if a:select_buf > 0
++      call <SID>DeleteBuffer(0,0,l:selBuf)
++    else
++      call <SID>MBEDeleteBufferAndAfter(l:selBuf)
++    endif
+   endif
+ 
+   call <SID>DEBUG('Leaving MBEDeleteBuffer()',10)
