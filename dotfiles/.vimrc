@@ -506,9 +506,12 @@ let g:ctrlsf_indent = 2
 let g:ctrlsf_auto_focus = {
     \ "at": "start"
     \ }
-let g:ctrlsf_extra_backend_args = {
-    \ 'ag': '--silent --word-regexp'
-    \ }
+let g:ctrlsf_backend = 'ag'
+" \ 'ag': '--silent --word-regexp'
+" \ 'ag': '--silent --literal'
+" let g:ctrlsf_extra_backend_args = {
+"     \ 'ag': '--silent --word-regexp'
+"     \ }
 let g:ctrlsf_mapping = {
     \ "open"    : ["<CR>", "o", "<2-LeftMouse>"],
     \ "openb"   : "",
