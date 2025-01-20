@@ -154,7 +154,7 @@ index 59aa399..1e67121 100644
  "
  func! s:Quit() abort
 diff --git a/autoload/ctrlsf/opt.vim b/autoload/ctrlsf/opt.vim
-index b2ec1e4..ae211c4 100644
+index b2ec1e4..5deb0aa 100644
 --- a/autoload/ctrlsf/opt.vim
 +++ b/autoload/ctrlsf/opt.vim
 @@ -270,6 +270,10 @@ func! s:ParseOptions(options_str) abort
@@ -162,7 +162,7 @@ index b2ec1e4..ae211c4 100644
              " resolve to PATTERN and PATH
              if !has_key(options, 'pattern')
 +                " if pattern starts and ends with word, add word option
-+                if token[0].token[-1:] =~# '\w\+' && !has_key(options, 'word')
++                if token[0].token[-1:] =~# '\w\{2}' && !has_key(options, 'word')
 +                    let options['word'] = 1
 +                endif
                  let options['pattern'] = token
