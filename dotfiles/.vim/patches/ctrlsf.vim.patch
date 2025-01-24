@@ -168,17 +168,89 @@ index b2ec1e4..5deb0aa 100644
                  let options['pattern'] = token
              else
                  if !has_key(options, 'path')
+diff --git a/autoload/ctrlsf/pat.vim b/autoload/ctrlsf/pat.vim
+index 7554a94..cc0616a 100644
+--- a/autoload/ctrlsf/pat.vim
++++ b/autoload/ctrlsf/pat.vim
+@@ -97,9 +97,9 @@ func! ctrlsf#pat#HighlightRegex(vmode) abort
+         endif
+     else
+         if magic ==# '\v'
+-            let sign = '(\|\d+ col \d+\|.*)@<='
++            let sign = '(\|[ 0-9]+col[ 0-9]+\|.*)@<='
+         else
+-            let sign = '\(|\d\+ col \d\+|\.\*\)\@<='
++            let sign = '\(|\[ 0-9]\+col\[ 0-9]\+|\.\*\)\@<='
+         endif
+     endif
+ 
+@@ -128,9 +128,9 @@ func! ctrlsf#pat#MatchPerLineRegex(vmode) abort
+         endif
+     else
+         if magic ==# '\v'
+-            let sign = '\|\d+ col \d+\|.{-}\zs'
++            let sign = '\|[ 0-9]+col[ 0-9]+\|.{-}\zs'
+         else
+-            let sign = '|\d\+ col \d\+|\.\{-}\zs'
++            let sign = '|\[ 0-9]\+col\[ 0-9]\+|\.\{-}\zs'
+         endif
+     endif
+ 
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..7014109 100644
+index 22271e6..199ee84 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
-@@ -36,7 +36,7 @@ endf
+@@ -36,16 +36,7 @@ endf
  func! s:Line(line) abort
      let out = a:line.lnum . (a:line.matched() ? ':' : '-')
      let out .= repeat(' ', ctrlsf#view#Indent() - len(out))
 -    let out .= a:line.content
+-    return [out]
+-endf
+-
+-func! s:LineCompact(match) abort
+-    let out = printf("%s|%s col %s| %s",
+-                \ a:match.filename,
+-                \ a:match.lnum,
+-                \ a:match.col,
+-                \ a:match.text)
 +    let out .= trim(a:line.content)
      return [out]
+ endf
+ 
+@@ -154,23 +145,26 @@ endf
+ func! s:CompactViewIncr(base_vlnum) abort
+     let matchlist = ctrlsf#db#MatchList()
+     let to_render = matchlist[s:rendered_match:-1]
+-
++    let mat_cnt = s:rendered_match
++    let s:rendered_match = s:rendered_match + len(to_render)
+     let view = []
+ 
+     for mat in to_render
+-        call extend(view, s:LineCompact(mat))
++        let mat_cnt += 1
++        let f_list = split(mat.filename, '/')
++        let f_basename = join(len(f_list) > 1 ? f_list[-2:]: f_list, '/')
++        let indent = printf("[%*d] %-*s |%-*s col %*s| ",
++                    \ 4, mat_cnt,
++                    \ 32, f_basename,
++                    \ 4, mat.lnum,
++                    \ 4, mat.col)
++        call extend(view, [indent . trim(mat.text)])
+ 
+         let vlnum = a:base_vlnum + len(view)
+-        let indent = printf("%s|%s col %s| ",
+-                    \ mat.filename,
+-                    \ mat.lnum,
+-                    \ mat.col)
+         let vcol = mat.col + len(indent)
+         call mat.set_vpos(vlnum, vcol, 'compact')
+     endfo
+ 
+-    let s:rendered_match = s:rendered_match + len(to_render)
+-
+     return view
  endf
  
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
