@@ -318,9 +318,11 @@ function! FernInit() abort
   nmap <buffer> <nowait> < <Plug>(fern-action-leave)
   nmap <buffer> <nowait> > <Plug>(fern-action-enter)
   nmap <buffer> p <Plug>(fern-action-preview:auto:toggle)
+  nmap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
   nmap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
   nmap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
   " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
+  nmap <silent> <buffer> <C-y> <Plug>(fern-action-preview:scroll:up:one)
 endfunction
 
 augroup FernEvents
@@ -480,7 +482,9 @@ let g:Lf_RootMarkers = [
 "             \"*.tmp","tags","*.out*","*.bak","*.log",
 "             \"*.bin","*.hex","*.exe","*.py[co]","*.cache"
 "         \} -g ""'
-let g:Lf_ExternalCommand = 'ag %s -l --silent --hidden
+
+function! UserSilverSearcherArgs() abort
+    return ' --silent --hidden
         \ --ignore ".git" --ignore ".svn" --ignore ".hg"
         \ --ignore ".cache" --ignore ".npm"
         \ --ignore "*.sw?" --ignore "~$*"
@@ -489,8 +493,11 @@ let g:Lf_ExternalCommand = 'ag %s -l --silent --hidden
         \ --ignore "*.tmp" --ignore "tags" --ignore "*.out*"
         \ --ignore "*.bak" --ignore "*.log"
         \ --ignore "*.bin" --ignore "*.hex" --ignore "*.exe"
-        \ --ignore "*.py[co]" --ignore "*.cache"
-        \ -g ""'
+        \ --ignore "*.py[co]" --ignore "*.cache"'
+endfunction
+
+let g:Lf_ExternalCommand = 'ag %s --files-with-matches
+    \ --filename-pattern "" ' . UserSilverSearcherArgs()
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 let g:Lf_ShowDevIcons = 0
 let g:Lf_PreviewInPopup = 0
@@ -507,6 +514,9 @@ let g:ctrlsf_auto_focus = {
     \ "at": "start"
     \ }
 let g:ctrlsf_backend = 'ag'
+let g:ctrlsf_extra_backend_args = {
+    \ 'ag': UserSilverSearcherArgs()
+    \ }
 " \ 'ag': '--silent --word-regexp'
 " \ 'ag': '--silent --literal'
 " let g:ctrlsf_extra_backend_args = {
