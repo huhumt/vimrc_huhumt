@@ -313,10 +313,8 @@ function! FernInit() abort
         \   "\<Plug>(fern-action-collapse)",
         \ )
   nmap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
-  nmap <buffer> h <Plug>(fern-action-collapse)
-  nmap <buffer> l <Plug>(fern-action-expand)
-  nmap <buffer> <nowait> < <Plug>(fern-action-leave)
-  nmap <buffer> <nowait> > <Plug>(fern-action-enter)
+  nmap <buffer> <nowait> < <Plug>(fern-action-collapse)
+  nmap <buffer> <nowait> > <Plug>(fern-action-expand)
   nmap <buffer> p <Plug>(fern-action-preview:auto:toggle)
   nmap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
   nmap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
@@ -606,12 +604,14 @@ inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float
 inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+nmap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
+nmap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 " vmap <leader>a <Plug>(coc-codeaction-selected)
 " nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
-        \ "coc-rome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
+        \ "coc-biome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
         \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go"
         \]
@@ -627,6 +627,9 @@ function! CocClean() abort
   endif
 endfunction
 command! -nargs=0 CocClean :call CocClean()
+
+" display 8 lines in prefix window to display command output
+let g:asyncrun_open = 8
 
 
 
@@ -745,6 +748,9 @@ Plug 'dhruvasagar/vim-table-mode'
 
 " split long line to multiple line by gS or gJ for the opposite
 Plug 'AndrewRadev/splitjoin.vim'
+
+" run command aysnc in backgroup
+Plug 'skywind3000/asyncrun.vim'
 
 
 
