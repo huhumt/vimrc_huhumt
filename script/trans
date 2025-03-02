@@ -46,11 +46,12 @@ def update_dict(trans_string: str) -> int:
 
 
 def python_trans(args: list) -> str:
-    args_list = args
-    args_list[0] = os.path.join(FILE_PARENT_DIR, "trans_shell")
-    args_list.insert(0, "bash")
+    trans_bin = os.path.join(FILE_PARENT_DIR, "trans_shell")
+    args_list = ["bash", trans_bin] + args
     fd = subprocess.Popen(args_list, stdout=subprocess.PIPE)
-    return fd.communicate()[0].decode("utf-8")
+    trans_output = fd.communicate()[0].decode("utf-8")
+    print(trans_output)
+    return trans_output
 
 
 def add_colour(normal_str: str) -> str:
@@ -102,15 +103,12 @@ def display_trans() -> str:
     return output.rstrip()
 
 
-def parse_args(args):
-    if args[1] == "--display-from-local-dict":
-        colour_out = add_colour(display_trans())
-        print(f"\n{colour_out}")
+if __name__ == "__main__":
+    if sys.argv[1] == "--display-from-local-dict":
+        print(f"\n{add_colour(display_trans())}")
         exit(0)
 
-
-if __name__ == "__main__":
-    parse_args(sys.argv)
-    trans_output = python_trans(sys.argv)
-    print(trans_output)
-    update_dict(trans_output)
+    if sys.argv[1] == "--from-vim":
+        python_trans(sys.argv[2:])
+    else:
+        update_dict(python_trans(sys.argv[1:]))

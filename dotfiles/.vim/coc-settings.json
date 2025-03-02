@@ -1,7 +1,17 @@
 {
-    "suggest.noselect": true,
+    "diagnostic.errorSign": "E>",
+    "diagnostic.hintSign": "H>",
+    "diagnostic.infoSign": "I>",
+    "diagnostic.warningSign": "W>",
+    "diagnostic.virtualText": true,
+    "diagnostic.virtualTextAlign": "after",
+    "diagnostic.virtualTextLimitInOneLine": 1,
+    "diagnostic.virtualTextLines": 1,
+    "diagnostic.virtualTextLevel": "warning",
     "inlayHint.display": false,
-    "clangd.path": "/usr/bin/clangd-16",
+    "suggest.virtualText": true,
+    "suggest.noselect": true,
+    "clangd.path": "/usr/bin/clangd-19",
     "clangd.disableDiagnostics": false,
     "python.pythonPath": "/usr/bin/python3",
     "python.linting.pylamaEnabled": true,
@@ -11,6 +21,8 @@
     "cSpell.language": "en-GB",
     "cSpell.numSuggestions": 4,
     "cSpell.allowCompoundWords": true,
+    "biome.bin": "/usr/local/bin/biome",
+    "biome.requireConfiguration": false,
     "[java]": {
         "semanticTokens.enable": true
     }

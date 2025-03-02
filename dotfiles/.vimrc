@@ -281,7 +281,7 @@ set guioptions=mlrb
 
 set list
 " set listchars=tab:>-
-set listchars=tab:\┆\ 
+set listchars=tab:\┆\ " do not remove end whitespace
 
 set tag=tags
 
@@ -313,10 +313,8 @@ function! FernInit() abort
         \   "\<Plug>(fern-action-collapse)",
         \ )
   nmap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
-  nmap <buffer> h <Plug>(fern-action-collapse)
-  nmap <buffer> l <Plug>(fern-action-expand)
-  nmap <buffer> <nowait> < <Plug>(fern-action-leave)
-  nmap <buffer> <nowait> > <Plug>(fern-action-enter)
+  nmap <buffer> <nowait> < <Plug>(fern-action-collapse)
+  nmap <buffer> <nowait> > <Plug>(fern-action-expand)
   nmap <buffer> p <Plug>(fern-action-preview:auto:toggle)
   nmap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
   nmap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
@@ -556,7 +554,8 @@ let g:hexmode_xxd_options = '-g 1'
 
 " Support for Vim-Dict plugin
 " let g:trans_bin = "/usr/bin"
-nnoremap <silent> <Leader><Leader>t :Trans<CR>
+nnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
+vnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
 
 " exclude some filetype when do diff
 let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
@@ -590,10 +589,24 @@ let g:cpp_member_highlight = 1
 let g:cpp_simple_highlight = 1
 
 " vim-matchup corrupts with statusline
-let g:matchup_matchparen_enabled = 0
+" let g:matchup_matchparen_enabled = 0
 
 " configuration for vim-table-mode
-autocmd BufEnter *.md let g:table_mode_corner='|'
+" autocmd BufEnter *.md let g:table_mode_corner='|'
+let g:table_mode_corner='|'
+function! s:isAtStartOfLine(mapping)
+  let text_before_cursor = getline('.')[0 : col('.')-1]
+  let mapping_pattern = '\V' . escape(a:mapping, '\')
+  let comment_pattern = '\V' . escape(substitute(&l:commentstring, '%s.*$', '', ''), '\')
+  return (text_before_cursor =~? '^' . ('\v(' . comment_pattern . '\v)?') . '\s*\v' . mapping_pattern . '\v$')
+endfunction
+
+inoreabbrev <expr> <bar><bar>
+          \ <SID>isAtStartOfLine('\|\|') ?
+          \ '<c-o>:TableModeEnable<cr><bar><space><bar><left><left>' : '<bar><bar>'
+inoreabbrev <expr> __
+          \ <SID>isAtStartOfLine('__') ?
+          \ '<c-o>:silent! TableModeDisable<cr>' : '__'
 
 " configuration for rust.vim
 " let g:rustfmt_autosave = 1
@@ -606,14 +619,22 @@ inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float
 inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+nmap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
+nmap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
+inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+nnoremap <silent><expr> <Tab> ":call CocActionAsync('definitionHover')<CR>"
+" if first command failed, run second command
+" nnoremap <F5> :execute printf('!poetry run %s || python %s', shellescape(@%), shellescape(@%))<CR>
+
 " vmap <leader>a <Plug>(coc-codeaction-selected)
 " nmap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
-        \ "coc-rome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
+        \ "coc-biome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go"
+        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go",
+        \ "coc-vimlsp"
         \]
 " Remove plugins not explicitly defined in g:coc_global_extensions
 " Ignore special case: friendly-snippets, coc-vim-source-requirements
@@ -627,6 +648,70 @@ function! CocClean() abort
   endif
 endfunction
 command! -nargs=0 CocClean :call CocClean()
+
+" setup vim-lsp
+" let lspOpts = #{
+"     \ showDiagOnStatusLine: v:true,
+"     \ showDiagWithVirtualText: v:true,
+"     \ }
+" autocmd User LspSetup call LspOptionsSet(lspOpts)
+
+" let lspServers = [
+"     \ #{
+"     \     name: 'ccls',
+"     \     filetype: ['c', 'cpp'],
+"     \     path: 'ccls',
+"     \     initializationOptions: #{
+"     \       cache: #{
+"     \         directory: expand('$HOME/.cache/ccls')
+"     \     }},
+"     \ },
+"     \ #{
+"     \     name: 'bashls',
+"     \     filetype: ['sh', 'bash'],
+"     \     path: 'bash-language-server',
+"     \     args: ['start'],
+"     \ },
+"     \ #{
+"     \     name: 'biome',
+"     \     filetype: ['css', 'vue', 'json', 'jsonc', 'astro', 'svelte', 'javascript', 'javascriptreact', 'typescript', 'typescriptreact'],
+"     \     path: expand('biome'),
+"     \     args: ['lsp-proxy'],
+"     \ },
+"     \ #{
+"     \     name: 'golang',
+"     \     filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
+"     \     path: expand('$HOME/.local/share/go/bin/gopls'),
+"     \     args: ['serve'],
+"     \ },
+"     \ #{
+"     \     name: 'pyright',
+"     \     filetype: 'python',
+"     \     path: 'pyright-langserver',
+"     \     args: ['--stdio'],
+"     \     workspaceConfig: #{
+"     \       python: #{
+"     \         pythonPath: 'python3'
+"     \     }}
+"     \ },
+"     \ #{
+"     \     name: 'vimls',
+"     \     filetype: 'vim',
+"     \     path: 'vim-language-server',
+"     \     args: ['--stdio'],
+"     \ },
+"     \ #{
+"     \     name: 'rustanalyzer',
+"     \     filetype: ['rust'],
+"     \     path: 'rust-analyzer',
+"     \     args: [],
+"     \     syncInit: v:true
+"     \ },
+"     \ ]
+" autocmd User LspSetup call LspAddServer(lspServers)
+
+" display 8 lines in prefix window to display command output
+let g:asyncrun_open = 8
 
 
 
@@ -651,23 +736,21 @@ Plug 'yuki-yano/fern-preview.vim'
 " Plug 'scrooloose/nerdcommenter'
 Plug 'tpope/vim-commentary'
 
-" check your code syntastic
-" Plug 'vim-syntastic/syntastic'
-" Plug 'dense-analysis/ale'
-
 " display vim status
 " Plug 'vim-airline/vim-airline'
 " Plug 'vim-airline/vim-airline-themes'
 
 " display whitespace
-Plug 'bronson/vim-trailing-whitespace'
+" Plug 'bronson/vim-trailing-whitespace'
+Plug 'ntpeters/vim-better-whitespace'
 
 " use mini-buffer window to display select function
 " this plugin broke command `20 split README.md`
 Plug 'fholgado/minibufexpl.vim'
 
 " use tagbar to display current status
-Plug 'majutsushi/tagbar'
+" Plug 'majutsushi/tagbar'
+Plug 'preservim/tagbar'
 " Plug 'liuchengxu/vista.vim'
 
 " auto complete code usging SuperTab
@@ -681,12 +764,14 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 " Plug 'ackyshake/VimCompletesMe'
 Plug 'ludovicchabant/vim-gutentags'
 " Plug 'skywind3000/gutentags_plus'
+" Plug 'vim-syntastic/syntastic'
+" Plug 'dense-analysis/ale'
+" Plug 'yegappan/lsp'
+Plug 'vim-autoformat/vim-autoformat'
 
 " auto add delimite
 " Plug 'Raimondi/delimitMate'
-
-" auto format code using clang style
-Plug 'vim-autoformat/vim-autoformat'
+" Plug 'cohama/lexima.vim'
 
 " fuzzy search using Ctrl-P
 " Plug 'ctrlpvim/ctrlp.vim'
@@ -746,6 +831,9 @@ Plug 'dhruvasagar/vim-table-mode'
 " split long line to multiple line by gS or gJ for the opposite
 Plug 'AndrewRadev/splitjoin.vim'
 
+" run command aysnc in backgroup
+Plug 'skywind3000/asyncrun.vim'
+
 
 
 
@@ -800,6 +888,7 @@ highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=D
 " highlight link CocWarningHighlight MyErrorHi
 " highlight link CocHintHighlight MyErrorHi
 " highlight link CocInfoHighlight MyErrorHi
+highlight CocMenuSel ctermbg=65 guibg=darkgray
 
 " https://www.ditig.com/256-colors-cheat-sheet
 highlight User1 ctermbg=2   ctermfg=0   guibg=green guifg=black
