@@ -1,5 +1,5 @@
 diff --git a/plugin/minibufexpl.vim b/plugin/minibufexpl.vim
-index e2b3348..920d11a 100644
+index e2b3348..2c22417 100644
 --- a/plugin/minibufexpl.vim
 +++ b/plugin/minibufexpl.vim
 @@ -91,13 +91,16 @@ if !exists(':MBEbb')
@@ -44,6 +44,15 @@ index e2b3348..920d11a 100644
    autocmd CursorHold,CursorHoldI,BufWritePost    *
      \ call <SID>DEBUG('Entering UpdateBufferStateDict AutoCmd', 10) |
      \ call <SID>UpdateBufferStateDict(bufnr("%"),0) |
+@@ -646,7 +649,7 @@ function! <SID>StartExplorer(curBufNum)
+ 
+   " Set the text of the statusline for the MBE buffer. See help:stl for
+   " many options
+-  exec 'setlocal statusline='.g:miniBufExplStatusLineText
++  " exec 'setlocal statusline='.g:miniBufExplStatusLineText
+ 
+   " No spell check
+   setlocal nospell
 @@ -669,7 +672,10 @@ function! <SID>StartExplorer(curBufNum)
    nnoremap <buffer> v       :call <SID>MBESelectBuffer(2)<CR>:<BS>
    " If you press d in the -MiniBufExplorer- then try to
@@ -56,7 +65,17 @@ index e2b3348..920d11a 100644
    " The following allow us to use regular movement keys to
    " scroll in a wrapped single line buffer
    nnoremap <buffer> k       gk
-@@ -1350,9 +1356,10 @@ endfunction
+@@ -875,6 +881,9 @@ function! <SID>UpdateExplorer(curBufNum)
+     " Switch into MBE allowing autocmd to run will
+     " make the syntax highlight in MBE window working
+     call s:SwitchWindow('w',0,l:winNum)
++    let l:buf_path = expand('#'.a:curBufNum.':~:.')
++    let l:sts = g:miniBufExplStatusLineText . '%3*\ ' . l:buf_path
++    exec 'setlocal statusline='.l:sts
+   endif
+ 
+   call <SID>DisplayBuffers(a:curBufNum)
+@@ -1350,9 +1359,10 @@ endfunction
  "   delete/wipeout/unload a buffer
  " a:bufNum
  "   number of the buffer to be deleted
@@ -69,7 +88,7 @@ index e2b3348..920d11a 100644
  
    if a:0 == 0
      call <SID>DEBUG('No buffer is given, use current buffer',5)
-@@ -1362,7 +1369,23 @@ function! <SID>DeleteBuffer(action,bang,...)
+@@ -1362,7 +1372,23 @@ function! <SID>DeleteBuffer(action,bang,...)
      let l:bufNums = map(copy(a:000),'v:val =~ ''\d\+'' ? bufnr(v:val + 0) : bufnr(v:val)')
    endif
  
@@ -93,7 +112,7 @@ index e2b3348..920d11a 100644
  
    for l:bufNum in l:bufNums
      if <SID>IsBufferIgnored(l:bufNum)
-@@ -1399,21 +1422,8 @@ function! <SID>DeleteBuffer(action,bang,...)
+@@ -1399,21 +1425,8 @@ function! <SID>DeleteBuffer(action,bang,...)
      " Delete the buffer selected.
      call <SID>DEBUG('About to delete buffer: '.l:bufNum,5)
  
@@ -116,26 +135,7 @@ index e2b3348..920d11a 100644
      exec l:cmd
  
      let t:miniBufExplAutoUpdate = l:saveAutoUpdate
-@@ -2239,6 +2249,18 @@ function! <SID>MBESelectBuffer(split)
-   call <SID>DEBUG('Leaving MBESelectBuffer()',10)
- endfunction
- 
-+function! <SID>MBEDeleteBufferAndAfter(...)
-+  if a:0 == 0
-+    call <SID>DEBUG('No buffer is given, use current buffer',5)
-+    let l:selBuf = bufnr('%')
-+  else
-+    let l:selBuf = str2nr(a:1)
-+  endif
-+
-+  let l:curBufIndex = max([2, index(s:BufList, l:selBuf)])
-+  call call('<SID>DeleteBuffer', [0,0]+s:BufList[l:curBufIndex:])
-+endfunction
-+
- " }}}
- " MBEDeleteBuffer - From the MBE window, delete selected buffer from list {{{
- "
-@@ -2247,7 +2269,8 @@ endfunction
+@@ -2247,7 +2260,8 @@ endfunction
  " window, this routine will attempt to get different buffers into the
  " windows that will be affected so that windows don't get removed.
  "
@@ -145,7 +145,7 @@ index e2b3348..920d11a 100644
    call <SID>DEBUG('Entering MBEDeleteBuffer()',10)
  
    " Make sure we are in our window
-@@ -2260,7 +2283,7 @@ function! <SID>MBEDeleteBuffer()
+@@ -2260,7 +2274,7 @@ function! <SID>MBEDeleteBuffer()
    let l:selBuf = <SID>GetSelectedBuffer()
  
    if l:selBuf != -1
