@@ -108,7 +108,8 @@ if __name__ == "__main__":
         print(f"\n{add_colour(display_trans())}")
         exit(0)
 
-    if sys.argv[1] == "--from-vim":
-        python_trans(sys.argv[2:])
+    if "--from-vim" in sys.argv:
+        sys.argv.remove("--from-vim")
+        python_trans(sys.argv[1:])
     else:
         update_dict(python_trans(sys.argv[1:]))
