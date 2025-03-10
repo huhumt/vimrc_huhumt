@@ -29,6 +29,7 @@ set incsearch       " do incremental searching
 set autoread
 " Turn on the Wild menu
 set wildmenu
+set wildcharm=<Tab>
 set completeopt=menu
 set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
@@ -181,10 +182,10 @@ if has("cscope")
     " s: Find this C symbol
     " t: Find this text string
 
-    nmap <Leader><Leader>c :cs find c <C-R>=expand("<cword>")<CR><CR>
-    " nmap <Leader><Leader>e :cs find e <C-R>=expand("<cword>")<CR><CR>
-    " nmap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
-    " nmap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
+    nnoremap <Leader><Leader>c :cs find c <C-R>=expand("<cword>")<CR><CR>
+    " nnoremap <Leader><Leader>e :cs find e <C-R>=expand("<cword>")<CR><CR>
+    " nnoremap <Leader><Leader>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
+    " nnoremap <Leader><Leader>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
 
 endif
 
@@ -220,7 +221,7 @@ cno $c e <C-\>eCurrentFileDir("e")<cr>
 " https://dustri.org/b/lightweight-and-sexy-status-bar-in-vim.html
 " https://www.tdaly.co.uk/post/vanilla-vim-statusline
 "" statusline
-function! StatuslineCurMode()
+function! StatuslineCurMode() abort
     let l:statusline_currentmode={
            \ 'n'      : 'NORMAL ',
            \ 'v'      : 'VISUAL ',
@@ -305,22 +306,22 @@ let g:fern#renderer#default#root_symbol = '~ '
 " endfunction
 
 function! FernInit() abort
-  nmap <buffer><expr>
+  nnoremap <buffer><expr>
         \ <Plug>(fern-my-open-expand-collapse)
         \ fern#smart#leaf(
         \   "\<Plug>(fern-action-open:select)",
         \   "\<Plug>(fern-action-expand)",
         \   "\<Plug>(fern-action-collapse)",
         \ )
-  nmap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
-  nmap <buffer> <nowait> < <Plug>(fern-action-collapse)
-  nmap <buffer> <nowait> > <Plug>(fern-action-expand)
-  nmap <buffer> p <Plug>(fern-action-preview:auto:toggle)
-  nmap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
-  nmap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
-  nmap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
+  nnoremap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
+  nnoremap <buffer> <nowait> < <Plug>(fern-action-collapse)
+  nnoremap <buffer> <nowait> > <Plug>(fern-action-expand)
+  nnoremap <buffer> p <Plug>(fern-action-preview:auto:toggle)
+  nnoremap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
+  nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
+  nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
   " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
-  nmap <silent> <buffer> <C-y> <Plug>(fern-action-preview:scroll:up:one)
+  nnoremap <silent> <buffer> <C-y> <Plug>(fern-action-preview:scroll:up:one)
 endfunction
 
 augroup FernEvents
@@ -371,7 +372,7 @@ augroup END
 let g:miniBufExplMaxSize = 3
 
 " Support tagbar plugin
-nmap <Leader>t :TagbarToggle<CR>
+nnoremap <Leader>t :TagbarToggle<CR>
 let g:tagbar_ctags_bin = '/usr/bin/ctags'
 let g:tagbar_width = 35 " default is 40
 let g:tagbar_iconchars = ['▸', '▾']
@@ -379,7 +380,7 @@ let g:tagbar_iconchars = ['▸', '▾']
 "     autocmd VimEnter * nested :TagbarOpen
 " endif " if has("autocmd")
 
-" nmap <Leader>t :Vista!!<CR>
+" nnoremap <Leader>t :Vista!!<CR>
 " let g:vista_default_executive = 'ctags'
 " let g:vista_executive_for = {
 "   \ 'cpp': 'vim_lsp',
@@ -540,13 +541,13 @@ let g:ctrlsf_mapping = {
     \ "loclist" : "",
     \ "fzf"     : "",
     \ }
-nmap <Leader><Leader>e <Plug>CtrlSFCwordExec
-vmap <Leader><Leader>e <Plug>CtrlSFVwordExec
+nnoremap <Leader><Leader>e <Plug>CtrlSFCwordExec
+vnoremap <Leader><Leader>e <Plug>CtrlSFVwordExec
 
 " Support for easy motion
 let g:EasyMotion_do_mapping = 0 " Disable default mappings
 let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
-nmap s <Plug>(easymotion-sn)
+nnoremap s <Plug>(easymotion-sn)
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -594,19 +595,6 @@ let g:cpp_simple_highlight = 1
 " configuration for vim-table-mode
 " autocmd BufEnter *.md let g:table_mode_corner='|'
 let g:table_mode_corner='|'
-function! s:isAtStartOfLine(mapping)
-  let text_before_cursor = getline('.')[0 : col('.')-1]
-  let mapping_pattern = '\V' . escape(a:mapping, '\')
-  let comment_pattern = '\V' . escape(substitute(&l:commentstring, '%s.*$', '', ''), '\')
-  return (text_before_cursor =~? '^' . ('\v(' . comment_pattern . '\v)?') . '\s*\v' . mapping_pattern . '\v$')
-endfunction
-
-inoreabbrev <expr> <bar><bar>
-          \ <SID>isAtStartOfLine('\|\|') ?
-          \ '<c-o>:TableModeEnable<cr><bar><space><bar><left><left>' : '<bar><bar>'
-inoreabbrev <expr> __
-          \ <SID>isAtStartOfLine('__') ?
-          \ '<c-o>:silent! TableModeDisable<cr>' : '__'
 
 " configuration for rust.vim
 " let g:rustfmt_autosave = 1
@@ -614,22 +602,32 @@ inoreabbrev <expr> __
 " configuration for coc.nvim
 " let g:lsp_cxx_hl_use_text_props = 1
 nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
-inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<Right>"
-inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
+nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(1)\<CR>" : "\<Right>"
+inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
-nmap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
-nmap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
+vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+nnoremap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
+nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
-inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
-nnoremap <silent><expr> <Tab> ":call CocActionAsync('definitionHover')<CR>"
-" if first command failed, run second command
-" nnoremap <F5> :execute printf('!poetry run %s || python %s', shellescape(@%), shellescape(@%))<CR>
+inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
+            \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)" <Bar> execute "normal! el"<CR>'
+            \ : pumvisible() ? "\<C-n>" : "\<Tab>"
+function! CocJumpErrorOrHover() abort
+    if get(b:, 'table_mode_active', 0) > 0
+        execute "normal \<Plug>(table-mode-motion-right)"
+    else
+        let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
+        if len(l:jump_error) == 0
+            call CocActionAsync('definitionHover')
+        endif
+    endif
+endfunction
+nnoremap <silent> <Tab> :call CocJumpErrorOrHover()<CR>
 
-" vmap <leader>a <Plug>(coc-codeaction-selected)
-" nmap <leader>a <Plug>(coc-codeaction-selected)
+" vnoremap <leader>a <Plug>(coc-codeaction-selected)
+" nnoremap <leader>a <Plug>(coc-codeaction-selected)
 let g:coc_global_extensions = [
         \ "coc-biome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
         \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
@@ -648,67 +646,6 @@ function! CocClean() abort
   endif
 endfunction
 command! -nargs=0 CocClean :call CocClean()
-
-" setup vim-lsp
-" let lspOpts = #{
-"     \ showDiagOnStatusLine: v:true,
-"     \ showDiagWithVirtualText: v:true,
-"     \ }
-" autocmd User LspSetup call LspOptionsSet(lspOpts)
-
-" let lspServers = [
-"     \ #{
-"     \     name: 'ccls',
-"     \     filetype: ['c', 'cpp'],
-"     \     path: 'ccls',
-"     \     initializationOptions: #{
-"     \       cache: #{
-"     \         directory: expand('$HOME/.cache/ccls')
-"     \     }},
-"     \ },
-"     \ #{
-"     \     name: 'bashls',
-"     \     filetype: ['sh', 'bash'],
-"     \     path: 'bash-language-server',
-"     \     args: ['start'],
-"     \ },
-"     \ #{
-"     \     name: 'biome',
-"     \     filetype: ['css', 'vue', 'json', 'jsonc', 'astro', 'svelte', 'javascript', 'javascriptreact', 'typescript', 'typescriptreact'],
-"     \     path: expand('biome'),
-"     \     args: ['lsp-proxy'],
-"     \ },
-"     \ #{
-"     \     name: 'golang',
-"     \     filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
-"     \     path: expand('$HOME/.local/share/go/bin/gopls'),
-"     \     args: ['serve'],
-"     \ },
-"     \ #{
-"     \     name: 'pyright',
-"     \     filetype: 'python',
-"     \     path: 'pyright-langserver',
-"     \     args: ['--stdio'],
-"     \     workspaceConfig: #{
-"     \       python: #{
-"     \         pythonPath: 'python3'
-"     \     }}
-"     \ },
-"     \ #{
-"     \     name: 'vimls',
-"     \     filetype: 'vim',
-"     \     path: 'vim-language-server',
-"     \     args: ['--stdio'],
-"     \ },
-"     \ #{
-"     \     name: 'rustanalyzer',
-"     \     filetype: ['rust'],
-"     \     path: 'rust-analyzer',
-"     \     args: [],
-"     \     syncInit: v:true
-"     \ },
-"     \ ]
-" autocmd User LspSetup call LspAddServer(lspServers)
 
 " display 8 lines in prefix window to display command output
 let g:asyncrun_open = 8
@@ -766,7 +703,6 @@ Plug 'ludovicchabant/vim-gutentags'
 " Plug 'skywind3000/gutentags_plus'
 " Plug 'vim-syntastic/syntastic'
 " Plug 'dense-analysis/ale'
-" Plug 'yegappan/lsp'
 Plug 'vim-autoformat/vim-autoformat'
 
 " auto add delimite
@@ -861,7 +797,7 @@ silent! colorscheme one-dark
 
 highlight Comment ctermfg=lightgreen guifg=green
 highlight Visual cterm=underline,standout ctermfg=red ctermbg=lightred
-highlight Search cterm=bold ctermfg=yellow ctermbg=lightblue
+highlight Search cterm=bold ctermfg=yellow ctermbg=gray
 " refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
 highlight DiffChange cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
 highlight DiffAdd    cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red

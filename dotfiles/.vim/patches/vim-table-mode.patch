@@ -1,0 +1,78 @@
+diff --git a/autoload/tablemode/spreadsheet/cell.vim b/autoload/tablemode/spreadsheet/cell.vim
+index 5e7e195..dd2f706 100644
+--- a/autoload/tablemode/spreadsheet/cell.vim
++++ b/autoload/tablemode/spreadsheet/cell.vim
+@@ -206,9 +206,9 @@ function! tablemode#spreadsheet#cell#Motion(direction, ...) "{{{2
+     for ii in range(l:count)
+       if a:direction ==# 'l'
+         if tablemode#spreadsheet#IsLastCell()
+-          if !tablemode#table#IsRow(line('.') + 1) && (tablemode#table#IsBorder(line('.') + 1) && !tablemode#table#IsRow(line('.') + 2))
+-            return
+-          endif
++          " if !tablemode#table#IsRow(line('.') + 1) && (tablemode#table#IsBorder(line('.') + 1) && !tablemode#table#IsRow(line('.') + 2))
++          "   return
++          " endif
+           call tablemode#spreadsheet#cell#Motion('j', 1)
+           normal! 0
+         endif
+@@ -221,9 +221,9 @@ function! tablemode#spreadsheet#cell#Motion(direction, ...) "{{{2
+         endif
+       elseif a:direction ==# 'h'
+         if tablemode#spreadsheet#IsFirstCell()
+-          if !tablemode#table#IsRow(line('.') - 1) && (tablemode#table#IsBorder(line('.') - 1) && !tablemode#table#IsRow(line('.') - 2))
+-            return
+-          endif
++          " if !tablemode#table#IsRow(line('.') - 1) && (tablemode#table#IsBorder(line('.') - 1) && !tablemode#table#IsRow(line('.') - 2))
++          "   return
++          " endif
+           call tablemode#spreadsheet#cell#Motion('k', 1)
+           normal! $
+         endif
+diff --git a/autoload/tablemode/table.vim b/autoload/tablemode/table.vim
+index 97748dc..8a32010 100644
+--- a/autoload/tablemode/table.vim
++++ b/autoload/tablemode/table.vim
+@@ -18,7 +18,7 @@ function! s:DefaultBorder() "{{{2
+   if tablemode#IsActive()
+     let corner = tablemode#utils#get_buffer_or_global_option('table_mode_corner')
+     let corner_corner = tablemode#utils#get_buffer_or_global_option('table_mode_corner_corner')
+-    return corner_corner . g:table_mode_fillchar . corner . g:table_mode_fillchar . corner_corner
++    return corner_corner . repeat(g:table_mode_fillchar . corner, 2) . g:table_mode_fillchar . corner_corner
+   else
+     return ''
+   endif
+@@ -26,22 +26,25 @@ endfunction
+ 
+ function! s:GenerateHeaderBorder(line) "{{{2
+   let line = tablemode#utils#line(a:line)
+-  if tablemode#table#IsRow(line - 1) || tablemode#table#IsRow(line + 1)
+-    let line_val = ''
+-    if tablemode#table#IsRow(line + 1)
+-      let line_val = getline(line + 1)
+-    endif
+-    if tablemode#table#IsRow(line - 1) && tablemode#utils#strlen(line_val) < tablemode#utils#strlen(getline(line - 1))
++  let line_val = ''
++
++  if tablemode#table#IsRow(line - 1) || tablemode#table#IsBorder(line - 1)
+       let line_val = getline(line - 1)
++  endif
++
++  if tablemode#table#IsRow(line + 1) || tablemode#table#IsBorder(line + 1)
++    let next_line = getline(line + 1)
++    if tablemode#utils#strlen(next_line) > tablemode#utils#strlen(line_val)
++      let line_val = next_line
+     endif
+-    if tablemode#utils#strlen(line_val) <= 1 | return s:DefaultBorder() | endif
++  endif
+ 
++  if tablemode#utils#strlen(line_val) > 1
+     let corner = tablemode#utils#get_buffer_or_global_option('table_mode_corner')
+     let corner_corner = tablemode#utils#get_buffer_or_global_option('table_mode_corner_corner')
+-    let header_fillchar = tablemode#utils#get_buffer_or_global_option('table_mode_header_fillchar')
+ 
+     let tline = line_val[stridx(line_val, g:table_mode_separator):strridx(line_val, g:table_mode_separator)]
+-    let fillchar = tablemode#table#IsHeader(line - 1) ? header_fillchar : g:table_mode_fillchar
++    let fillchar = (line_val =~# s:BorderExpr()) ? ' ' : g:table_mode_fillchar
+ 
+     let special_replacement = '___'
+     let border = substitute(tline, g:table_mode_escaped_separator_regex, special_replacement, 'g')
