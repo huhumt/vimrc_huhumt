@@ -193,9 +193,9 @@ endif
 " Moving around and tabs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" Smart way to move btw. windows
+" Smart way to move windows btw. refer to `:help window-moving-cursor`
 map <C-j> <C-W>j
-map <C-k> <C-W>k
+map <C-k> <C-W>k<C-W>h
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 map <S-*> <C-W>y
@@ -211,6 +211,9 @@ else
     vnoremap <leader>y "*y
     nnoremap <leader>p <ESC>"*p
 endif
+" inoremap <S-Insert> <C-R><C-R>+
+" inoremap <S-Insert> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
+" inoremap <C-v> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
 
 func! CurrentFileDir(cmd)
     return a:cmd . " " . expand("%:p:h") . "/"
@@ -620,7 +623,14 @@ function! CocJumpErrorOrHover() abort
     else
         let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
         if len(l:jump_error) == 0
-            call CocActionAsync('definitionHover')
+            try
+                call CocAction('definitionHover', ['float'])
+            catch
+            finally
+                if coc#float#has_float() == 0
+                    call feedkeys('K', 'in')
+                endif
+            endtry
         endif
     endif
 endfunction
@@ -769,6 +779,10 @@ Plug 'AndrewRadev/splitjoin.vim'
 
 " run command aysnc in backgroup
 Plug 'skywind3000/asyncrun.vim'
+
+" auto set paste/nopaste when use 'shift+insert'
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
+Plug 'ConradIrwin/vim-bracketed-paste'
 
 
 
