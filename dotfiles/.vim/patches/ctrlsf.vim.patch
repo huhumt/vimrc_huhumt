@@ -1,5 +1,5 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..1e67121 100644
+index 59aa399..b859e9c 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
 @@ -12,6 +12,10 @@
@@ -130,19 +130,19 @@ index 59aa399..1e67121 100644
 +"   1: do not close preview window, only clear popup_win flags
 +"   2: close preview windows, and clear popup_win flags
 +func! s:JumpPreviewPopupWindow(clear_flag) abort
-+    if s:preview_popup_win.winid > 0
-+        let popup_winnr = win_id2win(s:preview_popup_win.winid)
++    let l:popup_winnr = win_id2win(s:preview_popup_win.winid)
++    if s:preview_popup_win.winid > 0 && l:popup_winnr > 0
 +        call ctrlsf#win#FocusWindow(popup_winnr)
 +
 +        if a:clear_flag > 0
++            if a:clear_flag > 1
++                close
++            endif
++
 +            let s:preview_popup_win = {
 +                \ 'bufnr' : -1,
 +                \ 'winid' : 0,
 +                \ }
-+
-+            if a:clear_flag > 1
-+                close
-+            endif
 +        endif
 +    else
 +        call ctrlsf#win#FocusCallerWindow()
@@ -153,21 +153,6 @@ index 59aa399..1e67121 100644
  " s:Quit()
  "
  func! s:Quit() abort
-diff --git a/autoload/ctrlsf/opt.vim b/autoload/ctrlsf/opt.vim
-index b2ec1e4..5deb0aa 100644
---- a/autoload/ctrlsf/opt.vim
-+++ b/autoload/ctrlsf/opt.vim
-@@ -270,6 +270,10 @@ func! s:ParseOptions(options_str) abort
-         if !is_option || no_more_options
-             " resolve to PATTERN and PATH
-             if !has_key(options, 'pattern')
-+                " if pattern starts and ends with word, add word option
-+                if token[0].token[-1:] =~# '\w\{2}' && !has_key(options, 'word')
-+                    let options['word'] = 1
-+                endif
-                 let options['pattern'] = token
-             else
-                 if !has_key(options, 'path')
 diff --git a/autoload/ctrlsf/pat.vim b/autoload/ctrlsf/pat.vim
 index 7554a94..cc0616a 100644
 --- a/autoload/ctrlsf/pat.vim
@@ -197,7 +182,7 @@ index 7554a94..cc0616a 100644
      endif
  
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..199ee84 100644
+index 22271e6..5109d26 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -234,7 +219,7 @@ index 22271e6..199ee84 100644
 +        let f_basename = join(len(f_list) > 1 ? f_list[-2:]: f_list, '/')
 +        let indent = printf("[%*d] %-*s |%-*s col %*s| ",
 +                    \ 4, mat_cnt,
-+                    \ 32, f_basename,
++                    \ 48, f_basename,
 +                    \ 4, mat.lnum,
 +                    \ 4, mat.col)
 +        call extend(view, [indent . trim(mat.text)])
@@ -253,6 +238,35 @@ index 22271e6..199ee84 100644
      return view
  endf
  
+@@ -278,16 +272,27 @@ endf
+ "
+ func! ctrlsf#view#FindNextMatch(forward, wrapscan, ...) abort
+     let file_based = get(a:, 1, 0)
++    let l:fixed_vcol = 8
++    let l:manual_cursor_moved = v:false
+ 
+     if file_based
+         let vlnum = s:FindNextFile(a:forward)
+         call cursor(vlnum, 1)
++    else
++        if a:forward && col('.') == l:fixed_vcol
++            call cursor(0, col('$'))
++            let l:manual_cursor_moved = v:true
++        endif
+     endif
+ 
+     let regex = ctrlsf#pat#MatchPerLineRegex(ctrlsf#CurrentMode())
+     let flag  = (a:forward || file_based) ? 'n' : 'nb'
+     let flag .= a:wrapscan ? 'w' : 'W'
+-    return searchpos(regex, flag)
++    let [vlnum, vcol] = searchpos(regex, flag)
++    if l:manual_cursor_moved && vlnum == 1
++        call cursor(0, l:fixed_vcol)
++    endif
++    return [vlnum, file_based ? vcol : l:fixed_vcol]
+ endf
+ 
+ func! s:FindNextFile(forward) abort
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
 index 1bfd140..858dffd 100644
 --- a/autoload/ctrlsf/win.vim

@@ -23,7 +23,13 @@
     "cSpell.allowCompoundWords": true,
     "biome.bin": "/usr/local/bin/biome",
     "biome.requireConfiguration": false,
-    "[java]": {
-        "semanticTokens.enable": true
+    "languageserver": {
+        "terraform": {
+            "command": "terraform-ls",
+            "args": ["serve"],
+            "filetypes": ["terraform", "tf"],
+            "initializationOptions": {},
+            "settings": {}
+        }
     }
 }

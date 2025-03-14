@@ -193,9 +193,9 @@ endif
 " Moving around and tabs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" Smart way to move btw. windows
+" Smart way to move windows btw. refer to `:help window-moving-cursor`
 map <C-j> <C-W>j
-map <C-k> <C-W>k
+map <C-k> <C-W>k<C-W>h
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 map <S-*> <C-W>y
@@ -211,6 +211,9 @@ else
     vnoremap <leader>y "*y
     nnoremap <leader>p <ESC>"*p
 endif
+" inoremap <S-Insert> <C-R><C-R>+
+" inoremap <S-Insert> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
+" inoremap <C-v> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
 
 func! CurrentFileDir(cmd)
     return a:cmd . " " . expand("%:p:h") . "/"
@@ -508,6 +511,7 @@ let g:ctrlsf_context = '-C 0'
 let g:ctrlsf_case_sensitive = 'yes'
 let g:ctrlsf_default_root = 'cwd'
 let g:ctrlsf_auto_preview = 1
+let g:ctrlsf_selected_line_hl = 'op'
 let g:ctrlsf_indent = 2
 let g:ctrlsf_auto_focus = {
     \ "at": "start"
@@ -541,7 +545,7 @@ let g:ctrlsf_mapping = {
     \ "loclist" : "",
     \ "fzf"     : "",
     \ }
-nnoremap <Leader><Leader>e <Plug>CtrlSFCwordExec
+nnoremap <Leader><Leader>e <Plug>CtrlSFCCwordExec
 vnoremap <Leader><Leader>e <Plug>CtrlSFVwordExec
 
 " Support for easy motion
@@ -608,7 +612,8 @@ inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
 nnoremap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
-nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
+" nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
+nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<C-o>"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
@@ -620,7 +625,14 @@ function! CocJumpErrorOrHover() abort
     else
         let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
         if len(l:jump_error) == 0
-            call CocActionAsync('definitionHover')
+            try
+                call CocAction('definitionHover', ['float'])
+            catch
+            finally
+                if coc#float#has_float() == 0
+                    call feedkeys('K', 'in')
+                endif
+            endtry
         endif
     endif
 endfunction
@@ -769,6 +781,10 @@ Plug 'AndrewRadev/splitjoin.vim'
 
 " run command aysnc in backgroup
 Plug 'skywind3000/asyncrun.vim'
+
+" auto set paste/nopaste when use 'shift+insert'
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
+Plug 'ConradIrwin/vim-bracketed-paste'
 
 
 
