@@ -1,27 +1,29 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..b859e9c 100644
+index 59aa399..8efcc15 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
-@@ -12,6 +12,10 @@
+@@ -12,6 +12,7 @@
  " remember what user is searching
  let s:current_mode = ''
  let s:current_query = ''
-+let s:preview_popup_win = {
-+    \ 'bufnr' : -1,
-+    \ 'winid' : 0,
-+    \ }
++let s:preview_popup_winid = -1
  
  " s:ExecSearch()
  "
-@@ -254,6 +258,7 @@ func! ctrlsf#Quit() abort
+@@ -254,6 +255,12 @@ func! ctrlsf#Quit() abort
      endif
  
      call s:Quit()
-+    call s:JumpPreviewPopupWindow(2)
++
++    if s:JumpPreviewPopupWindow() > 0
++        close
++    endif
++
++    let s:preview_popup_winid = -1
  endf
  
  " OpenLocList()
-@@ -332,6 +337,8 @@ func! ctrlsf#JumpTo(mode, ...) abort
+@@ -332,6 +339,8 @@ func! ctrlsf#JumpTo(mode, ...) abort
          call s:OpenFileInWindow(file, lnum, col, 1, 0)
      elseif a:mode ==# 'open_background'
          call s:OpenFileInWindow(file, lnum, col, 2, 0)
@@ -30,7 +32,7 @@ index 59aa399..b859e9c 100644
      elseif a:mode ==# 'split'
          call s:OpenFileInWindow(file, lnum, col, 1, 1)
      elseif a:mode ==# 'vsplit'
-@@ -366,13 +373,12 @@ func! ctrlsf#NextMatch(forward, ...) abort
+@@ -366,13 +375,12 @@ func! ctrlsf#NextMatch(forward, ...) abort
              call ctrlsf#log#Notice("search hit TOP, continuing at BOTTOM")
          else
              call ctrlsf#log#Clear()
@@ -47,7 +49,7 @@ index 59aa399..b859e9c 100644
          endif
      endif
  endf
-@@ -417,31 +423,34 @@ endf
+@@ -417,39 +425,48 @@ endf
  " '2' means split vertically
  "
  func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
@@ -60,25 +62,22 @@ index 59aa399..b859e9c 100644
 +    " let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
 +    " if (target_winnr == 0 || (target_winnr < 3 && target_winnr >= winnr('$') - 1)) && (a:split || (&modified && !&hidden))
 +    let opened_win_len = len(filter(range(1, winnr('$')), 'empty(getwinvar(v:val, "&buftype"))'))
-+    if opened_win_len < 2 && (a:split || (&modified && !&hidden))
-+        call ctrlsf#win#FocusCallerWindow()
++    call ctrlsf#win#FocusCallerWindow()
++    " if opened_win_len < 2 && (a:split || (&modified && !&hidden))
++    if opened_win_len < 2
 +        if a:split == 2
 +            exec 'silent leftabove vertical split ' . fnameescape(a:file)
 +        else
 +            exec 'silent split ' . fnameescape(a:file)
          endif
 -    endif
- 
+-
 -    let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
 -    if target_winnr == 0
 -        exec 'silent split ' . fnameescape(a:file)
-+        let s:preview_popup_win = {
-+            \ 'bufnr' : ctrlsf#win#FindCallerBuf(),
-+            \ 'winid' : win_getid(winnr()),
-+            \ }
      else
 -        exec target_winnr . 'wincmd w'
-+        call s:JumpPreviewPopupWindow(0)
++        call s:JumpPreviewPopupWindow()
  
          if bufname('%') !=# a:file
 -            if a:split || (&modified && !&hidden)
@@ -91,18 +90,15 @@ index 59aa399..b859e9c 100644
 -                exec 'silent edit ' . fnameescape(a:file)
 -            endif
 +            exec 'silent edit ' . fnameescape(a:file)
-+
-+            " if a:mode > 1 && s:preview_popup_win.bufnr > 0
-+            "     if exists('g:loaded_minibufexplorer')
-+            "         exec 'silent! MBEbda ' . s:preview_popup_win.bufnr
-+            "     else
-+            "         exec 'silent! .,$bdelete'
-+            "     endif
-+            " endif
          endif
      endif
  
-@@ -450,6 +459,18 @@ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
++    if s:preview_popup_winid < 0
++        let s:preview_popup_winid = win_getid(winnr())
++    endif
++
+     call ctrlsf#win#MoveCursorCentral(a:lnum, a:col)
+ 
      if g:ctrlsf_selected_line_hl =~ 'o'
          call ctrlsf#hl#HighlightSelectedLine()
      endif
@@ -114,40 +110,21 @@ index 59aa399..b859e9c 100644
 +            " close preview window if file is opened in current tab
 +            call ctrlsf#preview#ClosePreviewWindow()
 +        endif
-+        call s:JumpPreviewPopupWindow(1)
++
++        call s:JumpPreviewPopupWindow()
++        let s:preview_popup_winid = -1
 +    else
 +        call ctrlsf#win#FocusMainWindow()
 +    endif
  endf
  
  " OpenFileInTab()
-@@ -521,6 +542,31 @@ func! s:OpenAndDraw() abort
+@@ -521,6 +538,10 @@ func! s:OpenAndDraw() abort
      call ctrlsf#win#FocusFirstMatch()
  endf
  
-+" clear_flag:
-+"   0: do not close preview window, do not clear popup_win flags
-+"   1: do not close preview window, only clear popup_win flags
-+"   2: close preview windows, and clear popup_win flags
-+func! s:JumpPreviewPopupWindow(clear_flag) abort
-+    let l:popup_winnr = win_id2win(s:preview_popup_win.winid)
-+    if s:preview_popup_win.winid > 0 && l:popup_winnr > 0
-+        call ctrlsf#win#FocusWindow(popup_winnr)
-+
-+        if a:clear_flag > 0
-+            if a:clear_flag > 1
-+                close
-+            endif
-+
-+            let s:preview_popup_win = {
-+                \ 'bufnr' : -1,
-+                \ 'winid' : 0,
-+                \ }
-+        endif
-+    else
-+        call ctrlsf#win#FocusCallerWindow()
-+        let s:preview_popup_win.bufnr = ctrlsf#win#FindCallerBuf()
-+    endif
++func! s:JumpPreviewPopupWindow() abort
++    return ctrlsf#win#FocusWindow(win_id2win(s:preview_popup_winid))
 +endf
 +
  " s:Quit()
@@ -268,7 +245,7 @@ index 22271e6..5109d26 100644
  
  func! s:FindNextFile(forward) abort
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
-index 1bfd140..858dffd 100644
+index 1bfd140..afc5876 100644
 --- a/autoload/ctrlsf/win.vim
 +++ b/autoload/ctrlsf/win.vim
 @@ -94,7 +94,12 @@ func! ctrlsf#win#OpenMainWindow() abort
@@ -284,6 +261,15 @@ index 1bfd140..858dffd 100644
 +    endif
  
      call s:InitMainWindow()
+ 
+@@ -285,7 +290,7 @@ func! ctrlsf#win#FocusWindow(exp) abort
+         let winnr = ctrlsf#win#FindWindow(a:exp)
+     endif
+ 
+-    if winnr < 0
++    if winnr <= 0
+         return -1
+     endif
  
 @@ -311,6 +316,10 @@ func! ctrlsf#win#FindCallerWindow() abort
      return s:caller_win.winid > 0 ? win_id2win(s:caller_win.winid) : -1
