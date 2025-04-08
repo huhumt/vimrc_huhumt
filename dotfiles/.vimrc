@@ -195,7 +195,8 @@ endif
 
 " Smart way to move windows btw. refer to `:help window-moving-cursor`
 map <C-j> <C-W>j
-map <C-k> <C-W>k<C-W>h
+" map <C-k> <C-W>k<C-W>h
+map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 map <S-*> <C-W>y
@@ -244,14 +245,13 @@ set statusline=%1*\ %{StatuslineCurMode()}
 set statusline+=%2*\%{exists('g:loaded_fugitive')?FugitiveStatusline():''}
 " set statusline+=%3*\ %f\                     " short filename
 set statusline+=%3*\ %{expand('%:~:.')}\     " short filename
-set statusline+=%4*\%h%m%r                   " file flags (help, RO, modified)
-set statusline+=%4*\%y                       " file type
+set statusline+=%4*\ %y\ %h%m%r              " file flags (help, RO, modified)
 " vim gutentags running status
 set statusline+=%4*%{exists('g:loaded_gutentags')?gutentags#statusline():''}
 set statusline+=%=                           " right align
 set statusline+=%4*\ %{&fenc?&fenc:&enc}     " fileencodings
 set statusline+=%4*\[%{&ff}\]\               " fileformat
-set statusline+=%2*\Ln\ %l/%L\\|Col\ %v      " line count
+set statusline+=%2*\ Ln\ %l/%L\\|Col\ %v\    " line count
 set statusline+=%4*\ ::                      " seperator
 set statusline+=%4*\ %p%%                    " precentage
 
@@ -301,7 +301,7 @@ let g:fern#disable_default_mappings = 1
 let g:fern#default_hidden = 1
 let g:fern#drawer_width = 40
 " let g:fern_auto_preview = 1
-map <Leader><Leader>n :Fern . -drawer -toggle<CR>
+map <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
 let g:fern#renderer#default#root_symbol = '~ '
 
 " function! FernPreviewGetMargins() abort
@@ -502,7 +502,8 @@ let g:Lf_ExternalCommand = 'ag %s --files-with-matches
     \ --filename-pattern "" ' . UserSilverSearcherArgs()
 let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 let g:Lf_ShowDevIcons = 0
-let g:Lf_PreviewInPopup = 0
+" let g:Lf_PreviewInPopup = 0
+let g:Lf_PreviewPosition = 'right'
 
 " Support ctrlsp plugin
 let g:ctrlsf_default_view_mode = 'compact'
@@ -628,10 +629,6 @@ function! CocJumpErrorOrHover() abort
             try
                 call CocAction('definitionHover', ['float'])
             catch
-            finally
-                if coc#float#has_float() == 0
-                    call feedkeys('K', 'in')
-                endif
             endtry
         endif
     endif
@@ -845,7 +842,7 @@ highlight CocMenuSel ctermbg=65 guibg=darkgray
 " https://www.ditig.com/256-colors-cheat-sheet
 highlight User1 ctermbg=2   ctermfg=0   guibg=green guifg=black
 highlight User2 ctermbg=12  ctermfg=120 guibg=black guifg=lightgreen
-highlight User3 ctermbg=240 ctermfg=168 guibg=black guifg=grey
+highlight User3 ctermbg=195 ctermfg=168 guibg=black guifg=grey
 highlight User4 ctermbg=8   ctermfg=156 guibg=black guifg=lightgreen
 
 highlight SpecialKey ctermfg=239 guibg=black

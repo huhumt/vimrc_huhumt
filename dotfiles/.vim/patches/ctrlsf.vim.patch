@@ -1,5 +1,5 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..8efcc15 100644
+index 59aa399..5f58a84 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
 @@ -12,6 +12,7 @@
@@ -49,7 +49,7 @@ index 59aa399..8efcc15 100644
          endif
      endif
  endf
-@@ -417,39 +425,48 @@ endf
+@@ -417,39 +425,47 @@ endf
  " '2' means split vertically
  "
  func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
@@ -63,8 +63,7 @@ index 59aa399..8efcc15 100644
 +    " if (target_winnr == 0 || (target_winnr < 3 && target_winnr >= winnr('$') - 1)) && (a:split || (&modified && !&hidden))
 +    let opened_win_len = len(filter(range(1, winnr('$')), 'empty(getwinvar(v:val, "&buftype"))'))
 +    call ctrlsf#win#FocusCallerWindow()
-+    " if opened_win_len < 2 && (a:split || (&modified && !&hidden))
-+    if opened_win_len < 2
++    if opened_win_len < 2 && (a:split || (&modified && !&hidden))
 +        if a:split == 2
 +            exec 'silent leftabove vertical split ' . fnameescape(a:file)
 +        else
@@ -119,7 +118,7 @@ index 59aa399..8efcc15 100644
  endf
  
  " OpenFileInTab()
-@@ -521,6 +538,10 @@ func! s:OpenAndDraw() abort
+@@ -521,6 +537,10 @@ func! s:OpenAndDraw() abort
      call ctrlsf#win#FocusFirstMatch()
  endf
  
@@ -245,24 +244,27 @@ index 22271e6..5109d26 100644
  
  func! s:FindNextFile(forward) abort
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
-index 1bfd140..afc5876 100644
+index 1bfd140..1eefb46 100644
 --- a/autoload/ctrlsf/win.vim
 +++ b/autoload/ctrlsf/win.vim
-@@ -94,7 +94,12 @@ func! ctrlsf#win#OpenMainWindow() abort
+@@ -91,10 +91,14 @@ func! ctrlsf#win#OpenMainWindow() abort
+               \ }[g:ctrlsf_compact_position]
+     endif
  
+-
      " open window
      exec 'silent keepalt ' . openpos . winsize . 'split ' .
 -                \ (bufnr('__CtrlSF__') != -1 ? '+b'.bufnr('__CtrlSF__') : '__CtrlSF__')
 +                \ (bufnr(s:MAIN_BUF_NAME) != -1 ? '+b'.bufnr(s:MAIN_BUF_NAME) : s:MAIN_BUF_NAME)
 +
-+    let delta_height = winsize - winheight(0)
-+    if delta_height != 0
-+        exec 'silent resize ' . delta_height
++    let delta_height = winheight(0) - winsize
++    if delta_height > 0
++        exec 'silent resize -' . delta_height
 +    endif
  
      call s:InitMainWindow()
  
-@@ -285,7 +290,7 @@ func! ctrlsf#win#FocusWindow(exp) abort
+@@ -285,7 +289,7 @@ func! ctrlsf#win#FocusWindow(exp) abort
          let winnr = ctrlsf#win#FindWindow(a:exp)
      endif
  
@@ -271,7 +273,7 @@ index 1bfd140..afc5876 100644
          return -1
      endif
  
-@@ -311,6 +316,10 @@ func! ctrlsf#win#FindCallerWindow() abort
+@@ -311,6 +315,10 @@ func! ctrlsf#win#FindCallerWindow() abort
      return s:caller_win.winid > 0 ? win_id2win(s:caller_win.winid) : -1
  endf
  
@@ -282,7 +284,7 @@ index 1bfd140..afc5876 100644
  " FocusCallerWindow()
  "
  func! ctrlsf#win#FocusCallerWindow() abort
-@@ -367,6 +376,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
+@@ -367,6 +375,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
      " scroll up to top line
      1normal! ^
      call ctrlsf#NextMatch(1, 0)
