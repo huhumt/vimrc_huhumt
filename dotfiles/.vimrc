@@ -212,9 +212,18 @@ else
     vnoremap <leader>y "*y
     nnoremap <leader>p <ESC>"*p
 endif
-" inoremap <S-Insert> <C-R><C-R>+
-" inoremap <S-Insert> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
-" inoremap <C-v> <C-O>:set paste<CR><C-R><C-R>+<C-O>:set nopaste<CR>
+
+" auto set paste/nopaste when use 'shift+insert'
+" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
+" Auto-toggle paste mode for xterm
+let &t_SI .= "\<Esc>[?2004h"
+let &t_EI .= "\<Esc>[?2004l"
+inoremap <special> <expr> <Esc>[200~ XTermPasteBegin()
+function! XTermPasteBegin()
+  set pastetoggle=<Esc>[201~
+  set paste
+  return ""
+endfunction
 
 func! CurrentFileDir(cmd)
     return a:cmd . " " . expand("%:p:h") . "/"
@@ -241,6 +250,11 @@ endfunction
 
 function! StatuslineGitBranch() abort
     let l:root_dir = finddir('.git', expand('%:p:h') . ';')
+
+    if empty(l:root_dir)
+        return ""
+    endif
+
     let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
 
     if l:git_branch !~ "fatal: not a git repository"
@@ -336,7 +350,6 @@ function! FernInit() abort
   nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
   nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
   " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
-  nnoremap <silent> <buffer> <C-y> <Plug>(fern-action-preview:scroll:up:one)
 endfunction
 
 augroup FernEvents
@@ -791,9 +804,6 @@ Plug 'AndrewRadev/splitjoin.vim'
 " run command aysnc in backgroup
 Plug 'skywind3000/asyncrun.vim'
 
-" auto set paste/nopaste when use 'shift+insert'
-" https://coderwall.com/p/if9mda/automatically-set-paste-mode-in-vim-when-pasting-in-insert-mode
-Plug 'ConradIrwin/vim-bracketed-paste'
 
 
 
