@@ -226,7 +226,7 @@ cno $c e <C-\>eCurrentFileDir("e")<cr>
 " https://www.tdaly.co.uk/post/vanilla-vim-statusline
 "" statusline
 function! StatuslineCurMode() abort
-    let l:statusline_currentmode={
+    let l:statusline_currentmode = {
            \ 'n'      : 'NORMAL ',
            \ 'v'      : 'VISUAL ',
            \ 'V'      : 'V·Line ',
@@ -236,14 +236,26 @@ function! StatuslineCurMode() abort
            \ 'Rv'     : 'V·Replace ',
            \ 'c'      : 'Command ',
            \}
-    return get(l:statusline_currentmode, mode(), 'Thinking')
+    return get(l:statusline_currentmode, mode(), 'Thinking ')
+endfunction
+
+function! StatuslineGitBranch() abort
+    let l:root_dir = finddir('.git', expand('%:p:h') . ';')
+    let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
+
+    if l:git_branch !~ "fatal: not a git repository"
+        " it's quite strange that 2 whitespaces need to be added at the
+        " beginning to display a whitespace in statusline
+        return "  [Git](" . substitute(l:git_branch, '\n', '', 'g') . ") "
+    else
+        return ""
+    endif
 endfunction
 
 set laststatus=2
 set statusline=%1*\ %{StatuslineCurMode()}
 " git branch information from vim-fugitive plugin
-set statusline+=%2*\%{exists('g:loaded_fugitive')?FugitiveStatusline():''}
-" set statusline+=%3*\ %f\                     " short filename
+set statusline+=%2*\%{StatuslineGitBranch()} " git branch info
 set statusline+=%3*\ %{expand('%:~:.')}\     " short filename
 set statusline+=%4*\ %y\ %h%m%r              " file flags (help, RO, modified)
 " vim gutentags running status
@@ -624,13 +636,13 @@ function! CocJumpErrorOrHover() abort
     if get(b:, 'table_mode_active', 0) > 0
         execute "normal \<Plug>(table-mode-motion-right)"
     else
-        let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
-        if len(l:jump_error) == 0
-            try
-                call CocAction('definitionHover', ['float'])
-            catch
-            endtry
-        endif
+        " let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
+        " if len(l:jump_error) == 0
+        try
+            call CocAction('definitionHover', ['float'])
+        catch
+        endtry
+        " endif
     endif
 endfunction
 nnoremap <silent> <Tab> :call CocJumpErrorOrHover()<CR>
@@ -734,7 +746,7 @@ Plug 'easymotion/vim-easymotion'
 
 " use reversion manage tool
 " Plug 'vim-scripts/vcscommand.vim'
-Plug 'tpope/vim-fugitive'
+" Plug 'tpope/vim-fugitive'
 
 " use dirdiff tool to do diff and merge
 Plug 'will133/vim-dirdiff'
@@ -765,7 +777,7 @@ Plug 'andymass/vim-matchup'
 Plug 'rafi/awesome-vim-colorschemes'
 
 " display git info
-Plug 'airblade/vim-gitgutter'
+" Plug 'airblade/vim-gitgutter'
 
 " auto generate table in vim
 Plug 'dhruvasagar/vim-table-mode'
