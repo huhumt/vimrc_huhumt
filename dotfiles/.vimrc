@@ -255,7 +255,7 @@ function! StatuslineGitBranch() abort
         return ""
     endif
 
-    let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
+    silent let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
 
     if l:git_branch !~ "fatal: not a git repository"
         " it's quite strange that 2 whitespaces need to be added at the
@@ -532,7 +532,7 @@ let g:Lf_PreviewPosition = 'right'
 
 " Support ctrlsp plugin
 let g:ctrlsf_default_view_mode = 'compact'
-let g:ctrlsf_compact_winsize = '20%'
+let g:ctrlsf_compact_winsize = 10
 let g:ctrlsf_context = '-C 0'
 let g:ctrlsf_case_sensitive = 'yes'
 let g:ctrlsf_default_root = 'cwd'
