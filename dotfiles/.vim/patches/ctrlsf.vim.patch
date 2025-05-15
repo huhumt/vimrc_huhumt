@@ -159,7 +159,7 @@ index 7554a94..cc0616a 100644
      endif
  
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..5109d26 100644
+index 22271e6..e014009 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -215,7 +215,7 @@ index 22271e6..5109d26 100644
      return view
  endf
  
-@@ -278,16 +272,27 @@ endf
+@@ -278,16 +272,28 @@ endf
  "
  func! ctrlsf#view#FindNextMatch(forward, wrapscan, ...) abort
      let file_based = get(a:, 1, 0)
@@ -226,7 +226,8 @@ index 22271e6..5109d26 100644
          let vlnum = s:FindNextFile(a:forward)
          call cursor(vlnum, 1)
 +    else
-+        if a:forward && col('.') == l:fixed_vcol
++        let l:cur_col = col('.')
++        if a:forward && l:cur_col >= l:fixed_vcol && l:cur_col < l:fixed_vcol * 6
 +            call cursor(0, col('$'))
 +            let l:manual_cursor_moved = v:true
 +        endif
@@ -294,10 +295,34 @@ index 1bfd140..1eefb46 100644
  
  """""""""""""""""""""""""""""""""
 diff --git a/plugin/ctrlsf.vim b/plugin/ctrlsf.vim
-index 19fb9a2..aa0aab4 100644
+index 19fb9a2..e9e230f 100644
 --- a/plugin/ctrlsf.vim
 +++ b/plugin/ctrlsf.vim
-@@ -99,7 +99,7 @@ endif
+@@ -10,6 +10,7 @@ if exists('g:ctrlsf_loaded') && !get(g:, 'ctrlsf_debug_mode', 0)
+     finish
+ endif
+ let g:ctrlsf_loaded = 1
++let s:ctrlsf_last_cmd = ""
+ " }}}
+ 
+ " Utils {{{1
+@@ -54,6 +55,7 @@ func! s:SearchCwordCmd(type, word_boundary, to_exec)
+         let cmd .= " " . expand('<cword>')
+     endif
+     let cmd .= a:to_exec ? "\<CR>" : " "
++    let s:ctrlsf_last_cmd = cmd
+     return cmd
+ endf
+ " }}}
+@@ -65,6 +67,7 @@ func! s:SearchVwordCmd(type, to_exec)
+     let keys = '":\<C-U>'. a:type .' " . g:CtrlSFGetVisualSelection()'
+     let keys .= a:to_exec ? '."\<CR>"' : '." "'
+     let cmd = ":\<C-U>call feedkeys(" . keys . ", 'n')\<CR>"
++    let s:ctrlsf_last_cmd = cmd
+     return cmd
+ endf
+ " }}}
+@@ -99,7 +102,7 @@ endif
  if !exists('g:ctrlsf_auto_close')
      let g:ctrlsf_auto_close = {
          \ "normal" : 1,
@@ -306,3 +331,11 @@ index 19fb9a2..aa0aab4 100644
          \ }
  endif
  " }}}
+@@ -327,6 +330,7 @@ com! -n=0                                         CtrlSFClearHL  call ctrlsf#Cle
+ com! -n=0                                         CtrlSFToggle   call ctrlsf#Toggle()
+ com! -n=0                                         CtrlSFStop     call ctrlsf#StopSearch()
+ com! -n=0                                         CtrlSFFocus    call ctrlsf#Focus()
++com! -n=0                                         CtrlSFRepeat   execute "normal " . s:ctrlsf_last_cmd
+ " }}}
+ 
+ " Maps {{{1
