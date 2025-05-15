@@ -159,7 +159,7 @@ index 7554a94..cc0616a 100644
      endif
  
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..5109d26 100644
+index 22271e6..e014009 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -215,7 +215,7 @@ index 22271e6..5109d26 100644
      return view
  endf
  
-@@ -278,16 +272,27 @@ endf
+@@ -278,16 +272,28 @@ endf
  "
  func! ctrlsf#view#FindNextMatch(forward, wrapscan, ...) abort
      let file_based = get(a:, 1, 0)
@@ -226,7 +226,8 @@ index 22271e6..5109d26 100644
          let vlnum = s:FindNextFile(a:forward)
          call cursor(vlnum, 1)
 +    else
-+        if a:forward && col('.') == l:fixed_vcol
++        let l:cur_col = col('.')
++        if a:forward && l:cur_col >= l:fixed_vcol && l:cur_col < l:fixed_vcol * 6
 +            call cursor(0, col('$'))
 +            let l:manual_cursor_moved = v:true
 +        endif
