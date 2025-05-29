@@ -1,0 +1,21 @@
+IMAPStore work-remote
+Host mail.test.co.uk
+Port 993
+User test@test.co.uk
+PassCmd "echo $imap_pass"
+TLSType IMAPS
+
+MaildirStore work-local
+Path ~/.config/neomutt/mails/
+Inbox ~/.config/neomutt/mails/Inbox
+SubFolders Verbatim
+
+Channel work-inbox
+Far :work-remote:
+Near :work-local:
+Patterns INBOX Sent Trash Drafts Test/*
+Create Near
+Expunge Both
+SyncState *
+MaxMessages 0
+MaxSize 2m
