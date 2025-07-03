@@ -397,7 +397,7 @@ augroup END
 " let g:miniBufExplMapWindowNavArrows = 1
 " let g:miniBufExplMapCTabSwitchBufs = 1
 " let g:miniBufExplModSelTarget = 1
-let g:miniBufExplMaxSize = 3
+let g:miniBufExplMaxSize = 1
 
 " Support tagbar plugin
 nnoremap <Leader>t :TagbarToggle<CR>
@@ -537,7 +537,6 @@ let g:ctrlsf_context = '-C 0'
 let g:ctrlsf_case_sensitive = 'yes'
 let g:ctrlsf_default_root = 'cwd'
 let g:ctrlsf_auto_preview = 1
-let g:ctrlsf_selected_line_hl = 'op'
 let g:ctrlsf_indent = 2
 let g:ctrlsf_auto_focus = {
     \ "at": "start"
@@ -552,10 +551,10 @@ let g:ctrlsf_extra_backend_args = {
 "     \ 'ag': '--silent --word-regexp'
 "     \ }
 let g:ctrlsf_mapping = {
-    \ "open"    : ["<CR>", "o", "<2-LeftMouse>"],
+    \ "open"    : "",
     \ "openb"   : "",
     \ "split"   : "",
-    \ "vsplit"  : "",
+    \ "vsplit"  : ["<CR>", "o", "<2-LeftMouse>"],
     \ "tab"     : "",
     \ "tabb"    : "",
     \ "popen"   : "",

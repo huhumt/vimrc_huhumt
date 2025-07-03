@@ -1,38 +1,8 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..9e63278 100644
+index 59aa399..433ae47 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
-@@ -12,6 +12,7 @@
- " remember what user is searching
- let s:current_mode = ''
- let s:current_query = ''
-+let s:preview_popup_winid = -1
- 
- " s:ExecSearch()
- "
-@@ -254,6 +255,12 @@ func! ctrlsf#Quit() abort
-     endif
- 
-     call s:Quit()
-+
-+    if s:JumpPreviewPopupWindow() > 0
-+        close
-+    endif
-+
-+    let s:preview_popup_winid = -1
- endf
- 
- " OpenLocList()
-@@ -332,6 +339,8 @@ func! ctrlsf#JumpTo(mode, ...) abort
-         call s:OpenFileInWindow(file, lnum, col, 1, 0)
-     elseif a:mode ==# 'open_background'
-         call s:OpenFileInWindow(file, lnum, col, 2, 0)
-+    elseif a:mode ==# 'open_vsplit'
-+        call s:OpenFileInWindow(file, lnum, col, 2, 2)
-     elseif a:mode ==# 'split'
-         call s:OpenFileInWindow(file, lnum, col, 1, 1)
-     elseif a:mode ==# 'vsplit'
-@@ -366,13 +375,12 @@ func! ctrlsf#NextMatch(forward, ...) abort
+@@ -366,11 +366,10 @@ func! ctrlsf#NextMatch(forward, ...) abort
              call ctrlsf#log#Notice("search hit TOP, continuing at BOTTOM")
          else
              call ctrlsf#log#Clear()
@@ -44,92 +14,17 @@ index 59aa399..9e63278 100644
 -        normal! zv
 -
          if g:ctrlsf_auto_preview
--            call ctrlsf#JumpTo('preview')
-+            call ctrlsf#JumpTo('open_vsplit')
+             call ctrlsf#JumpTo('preview')
          endif
-     endif
- endf
-@@ -417,39 +425,48 @@ endf
- " '2' means split vertically
- "
- func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
--    if a:mode == 1
--        " close preview window if file is opened in current tab
--        call ctrlsf#preview#ClosePreviewWindow()
--
--        if ctrlsf#opt#AutoClose()
--            call s:Quit()
-+    " let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
-+    " if (target_winnr == 0 || (target_winnr < 3 && target_winnr >= winnr('$') - 1)) && (a:split || (&modified && !&hidden))
-+    let opened_win_len = len(filter(range(1, winnr('$')), 'empty(getwinvar(v:val, "&buftype"))'))
-+    call ctrlsf#win#FocusCallerWindow()
-+    if opened_win_len < 2 && (a:split || (&modified && !&hidden))
-+        if a:split == 2
-+            exec 'silent leftabove vertical split ' . fnameescape(a:file)
-+        else
-+            exec 'silent split ' . fnameescape(a:file)
-         endif
--    endif
--
--    let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
--    if target_winnr == 0
--        exec 'silent split ' . fnameescape(a:file)
-     else
--        exec target_winnr . 'wincmd w'
-+        call s:JumpPreviewPopupWindow()
- 
+@@ -435,7 +434,7 @@ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
          if bufname('%') !=# a:file
--            if a:split || (&modified && !&hidden)
--                if a:split == 2
+             if a:split || (&modified && !&hidden)
+                 if a:split == 2
 -                    exec 'silent vertical split ' . fnameescape(a:file)
--                else
--                    exec 'silent split ' . fnameescape(a:file)
--                endif
--            else
--                exec 'silent edit ' . fnameescape(a:file)
--            endif
-+            exec 'silent edit ' . fnameescape(a:file)
-         endif
-     endif
- 
-+    if s:preview_popup_winid < 0
-+        let s:preview_popup_winid = win_getid(winnr())
-+    endif
-+
-     call ctrlsf#win#MoveCursorCentral(a:lnum, a:col)
- 
-     if g:ctrlsf_selected_line_hl =~ 'o'
-         call ctrlsf#hl#HighlightSelectedLine()
-     endif
-+
-+    if a:mode == 1
-+        if ctrlsf#opt#AutoClose()
-+            call s:Quit()
-+        else
-+            " close preview window if file is opened in current tab
-+            call ctrlsf#preview#ClosePreviewWindow()
-+        endif
-+
-+        call s:JumpPreviewPopupWindow()
-+        call ctrlsf#ClearSelectedLine()
-+        let s:preview_popup_winid = -1
-+    else
-+        call ctrlsf#win#FocusMainWindow()
-+    endif
- endf
- 
- " OpenFileInTab()
-@@ -521,6 +538,10 @@ func! s:OpenAndDraw() abort
-     call ctrlsf#win#FocusFirstMatch()
- endf
- 
-+func! s:JumpPreviewPopupWindow() abort
-+    return ctrlsf#win#FocusWindow(win_id2win(s:preview_popup_winid))
-+endf
-+
- " s:Quit()
- "
- func! s:Quit() abort
++                    exec 'silent ' . ctrlsf#preview#GetOpenPos() . ' vertical split ' . fnameescape(a:file)
+                 else
+                     exec 'silent split ' . fnameescape(a:file)
+                 endif
 diff --git a/autoload/ctrlsf/pat.vim b/autoload/ctrlsf/pat.vim
 index 7554a94..cc0616a 100644
 --- a/autoload/ctrlsf/pat.vim
@@ -158,6 +53,150 @@ index 7554a94..cc0616a 100644
          endif
      endif
  
+diff --git a/autoload/ctrlsf/preview.vim b/autoload/ctrlsf/preview.vim
+index 503576f..ac88be3 100644
+--- a/autoload/ctrlsf/preview.vim
++++ b/autoload/ctrlsf/preview.vim
+@@ -7,6 +7,7 @@
+ 
+ " preview buffer's name
+ let s:PREVIEW_BUF_NAME = "__CtrlSFPreview__"
++let s:PREVIEW_OPENPOS = "leftabove"
+ 
+ " OpenPreviewWindow()
+ "
+@@ -16,58 +17,66 @@ func! ctrlsf#preview#OpenPreviewWindow() abort
+         return
+     endif
+ 
+-    " backup width/height of other windows
+-    " be sure doing this only when *opening new window*
+-    call ctrlsf#win#BackupAllWinSize()
+-
+-    let vmode = ctrlsf#CurrentMode()
+-
+-    if vmode ==# 'normal'
+-        " normal mode
+-        if g:ctrlsf_preview_position == 'inside'
+-            if g:ctrlsf_position == "left" || g:ctrlsf_position == "right" ||
+-             \ g:ctrlsf_position == 'left_local' || g:ctrlsf_position == 'right_local'
+-                let winsize = winheight(0) / 2
++    let l:normal_buffer = filter(range(1, winnr('$')), 'empty(getwinvar(v:val, "&buftype"))')
++    call ctrlsf#win#FocusCallerWindow()
++
++    if len(l:normal_buffer) < 2
++        " backup width/height of other windows
++        " be sure doing this only when *opening new window*
++        " call ctrlsf#win#BackupAllWinSize()
++
++        let vmode = ctrlsf#CurrentMode()
++
++        if vmode ==# 'normal'
++            " normal mode
++            if g:ctrlsf_preview_position == 'inside'
++                if g:ctrlsf_position == "left" || g:ctrlsf_position == "right" ||
++                 \ g:ctrlsf_position == 'left_local' || g:ctrlsf_position == 'right_local'
++                    let winsize = winheight(0) / 2
++                else
++                    let winsize = winwidth(0) / 2
++                endif
++
++                let openpos = {
++                        \ 'bottom': 'rightbelow vertical',
++                        \ 'right' : 'rightbelow',
++                        \ 'right_local' : 'rightbelow',
++                        \ 'top'   : 'rightbelow vertical',
++                        \ 'left' : 'rightbelow',
++                        \ 'left_local' : 'rightbelow'}
++                        \[g:ctrlsf_position] . ' '
+             else
+-                let winsize = winwidth(0) / 2
++                if g:ctrlsf_position == "left" || g:ctrlsf_position == "right" ||
++                 \ g:ctrlsf_position == 'left_local' || g:ctrlsf_position == 'right_local'
++                    let ctrlsf_width  = winwidth(0)
++                    let winsize = min([&columns-ctrlsf_width, ctrlsf_width])
++                else
++                    let ctrlsf_height  = winheight(0)
++                    let winsize = min([&lines-ctrlsf_height, ctrlsf_height])
++                endif
++
++                let openpos = {
++                        \ 'bottom'      : 'leftabove',
++                        \ 'right'       : 'leftabove vertical',
++                        \ 'right_local' : 'leftabove vertical',
++                        \ 'top'         : 'rightbelow',
++                        \ 'left'        : 'rightbelow vertical',
++                        \ 'left_local'  : 'rightbelow vertical'}
++                        \[g:ctrlsf_position] . ' '
+             endif
+-
+-            let openpos = {
+-                    \ 'bottom': 'rightbelow vertical',
+-                    \ 'right' : 'rightbelow',
+-                    \ 'right_local' : 'rightbelow',
+-                    \ 'top'   : 'rightbelow vertical',
+-                    \ 'left' : 'rightbelow',
+-                    \ 'left_local' : 'rightbelow'}
+-                    \[g:ctrlsf_position] . ' '
++            let opencmd = openpos . winsize . 'split'
+         else
+-            if g:ctrlsf_position == "left" || g:ctrlsf_position == "right" ||
+-             \ g:ctrlsf_position == 'left_local' || g:ctrlsf_position == 'right_local'
+-                let ctrlsf_width  = winwidth(0)
+-                let winsize = min([&columns-ctrlsf_width, ctrlsf_width])
+-            else
+-                let ctrlsf_height  = winheight(0)
+-                let winsize = min([&lines-ctrlsf_height, ctrlsf_height])
+-            endif
+-
+-            let openpos = {
+-                    \ 'bottom'      : 'leftabove',
+-                    \ 'right'       : 'leftabove vertical',
+-                    \ 'right_local' : 'leftabove vertical',
+-                    \ 'top'         : 'rightbelow',
+-                    \ 'left'        : 'rightbelow vertical',
+-                    \ 'left_local'  : 'rightbelow vertical'}
+-                    \[g:ctrlsf_position] . ' '
++            " compact mode
++            let opencmd = 'leftabove vsplit'
+         endif
++
++        " open window
++        exec 'silent keepalt ' . opencmd . s:PREVIEW_BUF_NAME
+     else
+-        " compact mode
+-        let winsize = &lines - winheight(0) - 10
+-        let openpos = 'leftabove'
++        let s:PREVIEW_OPENPOS = winnr() < l:normal_buffer[-1] ? 'leftabove' : 'rightbelow'
++        exec 'silent keepalt edit ' . s:PREVIEW_BUF_NAME
+     endif
+ 
+-    " open window
+-    exec 'silent keepalt ' . openpos . winsize . 'split ' . '__CtrlSFPreview__'
+-
+     call s:InitPreviewWindow()
+ endf
+ 
+@@ -81,7 +90,7 @@ func! ctrlsf#preview#ClosePreviewWindow() abort
+     close
+ 
+     " restore width/height of other windows
+-    call ctrlsf#win#RestoreAllWinSize()
++    " call ctrlsf#win#RestoreAllWinSize()
+ 
+     call ctrlsf#win#FocusMainWindow()
+ endf
+@@ -113,6 +122,10 @@ func! ctrlsf#preview#FindPreviewWindow() abort
+     return ctrlsf#win#FindWindow(s:PREVIEW_BUF_NAME)
+ endf
+ 
++func! ctrlsf#preview#GetOpenPos() abort
++    return s:PREVIEW_OPENPOS
++endf
++
+ " FocusPreviewWindow()
+ "
+ func! ctrlsf#preview#FocusPreviewWindow() abort
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
 index 22271e6..e014009 100644
 --- a/autoload/ctrlsf/view.vim
@@ -246,10 +285,19 @@ index 22271e6..e014009 100644
  
  func! s:FindNextFile(forward) abort
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
-index 1bfd140..1eefb46 100644
+index 1bfd140..a06c3e4 100644
 --- a/autoload/ctrlsf/win.vim
 +++ b/autoload/ctrlsf/win.vim
-@@ -91,10 +91,14 @@ func! ctrlsf#win#OpenMainWindow() abort
+@@ -43,7 +43,7 @@ func! ctrlsf#win#OpenMainWindow() abort
+ 
+     " backup width/height of other windows
+     " be sure doing this only when *opening new window*
+-    call ctrlsf#win#BackupAllWinSize()
++    " call ctrlsf#win#BackupAllWinSize()
+ 
+     let vmode = ctrlsf#CurrentMode()
+ 
+@@ -91,10 +91,9 @@ func! ctrlsf#win#OpenMainWindow() abort
                \ }[g:ctrlsf_compact_position]
      endif
  
@@ -258,15 +306,19 @@ index 1bfd140..1eefb46 100644
      exec 'silent keepalt ' . openpos . winsize . 'split ' .
 -                \ (bufnr('__CtrlSF__') != -1 ? '+b'.bufnr('__CtrlSF__') : '__CtrlSF__')
 +                \ (bufnr(s:MAIN_BUF_NAME) != -1 ? '+b'.bufnr(s:MAIN_BUF_NAME) : s:MAIN_BUF_NAME)
-+
-+    let delta_height = winheight(0) - winsize
-+    if delta_height > 0
-+        exec 'silent resize -' . delta_height
-+    endif
  
      call s:InitMainWindow()
  
-@@ -285,7 +289,7 @@ func! ctrlsf#win#FocusWindow(exp) abort
+@@ -164,7 +163,7 @@ func! ctrlsf#win#CloseMainWindow() abort
+       close
+ 
+       " restore width/height of other windows
+-      call ctrlsf#win#RestoreAllWinSize()
++      " call ctrlsf#win#RestoreAllWinSize()
+ 
+       call ctrlsf#win#FocusCallerWindow()
+     catch /^Vim\%((\a\+)\)\=:E444/
+@@ -285,7 +284,7 @@ func! ctrlsf#win#FocusWindow(exp) abort
          let winnr = ctrlsf#win#FindWindow(a:exp)
      endif
  
@@ -275,7 +327,7 @@ index 1bfd140..1eefb46 100644
          return -1
      endif
  
-@@ -311,6 +315,10 @@ func! ctrlsf#win#FindCallerWindow() abort
+@@ -311,6 +310,10 @@ func! ctrlsf#win#FindCallerWindow() abort
      return s:caller_win.winid > 0 ? win_id2win(s:caller_win.winid) : -1
  endf
  
@@ -286,7 +338,7 @@ index 1bfd140..1eefb46 100644
  " FocusCallerWindow()
  "
  func! ctrlsf#win#FocusCallerWindow() abort
-@@ -367,6 +375,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
+@@ -367,6 +370,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
      " scroll up to top line
      1normal! ^
      call ctrlsf#NextMatch(1, 0)
