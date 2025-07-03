@@ -131,18 +131,21 @@ if __name__ == "__main__":
     home = os.path.expanduser("~")
     filename = os.path.join(home, ".config/neomutt/test_addressbook")
     address_book_dict = read_address_book(filename)
-
     read_std_lines = sys.stdin.buffer.read().decode("utf-8", 'ignore')
-    result = subprocess.run(
-        [
-            'shorten_url',
-            "--update-message",
-            "--url-min-length=100",
-            read_std_lines
-        ],
-        stdout=subprocess.PIPE
-    )
-    sys.stdout.write(result.stdout.decode('utf-8').strip())
+
+    try:
+        result = subprocess.run(
+            [
+                'shorten_url',
+                "--update-message",
+                "--url-min-length=100",
+                read_std_lines
+            ],
+            stdout=subprocess.PIPE
+        )
+        sys.stdout.write(result.stdout.decode('utf-8').strip())
+    except:
+        sys.stdout.write(read_std_lines)
 
     email_list = read_email(read_std_lines)
     update_address_book(filename, address_book_dict, email_list, APPEND_MODE)
