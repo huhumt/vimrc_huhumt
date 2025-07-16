@@ -198,7 +198,7 @@ index 503576f..ac88be3 100644
  "
  func! ctrlsf#preview#FocusPreviewWindow() abort
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..e014009 100644
+index 22271e6..5aeeccc 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -219,7 +219,7 @@ index 22271e6..e014009 100644
      return [out]
  endf
  
-@@ -154,23 +145,26 @@ endf
+@@ -154,23 +145,23 @@ endf
  func! s:CompactViewIncr(base_vlnum) abort
      let matchlist = ctrlsf#db#MatchList()
      let to_render = matchlist[s:rendered_match:-1]
@@ -231,13 +231,10 @@ index 22271e6..e014009 100644
      for mat in to_render
 -        call extend(view, s:LineCompact(mat))
 +        let mat_cnt += 1
-+        let f_list = split(mat.filename, '/')
-+        let f_basename = join(len(f_list) > 1 ? f_list[-2:]: f_list, '/')
-+        let indent = printf("[%*d] %-*s |%-*s col %*s| ",
-+                    \ 4, mat_cnt,
-+                    \ 48, f_basename,
-+                    \ 4, mat.lnum,
-+                    \ 4, mat.col)
++        let indent = printf("%*s |%*s| %-*s ",
++                    \ 8,  "No." . mat_cnt,
++                    \ 10, mat.lnum . " col " . mat.col,
++                    \ 80, mat.filename)
 +        call extend(view, [indent . trim(mat.text)])
  
          let vlnum = a:base_vlnum + len(view)
@@ -254,7 +251,7 @@ index 22271e6..e014009 100644
      return view
  endf
  
-@@ -278,16 +272,28 @@ endf
+@@ -278,16 +269,28 @@ endf
  "
  func! ctrlsf#view#FindNextMatch(forward, wrapscan, ...) abort
      let file_based = get(a:, 1, 0)
