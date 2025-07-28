@@ -552,7 +552,7 @@ let g:ctrlsf_extra_backend_args = {
 "     \ }
 let g:ctrlsf_mapping = {
     \ "open"    : "",
-    \ "openb"   : "",
+    \ "openb"   : "e",
     \ "split"   : "",
     \ "vsplit"  : ["<CR>", "o", "<2-LeftMouse>"],
     \ "tab"     : "",

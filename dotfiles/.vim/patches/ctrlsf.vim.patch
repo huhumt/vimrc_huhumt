@@ -1,5 +1,5 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..433ae47 100644
+index 59aa399..9da6a39 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
 @@ -366,11 +366,10 @@ func! ctrlsf#NextMatch(forward, ...) abort
@@ -16,15 +16,49 @@ index 59aa399..433ae47 100644
          if g:ctrlsf_auto_preview
              call ctrlsf#JumpTo('preview')
          endif
-@@ -435,7 +434,7 @@ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
-         if bufname('%') !=# a:file
-             if a:split || (&modified && !&hidden)
-                 if a:split == 2
+@@ -418,30 +417,25 @@ endf
+ "
+ func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
+     if a:mode == 1
+-        " close preview window if file is opened in current tab
+-        call ctrlsf#preview#ClosePreviewWindow()
+-
+         if ctrlsf#opt#AutoClose()
+             call s:Quit()
++        else
++            " close preview window if file is opened in current tab
++            call ctrlsf#preview#ClosePreviewWindow()
+         endif
+     endif
+ 
+-    let target_winnr = ctrlsf#win#FindTargetWindow(a:file)
+-    if target_winnr == 0
+-        exec 'silent split ' . fnameescape(a:file)
+-    else
+-        exec target_winnr . 'wincmd w'
+-
+-        if bufname('%') !=# a:file
+-            if a:split || (&modified && !&hidden)
+-                if a:split == 2
 -                    exec 'silent vertical split ' . fnameescape(a:file)
-+                    exec 'silent ' . ctrlsf#preview#GetOpenPos() . ' vertical split ' . fnameescape(a:file)
-                 else
-                     exec 'silent split ' . fnameescape(a:file)
-                 endif
+-                else
+-                    exec 'silent split ' . fnameescape(a:file)
+-                endif
++    if bufname('%') !=# a:file
++        if a:split || (&modified && !&hidden)
++            if a:split == 2
++                exec 'silent ' . ctrlsf#preview#GetOpenPos() . ' vertical split ' . fnameescape(a:file)
+             else
+-                exec 'silent edit ' . fnameescape(a:file)
++                exec 'silent split ' . fnameescape(a:file)
+             endif
++        else
++            call ctrlsf#preview#FocusPreviewWindow()
++            exec 'silent edit ' . fnameescape(a:file)
++            call ctrlsf#win#UpdateCallerWindow()
+         endif
+     endif
+ 
 diff --git a/autoload/ctrlsf/pat.vim b/autoload/ctrlsf/pat.vim
 index 7554a94..cc0616a 100644
 --- a/autoload/ctrlsf/pat.vim
@@ -198,7 +232,7 @@ index 503576f..ac88be3 100644
  "
  func! ctrlsf#preview#FocusPreviewWindow() abort
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..5aeeccc 100644
+index 22271e6..e912534 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -231,10 +265,10 @@ index 22271e6..5aeeccc 100644
      for mat in to_render
 -        call extend(view, s:LineCompact(mat))
 +        let mat_cnt += 1
-+        let indent = printf("%*s |%*s| %-*s ",
++        let indent = printf("%*s %s |%*s| ",
 +                    \ 8,  "No." . mat_cnt,
-+                    \ 10, mat.lnum . " col " . mat.col,
-+                    \ 80, mat.filename)
++                    \ mat.filename,
++                    \ 10, mat.lnum . " col " . mat.col)
 +        call extend(view, [indent . trim(mat.text)])
  
          let vlnum = a:base_vlnum + len(view)
@@ -282,7 +316,7 @@ index 22271e6..5aeeccc 100644
  
  func! s:FindNextFile(forward) abort
 diff --git a/autoload/ctrlsf/win.vim b/autoload/ctrlsf/win.vim
-index 1bfd140..a06c3e4 100644
+index 1bfd140..84e2df3 100644
 --- a/autoload/ctrlsf/win.vim
 +++ b/autoload/ctrlsf/win.vim
 @@ -43,7 +43,7 @@ func! ctrlsf#win#OpenMainWindow() abort
@@ -324,7 +358,20 @@ index 1bfd140..a06c3e4 100644
          return -1
      endif
  
-@@ -311,6 +310,10 @@ func! ctrlsf#win#FindCallerWindow() abort
+@@ -305,12 +304,23 @@ func! ctrlsf#win#FocusMainWindow() abort
+     return ctrlsf#win#FocusWindow(s:MAIN_BUF_NAME)
+ endf
+ 
++func! ctrlsf#win#UpdateCallerWindow() abort
++    let s:caller_win = {
++        \ 'bufnr' : bufnr('%'),
++        \ 'winid' : win_getid(winnr()),
++        \ }
++endf
++
+ " FindCallerWindow()
+ "
+ func! ctrlsf#win#FindCallerWindow() abort
      return s:caller_win.winid > 0 ? win_id2win(s:caller_win.winid) : -1
  endf
  
@@ -335,7 +382,7 @@ index 1bfd140..a06c3e4 100644
  " FocusCallerWindow()
  "
  func! ctrlsf#win#FocusCallerWindow() abort
-@@ -367,6 +370,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
+@@ -367,6 +377,7 @@ func! ctrlsf#win#FocusFirstMatch() abort
      " scroll up to top line
      1normal! ^
      call ctrlsf#NextMatch(1, 0)
