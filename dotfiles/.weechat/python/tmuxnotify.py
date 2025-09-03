@@ -124,34 +124,29 @@ def notify_cmd_hyperlink(message):
 
 
 def notify_event(msg_from, new_msg):
-    NOTIFY_CMD = (f"notify-send -t 10000 -i 'user-idle' "
-                  f"'{msg_from}' "
-                  f"'{notify_cmd_hyperlink(new_msg)}'")
-    os.popen(NOTIFY_CMD)
+    notify_cmd_list = [
+        ("tmux display-popup -E -B -xC -yS -w 30% -h 20% "
+         "-s fg=colour220,bg=colour243 "
+         f"""'echo "{msg_from}\n  {new_msg}";
+         stty -echo;sleep 3;stty echo'"""),
 
-    TMUX_POPUP_CMD = (
-        f"tmux display-popup -E -B -xC -yS -w 30% -h 20% "
-        f"-s fg=colour220,bg=colour243 "
-        f"""'stty -echo;
-             echo "{msg_from}\n  {new_msg}";
-             sleep 5;
-             stty echo' &
-        """
-    )
-    os.popen(TMUX_POPUP_CMD)
+        (f"notify-send -t 10000 -i 'user-idle' "
+         f"'{msg_from}' '{notify_cmd_hyperlink(new_msg)}'"),
 
-    TMUX_CMD = "tmux set display-time {0} && tmux display-message '{1}' &"
-    os.popen(TMUX_CMD.format(5 * 1000, re.sub(' +', ' ', new_msg)))
+        f"""tmux display-message -d 5000 '{re.sub(" +", " ", new_msg)}' &""",
+    ]
+
+    for cmd in notify_cmd_list:
+        os.popen(cmd)
 
 
 def update_weechat_log(weechat_log_data, new_msg_prefix=""):
     today_m_d = datetime.today().strftime("%a %b %d")
-    now_h_m = datetime.now().time()
-    new_msg = f"{weechat_log_data.key}: {weechat_log_data.value}"
+    now_h_m = datetime.now().time().strftime("%H:%M")
+    new_msg = re.sub(r'[`]', '',
+                     f"{weechat_log_data.key}: {weechat_log_data.value}")
     short_msg = new_msg[:32].strip()
-    header = (
-        f"{weechat_log_data.header}{today_m_d} {now_h_m.strftime('%H:%M')}"
-    )
+    header = f"{weechat_log_data.header}{today_m_d} {now_h_m}"
 
     if weechat_log_data.source == FROM_GCALCLI:
         out_msg = f"<{short_msg}>\n{header}\n{new_msg}\n"
@@ -166,12 +161,13 @@ def update_weechat_log(weechat_log_data, new_msg_prefix=""):
     else:
         if content:
             if weechat_log_data.source == FROM_GCALCLI:
-                event_minute = int(weechat_log_data.key.split(":")[-1].strip())
-                delta_minute = event_minute - now_h_m.minute
+                event_time = datetime.strptime(weechat_log_data.key, '%H:%M')
+                cur_time = datetime.strptime(now_h_m, '%H:%M')
+                delta_seconds = abs((event_time - cur_time).total_seconds())
                 out_msg = update_gcalcli_log(
                     out_msg,
                     content,
-                    abs(delta_minute) < WEECHAT_CRON_INTERVAL
+                    delta_seconds < WEECHAT_CRON_INTERVAL * 60
                 )
             else:
                 out_msg = update_irc_log(out_msg, content)
@@ -200,7 +196,7 @@ def parse_today_event():
                 cur_date = " ".join(line_remove_colour.split()[:3])
                 try:
                     datetime.strptime(cur_date, "%a %b %d")
-                except ValueError:
+                except:
                     pass
                 else:
                     if cur_date == today_w_m_d:
