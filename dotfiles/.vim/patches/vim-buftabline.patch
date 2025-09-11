@@ -1,0 +1,69 @@
+diff --git a/doc/buftabline.txt b/doc/buftabline.txt
+index dc54ac9..ee7e53a 100644
+--- a/doc/buftabline.txt
++++ b/doc/buftabline.txt
+@@ -70,6 +70,10 @@ effect immediately unless you force an update: >
+     setting this to 0. Note it only has an effect before loading the plugin,
+     not if you change it later.
+ 
++*g:buftabline_show_max*      number (default 8)
++
++    The number of buffer number will be shown in tabline. 0 for no limitation.
++
+ 
+ ==============================================================================
+ 3. Mappings                                                *buftabline-mappings*
+diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
+index fccfd6d..8af4ab4 100644
+--- a/plugin/buftabline.vim
++++ b/plugin/buftabline.vim
+@@ -42,6 +42,7 @@ let g:buftabline_indicators = get(g:, 'buftabline_indicators', 0)
+ let g:buftabline_separators = get(g:, 'buftabline_separators', 0)
+ let g:buftabline_show       = get(g:, 'buftabline_show',       2)
+ let g:buftabline_plug_max   = get(g:, 'buftabline_plug_max',  10)
++let g:buftabline_show_max   = get(g:, 'buftabline_show_max',  8)
+ 
+ function! buftabline#user_buffers() " help buffers are always unlisted, but quickfix buffers are not
+ 	return filter(range(1,bufnr('$')),'buflisted(v:val) && "quickfix" !=? getbufvar(v:val, "&buftype")')
+@@ -55,6 +56,23 @@ function s:SID()
+ 	return matchstr(expand('<sfile>'), '<SNR>\d\+_')
+ endfunction
+ 
++let g:mru_list = []
++function! buftabline#updatebuf()
++	let l:bufnums = buftabline#user_buffers()
++	let l:cur_buf = bufnr('%')
++	if len(l:bufnums) > 0 && index(l:bufnums, l:cur_buf) != -1
++		if len(g:mru_list) == 0
++			let g:mru_list = l:bufnums
++		endif
++
++		let g:mru_list = add(filter(g:mru_list, 'v:val != l:cur_buf'), l:cur_buf)
++		if len(g:mru_list) > g:buftabline_show_max
++			let g:mru_list = g:mru_list[-g:buftabline_show_max:]
++		endif
++	endif
++	return filter(l:bufnums, 'index(g:mru_list, v:val) != -1')
++endfunction
++
+ let s:dirsep = fnamemodify(getcwd(),':p')[-1:]
+ let s:centerbuf = winbufnr(0)
+ let s:tablineat = has('tablineat')
+@@ -65,7 +83,7 @@ function! buftabline#render()
+ 	let show_mod = g:buftabline_indicators
+ 	let lpad     = g:buftabline_separators ? nr2char(0x23B8) : ' '
+ 
+-	let bufnums = buftabline#user_buffers()
++	let bufnums = buftabline#updatebuf()
+ 	let centerbuf = s:centerbuf " prevent tabline jumping around when non-user buffer current (e.g. help)
+ 
+ 	" pick up data on all the buffers
+@@ -96,7 +114,7 @@ function! buftabline#render()
+ 			let tab.label = ( show_mod ? '!' . screen_num : screen_num ? screen_num . ' !' : '!' )
+ 		else " unnamed file
+ 			let tab.label = ( show_mod && getbufvar(bufnum, '&mod') ? '+' : '' )
+-			\             . ( screen_num ? screen_num : '*' )
++			\             . ( screen_num ? screen_num : '*' ) . ' --NO NAME--' . localtime()
+ 		endif
+ 		let tabs += [tab]
+ 	endfor

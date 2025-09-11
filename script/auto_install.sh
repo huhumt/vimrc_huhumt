@@ -44,8 +44,9 @@ config_vim() {
     patch_list=(
        ctrlsf.vim.patch
        fern-preview.vim.patch
-       minibufexpl.vim.patch
+       vim-buftabline.patch
        vim-gutentags.patch
+       vim-table-mode.patch
     )
     for patch in ${patch_list[@]}; do
        patch_filename="$raw_repo_url/dotfiles/.vim/patches/$patch"

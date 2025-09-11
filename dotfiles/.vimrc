@@ -397,7 +397,11 @@ augroup END
 " let g:miniBufExplMapWindowNavArrows = 1
 " let g:miniBufExplMapCTabSwitchBufs = 1
 " let g:miniBufExplModSelTarget = 1
-let g:miniBufExplMaxSize = 1
+" let g:miniBufExplMaxSize = 1
+" let g:miniBufExplBuffersNeeded = 1
+let g:buftabline_numbers = 1
+let g:buftabline_indicators = 1
+let g:buftabline_separators = 1
 
 " Support tagbar plugin
 nnoremap <Leader>t :TagbarToggle<CR>
@@ -716,7 +720,8 @@ Plug 'ntpeters/vim-better-whitespace'
 
 " use mini-buffer window to display select function
 " this plugin broke command `20 split README.md`
-Plug 'fholgado/minibufexpl.vim'
+" Plug 'fholgado/minibufexpl.vim'
+Plug 'ap/vim-buftabline'
 
 " use tagbar to display current status
 " Plug 'majutsushi/tagbar'
@@ -798,7 +803,7 @@ Plug 'dhruvasagar/vim-table-mode'
 " Plug 'rust-lang/rust.vim'
 
 " split long line to multiple line by gS or gJ for the opposite
-Plug 'AndrewRadev/splitjoin.vim'
+" Plug 'AndrewRadev/splitjoin.vim'
 
 " run command aysnc in backgroup
 Plug 'skywind3000/asyncrun.vim'
@@ -851,6 +856,10 @@ set colorcolumn=80
 
 " highlight line number
 highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
+
+highlight link BufTabLineCurrent MarkWord3
+highlight link BufTabLineActive  MarkWord2
+highlight link BufTabLineHidden  CocMenuSel
 
 " change coc underline highlight
 " highlight MyErrorHi cterm=None ctermbg=lightgray ctermfg=NONE
