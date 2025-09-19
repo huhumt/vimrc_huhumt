@@ -33,6 +33,12 @@ set wildcharm=<Tab>
 set completeopt=menu
 set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
+" from vim version 9.1.1243, it starts to support diff by char
+" https://github.com/vim/vim/commit/9943d4790e42721a6777da9e12637aa595ba4965
+if has("patch-9.1.1243")
+    set diffopt=internal,filler,closeoff,inline:char
+endif
+
 set ttimeout        " time out for key codes
 set ttimeoutlen=100 " wait up to 100ms after Esc for special key
 
@@ -838,11 +844,11 @@ highlight Comment ctermfg=lightgreen guifg=green
 highlight Visual cterm=underline,standout ctermfg=red ctermbg=lightred
 highlight Search cterm=bold ctermfg=yellow ctermbg=gray
 " refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
-highlight DiffChange cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
-highlight DiffAdd    cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
-highlight DiffDelete cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
-highlight DiffChange cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
-highlight DiffText   cterm=none ctermfg=blue ctermbg=lightcyan gui=none guifg=bg guibg=Red
+" https://www.ditig.com/256-colors-cheat-sheet
+highlight DiffAdd    cterm=none ctermfg=NONE ctermbg=124
+highlight DiffDelete cterm=none ctermfg=NONE ctermbg=124
+highlight DiffChange cterm=none ctermfg=NONE ctermbg=NONE
+highlight DiffText   cterm=none ctermfg=190  ctermbg=29
 
 " add crosshair style cursor
 highlight CursorLine   cterm=reverse ctermbg=NONE ctermfg=NONE guibg=darkgray guifg=NONE
