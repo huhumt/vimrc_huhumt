@@ -14,7 +14,7 @@ index dc54ac9..ee7e53a 100644
  ==============================================================================
  3. Mappings                                                *buftabline-mappings*
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index fccfd6d..8af4ab4 100644
+index fccfd6d..6b49abf 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -42,6 +42,7 @@ let g:buftabline_indicators = get(g:, 'buftabline_indicators', 0)
@@ -58,6 +58,15 @@ index fccfd6d..8af4ab4 100644
  	let centerbuf = s:centerbuf " prevent tabline jumping around when non-user buffer current (e.g. help)
  
  	" pick up data on all the buffers
+@@ -83,7 +101,7 @@ function! buftabline#render()
+ 		if strlen(bufpath)
+ 			let tab.path = fnamemodify(bufpath, ':p:~:.')
+ 			let tab.sep = strridx(tab.path, s:dirsep, strlen(tab.path) - 2) " keep trailing dirsep
+-			let tab.label = tab.path[tab.sep + 1:]
++			let tab.label = currentbuf == bufnum ? tab.path : tab.path[tab.sep + 1:]
+ 			let pre = screen_num
+ 			if getbufvar(bufnum, '&mod')
+ 				let tab.hilite = 'Modified' . tab.hilite
 @@ -96,7 +114,7 @@ function! buftabline#render()
  			let tab.label = ( show_mod ? '!' . screen_num : screen_num ? screen_num . ' !' : '!' )
  		else " unnamed file
