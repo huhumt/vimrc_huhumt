@@ -272,12 +272,20 @@ function! StatuslineGitBranch() abort
     endif
 endfunction
 
+function! StatuslineFilename() abort
+    if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
+        return ctrlsf#utils#PreviewSectionC()
+    else
+        return empty(bufname()) ? "new file" : expand('%:~:.')
+    endif
+endfunction
+
 set laststatus=2
 set statusline=%1*\ %{StatuslineCurMode()}
 " git branch information from vim-fugitive plugin
-set statusline+=%2*\%{StatuslineGitBranch()} " git branch info
-set statusline+=%3*\ %{expand('%:~:.')}\     " short filename
-set statusline+=%4*\ %y\ %h%m%r              " file flags (help, RO, modified)
+set statusline+=%2*\%{StatuslineGitBranch()}  " git branch info
+set statusline+=%3*\ %{StatuslineFilename()}\ " short filename
+set statusline+=%4*\ %y\ %h%m%r               " file flags (help, RO, modified)
 " vim gutentags running status
 set statusline+=%4*%{exists('g:loaded_gutentags')?gutentags#statusline():''}
 set statusline+=%=                           " right align
