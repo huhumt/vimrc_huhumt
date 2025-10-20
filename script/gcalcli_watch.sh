@@ -9,8 +9,9 @@ watch -n 200 -c -t -x bash -c \
     ag --nofilename --nobreak \
     "Request: Holiday \d{2}/${this_month}/${this_year}" \
     "$HOME/.config/neomutt/mails/" | while read -r holiday; do
-      holiday_date=$(grep -oP "\d{2}/\d{2}/\d{2}-\d{2}/\d{2}/\d{2}" <<<"$holiday" | tr / -)
+      holiday_date=$(grep -oP "\d{2}/\d{2}/\d{2}(-\d{2}/\d{2}/\d{2})?" <<<"$holiday" | tr / -)
       IFS="-" read -r start_day start_month start_year end_day end_month end_year <<<"$holiday_date"
+      [ -z "$end_day" ] && end_day=$start_day && end_month=$start_month && end_year=$start_year
       holiday_exist=$(gcalcli --config-folder "$HOME/.config/gcalcli" \
           --nocolor search "${holiday_title}" \
           "${start_month}/${start_day}/${start_year}" \
