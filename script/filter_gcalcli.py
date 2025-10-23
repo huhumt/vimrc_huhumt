@@ -19,21 +19,22 @@ COLOUR_LIGHT_GRAY = '\033[0;37m'
 
 def to_colour(event_dict: OrderedDict) -> str:
     now_h_m = datetime.now().time()
-    colour_event = (
+    colour_header = (
         f"{COLOUR_BG_BLUE}"
         f"{datetime.today().strftime('%a %b %d')}"
         f"{COLOUR_OFF}\n"
     )
+    colour_event = str()
 
     for event_name in event_dict:
         event_time = event_dict[event_name]["time"]
         event_attr = event_dict[event_name]["attr"]
 
         if event_time == ALL_DAY_EVENT_KEY:
-            colour_event += (
+            colour_event = (
                 f"    {COLOUR_PURPLE}"
                 f"{event_name} (All Day){COLOUR_OFF}\n"
-            )
+            ) + colour_event
         else:
             reminder_c = datetime.strptime(event_time, "%H:%M")
             reminder_s = (reminder_c - timedelta(minutes=15)).time()
@@ -75,7 +76,7 @@ def to_colour(event_dict: OrderedDict) -> str:
                 colour_event += f"{colour}{event}"
             colour_event += f"{COLOUR_OFF}\n"
 
-    return colour_event
+    return f"{colour_header}{colour_event}"
 
 
 def hyperlinks_text(url, hyper_txt):
@@ -117,53 +118,72 @@ def get_event(line, pre_line, event_name, today_log):
                 stdout=subprocess.PIPE
             ).stdout.decode('utf-8').strip()
             description_url_list.append(short_url)
-        if description_url_list:
-            return None, "description_url", description_url_list
+        return None, "description_url", description_url_list
     return None, None, None
+
+
+def remove_colour(input_str):
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", input_str)
+
+
+def read_from_file(filename="/tmp/gcalcli_agenda.txt"):
+    yesterday = (datetime.today() - timedelta(days=1)).strftime("%a %b %d")
+    holiday_regex = r'(?P<holiday>.*holiday)[ ]*\((?P<duration>\d+)[ ]*day[s]?\)'
+    try:
+        with open(filename, "r") as f:
+            content = remove_colour(f.read())
+            if holiday := re.findall(holiday_regex, content, re.IGNORECASE)[0]:
+                name = holiday[0].strip()
+                day = int(holiday[1].strip())
+
+                # can only be yesterday or today
+                if name and (left_day := day - int(yesterday in content)) > 0:
+                    return ALL_DAY_EVENT_KEY, "(All day)", f"{name} ({left_day} {'days' if left_day > 1 else 'day'})"
+    except FileNotFoundError:
+        return None
+    except IndexError:
+        return None
 
 
 def parse_today_event(cal_log: str) -> OrderedDict:
     today_w_m_d = datetime.today().strftime("%a %b %d")
-    today_log_list = re.compile(
-        fr"{today_w_m_d}.*(?:\r?\n(?!\r?\n).*)*"
-    ).findall(cal_log)
+    re_today = fr"{today_w_m_d}.*(?:\r?\n(?!\r?\n).*)*"
+    event_dict = OrderedDict()
 
-    if not today_log_list:
+    if today_log_list := re.findall(re_today, remove_colour(cal_log)):
+        today_log = today_log_list[0]
+
+        pre_line = None
+        event_name = None
+
+        for line in today_log.splitlines():
+            line = line.split(today_w_m_d)[-1].strip()
+            time, key, value = get_event(line, pre_line, event_name, today_log)
+            pre_line = line
+
+            if key and value:
+                if time:
+                    event_name = value
+                    event_dict[event_name] = {"time": time, "attr": {}}
+                else:
+                    event_dict[event_name]["attr"][key] = value
+    else:
         if datetime.today().isoweekday() > 5:
             holiday_event = "Weekends"
         else:
             holiday_event = "On holiday"
 
-        return OrderedDict({
-            holiday_event: {
-                "time": ALL_DAY_EVENT_KEY,
-                "attr": {}
-            }
-        })
+        event_dict[holiday_event] = {"time": ALL_DAY_EVENT_KEY, "attr": {}}
 
-    today_log = today_log_list[0]
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-
-    event_dict = OrderedDict()
-    pre_line = None
-    event_name = None
-
-    for line in today_log.splitlines():
-        line = ansi_escape.sub("", line).split(today_w_m_d)[-1].strip()
-        time, key, value = get_event(line, pre_line, event_name, today_log)
-        pre_line = line
-
-        if key and value:
-            if time:
-                event_name = value
-                event_dict[event_name] = {"time": time, "attr": {}}
-            else:
-                event_dict[event_name]["attr"][key] = value
     return event_dict
 
 
 if __name__ == "__main__":
     event_dict = parse_today_event(
         sys.stdin.buffer.read().decode('utf-8', 'ignore'))
+    if holiday := read_from_file():
+        (time, key, value) = holiday
+        event_dict[value] = {"time": time, "attr": {}}
     if event_dict:
         print(to_colour(event_dict))
