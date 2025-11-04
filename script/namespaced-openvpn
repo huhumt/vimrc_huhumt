@@ -388,40 +388,35 @@ def main():
     local_user =  os.environ.get("SUDO_USER")
     namespace = args.namespace if args.namespace != "" else '""'
 
-    ip_cmd_list = [
-        'ip', 'netns', 'exec', namespace,
-        'sudo', '-u', local_user
-    ]
-
     ssh_key = os.path.join(
         os.path.expanduser(f'~{local_user}'), ".ssh/test_key"
     )
     ssh_cmd_list = [
         'ssh', 'test@test.co.uk',
-        '-p', '2222', '-i', ssh_key, '-L', '5901:localhost:5901'
+        '-p', '2222', '-i', ssh_key
     ]
 
+    process_id_list = []
     try:
-        if args.clean or (not args.disable_ssh):
-            ssh_cmd = " ".join(ssh_cmd_list)
-            process_id_list = subprocess.check_output(f"pgrep -f '{ssh_cmd}'", shell=True).decode().splitlines()
-        ip_cmd_list.append("-i")
+        ssh_cmd = " ".join(ssh_cmd_list)
+        process_id_list = subprocess.check_output(
+            f"pgrep -f '{ssh_cmd}'", shell=True).decode().splitlines()
     except subprocess.CalledProcessError:
-        ip_cmd_list += ssh_cmd_list
-        process_id_list = []
-
-    if args.clean:
-        print("Clean namespace and openvpn")
-        for process_id in process_id_list:
-            os.kill(int(process_id), signal.SIGTERM)
-        subprocess.run(["pkill", "openvpn"])
-        subprocess.run(["ip", "netns", "delete", args.namespace])
-        return 0
+        ssh_cmd_list += ['-L', '5901:localhost:5901']
+    finally:
+        if args.clean:
+            print("Clean namespace and openvpn")
+            for process_id in process_id_list:
+                os.kill(int(process_id), signal.SIGTERM)
+            subprocess.run(["pkill", "openvpn"])
+            subprocess.run(["ip", "netns", "delete", args.namespace])
+            return 0
 
     pid_filename = "/run/openvpn-client/vpn.pid"
     try:
         print(f"setup namespace {args.namespace}")
         setup_namespace(args.namespace)
+        time.sleep(2)
     except Exception as e:
         print(f"{e}\nOpen bash only\n")
     else:
@@ -457,6 +452,9 @@ def main():
             time.sleep(5)
     finally:
         if os.path.isfile(pid_filename):
+            ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
+            ip_cmd_list += ['-i'] if args.disable_ssh else ssh_cmd_list
+            print(f"Run '{" ".join(ip_cmd_list)}'")
             os.execv(IP_CMD, ip_cmd_list)
         else:
             print("Failed to authentication with given username and password")
