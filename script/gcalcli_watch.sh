@@ -42,7 +42,7 @@ watch -n 200 -c -t -x bash -c '
     fi
 
     if cal_event=$(gcalcli --config-folder $HOME/.config/gcalcli \
-    --nocolor agenda \
+    --nocolor --lineart ascii agenda \
     --details location \
     --details url \
     --details description | python $HOME/.local/bin/filter_gcalcli.py); then
