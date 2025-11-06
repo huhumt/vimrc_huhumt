@@ -35,9 +35,9 @@ set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
 " from vim version 9.1.1243, it starts to support diff by char
 " https://github.com/vim/vim/commit/9943d4790e42721a6777da9e12637aa595ba4965
-if has("patch-9.1.1243")
-    set diffopt=internal,filler,closeoff,inline:char
-endif
+" if has("patch-9.1.1243")
+"     set diffopt=internal,filler,closeoff,inline:char
+" endif
 set fillchars+=diff:\ " display nothing for diff add/delete
 
 set ttimeout        " time out for key codes
