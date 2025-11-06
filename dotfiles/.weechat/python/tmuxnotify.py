@@ -141,12 +141,11 @@ def notify_event(msg_from, new_msg):
 
 
 def update_weechat_log(weechat_log_data, new_msg_prefix=""):
-    today_m_d = datetime.today().strftime("%a %b %d")
-    now_h_m = datetime.now().time().strftime("%H:%M")
-    new_msg = re.sub(r'[`]', '',
-                     f"{weechat_log_data.key}: {weechat_log_data.value}")
+    today_date = datetime.today()
+    new_msg = re.sub(
+        r'[`]', '', f"{weechat_log_data.key}: {weechat_log_data.value}")
     short_msg = new_msg[:32].strip()
-    header = f"{weechat_log_data.header}{today_m_d} {now_h_m}"
+    header = f"{weechat_log_data.header}{today_date.strftime('%a %b %d %H:%M')}"
 
     if weechat_log_data.source == FROM_GCALCLI:
         out_msg = f"<{short_msg}>\n{header}\n{new_msg}\n"
@@ -161,9 +160,10 @@ def update_weechat_log(weechat_log_data, new_msg_prefix=""):
     else:
         if content:
             if weechat_log_data.source == FROM_GCALCLI:
-                event_time = datetime.strptime(weechat_log_data.key, '%H:%M')
-                cur_time = datetime.strptime(now_h_m, '%H:%M')
-                delta_seconds = abs((event_time - cur_time).total_seconds())
+                cur_hour, cur_minute = weechat_log_data.key.split(":")
+                event_time = today_date.replace(
+                    hour=int(cur_hour), minute=int(cur_minute))
+                delta_seconds = abs((today_date - event_time).total_seconds())
                 out_msg = update_gcalcli_log(
                     out_msg,
                     content,
@@ -180,49 +180,31 @@ def update_weechat_log(weechat_log_data, new_msg_prefix=""):
 
 def parse_today_event():
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    today_w_m_d = datetime.today().strftime("%a %b %d")
-    now_h_m = datetime.now().time()
+    today_date = datetime.today()
 
     # before 8:00AM or after 8:00PM, it's out of work hour
-    if now_h_m.hour < 8 or now_h_m.hour > 20:
+    if today_date.hour not in range(8, 20):
         return None, None
-
-    today_flag = False
 
     try:
         with open(GCALCLI_LOG_FILENAME, "r") as r_fd:
-            for line in r_fd:
-                line_remove_colour = ansi_escape.sub("", line)
-                cur_date = " ".join(line_remove_colour.split()[:3])
-                try:
-                    datetime.strptime(cur_date, "%a %b %d")
-                except:
-                    pass
-                else:
-                    if cur_date == today_w_m_d:
-                        today_flag = True
-                    else:
-                        if today_flag:
-                            return None, None
-
-                time_list = re.findall(r"\d{1,2}:\d{2} ", line_remove_colour)
-                if today_flag and time_list:
-                    time = time_list[0].strip()
-                    cal_list = line_remove_colour.split(time)
-                    event = " ".join(cal_list[-1].strip().split())
-                    event_time = datetime.strptime(time, "%H:%M")
-                    reminder_s = (
-                        event_time -
-                        timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)).time()
-                    reminder_e = (
-                        event_time +
-                        timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)).time()
-                    if (time and event
-                            and now_h_m > reminder_s
-                            and now_h_m < reminder_e):
-                        return time, event
+            content = ansi_escape.sub("", r_fd.read()).strip()
     except FileNotFoundError:
         pass
+    else:
+        if content.startswith(today_date.strftime("%a %b %d")):
+            re_event = r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s+(?P<event>.*)"
+            for cur_hour, cur_minute, cur_event in filter(
+                    lambda x: all(x), re.findall(re_event, content)):
+                print(cur_hour, cur_minute, cur_event)
+                event_time = today_date.replace(
+                    hour=int(cur_hour), minute=int(cur_minute))
+                reminder_s = (
+                    event_time - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4))
+                reminder_e = (
+                    event_time + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2))
+                if today_date > reminder_s and today_date < reminder_e:
+                    return f"{cur_hour}:{cur_minute}", cur_event.strip()
     return None, None
 
 
