@@ -16,6 +16,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from typing import Optional
 
 weechat.register("tmuxnotify", "lukaszkorecki", "0.1", "GPL",
                  "tmuxnotify: weechat notifications in tmux", "", "")
@@ -33,11 +34,10 @@ for option, default_value in settings.items():
 
 WEECHAT_LOG_FILENAME = "/tmp/weechat_msg.txt"
 GCALCLI_LOG_FILENAME = "/tmp/gcalcli_agenda.txt"
-FROM_GCALCLI, FROM_IRC = ("=== From gcalcli agenda, reported at: ",
-                          "=== From irc message, reported at: "
-                          )
-GCALCLI_IRC_SEP = f"\n{'='*80}\n"
-WEECHAT_CRON_INTERVAL = 3  # in minutes
+FROM_SOURCE_TEMPLATE = ("=== From {source}, reported at: ")
+MODE_APPEND, MODE_REPLACE, MODE_DELETE = range(3)
+GCALCLI_IRC_SEP = ('=' * 80)
+WEECHAT_CRON_INTERVAL = 5  # in minutes
 
 # Hook privmsg/hilights
 # https://weechat.org/files/doc/stable/weechat_plugin_api.en.html#_hook_signal
@@ -51,60 +51,14 @@ weechat.hook_timer(
 
 @dataclass
 class WeechatLogData:
-    source: str  # reported from gcalcli or irc
-    key: str     # timestamp for gcalcli, name for irc
-    value: str   # event for gcalcli, message for irc
-    header: str
-
-
-def delete_weechat_log(report_source):
-    try:
-        with open(WEECHAT_LOG_FILENAME, "r") as f:
-            content = f.read()
-            content_list = content.split(GCALCLI_IRC_SEP, 1)
-    except FileNotFoundError:
-        pass
-    else:
-        if report_source == FROM_GCALCLI:  # remove head
-            if FROM_GCALCLI in content:
-                if FROM_IRC in content:
-                    remains = content_list[-1].strip()
-                else:
-                    remains = None
-            else:
-                return True
-        else:  # remove tail
-            if FROM_IRC in content:
-                if FROM_GCALCLI in content:
-                    remains = content_list[0].strip()
-                else:
-                    remains = None
-            else:
-                return True
-
-        with open(WEECHAT_LOG_FILENAME, "w") as f:
-            f.write(f"{remains}\n" if remains else "")
-
-
-def update_gcalcli_log(new_msg, content, force_update=False):
-    head = content[0].strip()
-    new_msg_lines = len(new_msg.splitlines())
-    if head.startswith("<") and head.endswith(">"):
-        if force_update:
-            irc_msg = ''.join(content[new_msg_lines:])
-            return f"{new_msg}{irc_msg}"
-        else:
-            return None
-    else:
-        return f"{new_msg}{GCALCLI_IRC_SEP}\n{''.join(content)}"
-
-
-def update_irc_log(new_msg, content):
-    tail = content[-1].strip()
-    if tail.startswith("[") and tail.endswith("]"):
-        return f"{''.join(content[:-1])}{new_msg}"
-    else:
-        return f"{''.join(content)}\n{GCALCLI_IRC_SEP}{new_msg}"
+    # reported from gcalcli or irc
+    source: str
+    # (HH:MM, event) for gcalcli, (name, msg) for irc
+    logs: Optional[tuple] = None
+    # update log file mode, can be append, replace and delete
+    mode: Optional[int] = MODE_DELETE
+    # short message sep tuple, for example ('<', '>')
+    sep: Optional[tuple] = None
 
 
 def notify_cmd_hyperlink(message):
@@ -140,55 +94,62 @@ def notify_event(msg_from, new_msg):
         os.popen(cmd)
 
 
-def update_weechat_log(weechat_log_data, new_msg_prefix=""):
-    today_date = datetime.today()
-    new_msg = re.sub(
-        r'[`]', '', f"{weechat_log_data.key}: {weechat_log_data.value}")
-    short_msg = new_msg[:32].strip()
-    header = f"{weechat_log_data.header}{today_date.strftime('%a %b %d %H:%M')}"
+def remove_colour(input_str):
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", input_str).strip()
 
-    if weechat_log_data.source == FROM_GCALCLI:
-        out_msg = f"<{short_msg}>\n{header}\n{new_msg}\n"
-    else:
-        out_msg = f"{header}\n{new_msg_prefix}{new_msg}\n[{short_msg}]\n"
+
+def update_weechat_log(log_cls: WeechatLogData):
+    re_log = re.compile(
+        r'(?P<first>[\s\S]*?)'
+        fr'(?P<msg>{log_cls.source}[\s\S]+?{GCALCLI_IRC_SEP})'
+        r'(?P<last>[\s\S]*?)'
+    )
 
     try:
         with open(WEECHAT_LOG_FILENAME, "r") as f:
-            content = f.readlines()
+            content = f.read()
     except FileNotFoundError:
-        pass
-    else:
-        if content:
-            if weechat_log_data.source == FROM_GCALCLI:
-                cur_hour, cur_minute = weechat_log_data.key.split(":")
-                event_time = today_date.replace(
-                    hour=int(cur_hour), minute=int(cur_minute))
-                delta_seconds = abs((today_date - event_time).total_seconds())
-                out_msg = update_gcalcli_log(
-                    out_msg,
-                    content,
-                    delta_seconds < WEECHAT_CRON_INTERVAL * 60
-                )
-            else:
-                out_msg = update_irc_log(out_msg, content)
+        content = ""
 
-    if out_msg:
+    if log_cls.logs and log_cls.mode != MODE_DELETE:
+        header = log_cls.source + datetime.now().strftime('%a %b %d %H:%M')
+        new_msg = ": ".join(log_cls.logs).replace('`', '')
+        out_msg = remove_colour(new_msg)
+        notify_event(log_cls.source, out_msg)
+        short_msg = f"{log_cls.sep[0]}{out_msg[:32]}{log_cls.sep[1]}"
+
+        if log := re_log.findall(content):
+            old_msg_list = list(log[0])
+            if log_cls.mode == MODE_APPEND:
+                # remove old_header, old_short_msg, GCALCLI_IRC_SEP
+                old_msg_lines = old_msg_list[1].splitlines()[1:-2]
+                old_msg_list[1] = os.linesep.join(old_msg_lines + [new_msg])
+            else:
+                old_msg_list[1] = new_msg
+            msg_list = [header] + [m for m in old_msg_list if m]
+        else:
+            msg_list = ([content] if content else []) + [header, new_msg]
+
+        msg_list += [short_msg, GCALCLI_IRC_SEP]
         with open(WEECHAT_LOG_FILENAME, "w") as f:
-            f.write(out_msg)
-        notify_event(weechat_log_data.source, new_msg)
+            f.write(os.linesep.join(msg_list))
+    else:
+        if log := re_log.findall(content):
+            with open(WEECHAT_LOG_FILENAME, "w") as f:
+                f.write(content.replace(log[0][1], "").strip())
 
 
 def parse_today_event():
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     today_date = datetime.today()
 
     # before 8:00AM or after 8:00PM, it's out of work hour
     if today_date.hour not in range(8, 20):
-        return None, None
+        return None
 
     try:
         with open(GCALCLI_LOG_FILENAME, "r") as r_fd:
-            content = ansi_escape.sub("", r_fd.read()).strip()
+            content = remove_colour(r_fd.read())
     except FileNotFoundError:
         pass
     else:
@@ -196,7 +157,6 @@ def parse_today_event():
             re_event = r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s+(?P<event>.*)"
             for cur_hour, cur_minute, cur_event in filter(
                     lambda x: all(x), re.findall(re_event, content)):
-                print(cur_hour, cur_minute, cur_event)
                 event_time = today_date.replace(
                     hour=int(cur_hour), minute=int(cur_minute))
                 reminder_s = (
@@ -204,18 +164,17 @@ def parse_today_event():
                 reminder_e = (
                     event_time + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2))
                 if today_date > reminder_s and today_date < reminder_e:
-                    return f"{cur_hour}:{cur_minute}", cur_event.strip()
-    return None, None
+                    return (f"{cur_hour}:{cur_minute}", cur_event.strip())
+    return None
 
 
 def cron_timer_cb(data, remaining_calls):
-    key, value = parse_today_event()
-    if key and value:
-        update_weechat_log(
-            WeechatLogData(FROM_GCALCLI, key, value, FROM_GCALCLI)
-        )
-    else:
-        delete_weechat_log(FROM_GCALCLI)
+    update_weechat_log(WeechatLogData(
+        source=FROM_SOURCE_TEMPLATE.format("gcalcli agenda"),
+        logs=parse_today_event(),
+        mode=MODE_REPLACE,
+        sep=('<', '>')
+    ))
     return weechat.WEECHAT_RC_OK
 
 
@@ -238,13 +197,15 @@ def notify_show(data, signal, message):
         if signal == "weechat_pv":
             COLOUR_OFF = '\033[0m'
             COLOUR_YELLOW_UNDERLINE = '\033[4;33m'
-            new_msg_prefix = f"{COLOUR_YELLOW_UNDERLINE}pm: {COLOUR_OFF}"
-        else:
-            new_msg_prefix = ""
-        update_weechat_log(
-            WeechatLogData(FROM_IRC, name, msg, FROM_IRC), new_msg_prefix
-        )
+            name = f"{COLOUR_YELLOW_UNDERLINE}pm: {COLOUR_OFF}{name}"
+        update_weechat_log(WeechatLogData(
+            source=FROM_SOURCE_TEMPLATE.format("IRC message"),
+            logs=(name, msg),
+            mode=MODE_APPEND,
+            sep=('[', ']')
+        ))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
-        delete_weechat_log(FROM_IRC)
+        update_weechat_log(
+            WeechatLogData(source=FROM_SOURCE_TEMPLATE.format("IRC message")))
     return weechat.WEECHAT_RC_OK

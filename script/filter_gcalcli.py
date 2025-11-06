@@ -6,7 +6,7 @@ import subprocess
 import sys
 import re
 
-ALL_DAY_EVENT_KEY = "all_day_event_by_gcalcli"
+ALL_DAY_EVENT_KEY = "00:00"
 # https://stackoverflow.com/a/28938235
 COLOUR_OFF = '\033[0m'
 COLOUR_BG_BLUE = '\033[44m'
@@ -16,9 +16,8 @@ COLOUR_PURPLE = '\033[0;35m'
 COLOUR_LIGHT_GRAY = '\033[0;37m'
 
 
-def to_colour(m_w_d: str, event_list: list, tomorrow_flag: bool) -> str:
+def to_colour(w_m_d: str, event_list: list, tomorrow_flag: bool) -> str:
     now_h_m = datetime.now().time()
-    colour_header = f"{COLOUR_BG_BLUE}{m_w_d}{COLOUR_OFF}\n"
     colour_event = str()
 
     for event in event_list:
@@ -33,7 +32,7 @@ def to_colour(m_w_d: str, event_list: list, tomorrow_flag: bool) -> str:
         else:
             display_list = list(filter(None, [
                 event.get("location"),
-                event.get("hangout"),
+                event.get("hangout_link"),
                 event.get("description_url")
             ]))
 
@@ -76,6 +75,11 @@ def to_colour(m_w_d: str, event_list: list, tomorrow_flag: bool) -> str:
             for colour, event in colour_event_list.items():
                 colour_event += f"{colour}{event}"
             colour_event += f"{COLOUR_OFF}\n"
+
+    if tomorrow_flag:
+        colour_header = f"{COLOUR_BG_BLUE}{w_m_d} (tomorrow){COLOUR_OFF}\n"
+    else:
+        colour_header = f"{COLOUR_BG_BLUE}{w_m_d}{COLOUR_OFF}\n"
 
     return f"{colour_header}{colour_event}"
 
@@ -124,7 +128,7 @@ def update_event_list(date_log: str, event_list: list) -> None:
 
 def remove_colour(input_str: str) -> str:
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return ansi_escape.sub("", input_str)
+    return ansi_escape.sub("", input_str).strip()
 
 
 def parse_event(cal_log: str, tomorrow_flag: bool) -> tuple[str, list]:
@@ -179,4 +183,8 @@ if __name__ == "__main__":
     if holiday := read_from_file("/tmp/gcalcli_agenda.txt", tomorrow_flag):
         event_list.append(holiday)
     if event_list:
-        print(to_colour(w_m_d, event_list, tomorrow_flag))
+        print(to_colour(
+            w_m_d,
+            sorted(event_list, key=lambda x: int(x["time"].replace(":", ""))),
+            tomorrow_flag
+        ))
