@@ -38,6 +38,7 @@ set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 if has("patch-9.1.1243")
     set diffopt=internal,filler,closeoff,inline:char
 endif
+set fillchars+=diff:\ " display nothing for diff add/delete
 
 set ttimeout        " time out for key codes
 set ttimeoutlen=100 " wait up to 100ms after Esc for special key
@@ -853,10 +854,10 @@ highlight Visual cterm=underline,standout ctermfg=red ctermbg=lightred
 highlight Search cterm=bold ctermfg=yellow ctermbg=gray
 " refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
 " https://www.ditig.com/256-colors-cheat-sheet
-highlight DiffAdd    cterm=none ctermfg=NONE ctermbg=124
-highlight DiffDelete cterm=none ctermfg=NONE ctermbg=124
-highlight DiffChange cterm=none ctermfg=NONE ctermbg=NONE
-highlight DiffText   cterm=none ctermfg=190  ctermbg=29
+highlight DiffAdd    cterm=none ctermfg=143 ctermbg=232
+highlight DiffDelete cterm=none ctermfg=143 ctermbg=232
+highlight DiffChange cterm=none ctermfg=NONE ctermbg=60
+highlight DiffText   cterm=none ctermfg=194  ctermbg=29
 
 " add crosshair style cursor
 highlight CursorLine   cterm=reverse ctermbg=NONE ctermfg=NONE guibg=darkgray guifg=NONE
