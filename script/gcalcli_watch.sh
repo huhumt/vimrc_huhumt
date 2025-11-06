@@ -2,13 +2,12 @@
 
 watch -n 200 -c -t -x bash -c '
   cur_hour=$(date +%k)
-  this_year=$(date +%y)
-  this_month=$(date +%m)
-  holiday_title="Happy holiday"
 
   if [ "$cur_hour" -eq "7" ]; then
+    holiday_month_year=$(date "+%m/%y")
+    holiday_title="Happy holiday"
     ag --nofilename --nobreak \
-      "Request: Holiday \d{2}/${this_month}/${this_year}" \
+      "Request: Holiday \d{2}/${holiday_month_year}" \
       "$HOME/.config/neomutt/mails/" | while read -r holiday; do
       holiday_date=$(grep -oP "\d{2}/\d{2}/\d{2}(-\d{2}/\d{2}/\d{2})?" <<<"$holiday" | tr / -)
       IFS="-" read -r start_day start_month start_year end_day end_month end_year <<<"$holiday_date"
@@ -35,10 +34,11 @@ watch -n 200 -c -t -x bash -c '
   fi
 
   if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "20" ]; then
+    email_date=$(date "+%a, %d %b %Y")
     if gitlab_reply=$(ag --nofilename --nobreak --only-matching \
-      "Date: $(date "+%a, %d %b %Y")[\s\S]+?\K.+commented[^:]*:[ ]*[\s\S]+?--" \
-      "$HOME/.config/neomutt/mails" | perl -p0e "s/([\r?\n]{2}|=\r?\n|--)//g"); then
-      echo "$gitlab_reply" > /tmp/gitlab_comment_notification
+      "Date: ${email_date}[\s\S]+?\K.+commented[^:]*:[\s\S]+?--" \
+      "$HOME/.config/neomutt/mails" | perl -p0e "s/((\r?\n){2}|=\r?\n|--)//g"); then
+      echo "[${email_date}] ${gitlab_reply}" >> /tmp/gitlab_comment_notification
     fi
 
     if cal_event=$(gcalcli --config-folder $HOME/.config/gcalcli \
@@ -49,5 +49,5 @@ watch -n 200 -c -t -x bash -c '
       echo "$cal_event" && echo "$cal_event" > /tmp/gcalcli_agenda.txt && trans --display-from-local-dict
     fi
   else
-    printf "Out of working hour [8:00 ~ 20:00], have some rest\n"
+    cat /tmp/gcalcli_agenda.txt
   fi'
