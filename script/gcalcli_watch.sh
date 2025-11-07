@@ -34,12 +34,12 @@ watch -n 200 -c -t -x bash -c '
   fi
 
   if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "20" ]; then
-    email_date=$(date "+%a, %d %b %Y")
-    if gitlab_reply=$(ag --nofilename --nobreak --only-matching \
-      "Date: ${email_date}[\s\S]+?\K.+commented[^:]*:[\s\S]+?--" \
-      "$HOME/.config/neomutt/mails" | perl -p0e "s/((\r?\n){2}|=\r?\n|--)//g"); then
-      echo "[${email_date}] ${gitlab_reply}" >> /tmp/gitlab_comment_notification
-    fi
+    # email_date=$(date "+%a, %d %b %Y")
+    # if gitlab_reply=$(ag --nofilename --nobreak --only-matching \
+    #   "Date: ${email_date}[\s\S]+?\K.+commented[^:]*:[\s\S]+?--" \
+    #   "$HOME/.config/neomutt/mails" | perl -p0e "s/((\r?\n){2}|=\r?\n|--)//g"); then
+    #   echo "[${email_date}] ${gitlab_reply}" >> /tmp/gitlab_comment_notification
+    # fi
 
     if cal_event=$(gcalcli --config-folder $HOME/.config/gcalcli \
     --nocolor --lineart ascii agenda \
