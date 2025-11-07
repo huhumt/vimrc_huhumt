@@ -125,19 +125,24 @@ def update_weechat_log(log_cls: WeechatLogData):
 
         out_msg = remove_colour(new_msg)
         notify_event(log_cls.source, out_msg)
+        datetime_format = '%a %b %d %Y %H:%M'
 
         short_msg = f"{log_cls.sep[0]}{out_msg[:32].strip()}{log_cls.sep[1]}"
         new_msg_lines = [
-            log_cls.source + datetime.now().strftime('%a %b %d %H:%M'),
+            log_cls.source + datetime.now().strftime(datetime_format),
             new_msg, short_msg, GCALCLI_IRC_SEP
         ]
 
         if log := re_log.findall(content):
             msg_list = list(log[0])
-            if log_cls.mode == MODE_APPEND:
-                # remove old_header, old_short_msg, GCALCLI_IRC_SEP
-                old_msg_lines = msg_list[1].strip().splitlines()[1:-2]
-                new_msg_lines[1:2] = old_msg_lines + [new_msg]
+            old_msg_lines = msg_list[1].strip().splitlines()
+            old_msg_date = datetime.strptime(
+                old_msg_lines[0].split(log_cls.source)[-1], datetime_format)
+            a_week_ago = datetime.now() - timedelta(days=7)
+            # if old msg is too old, replace it rather than append
+            if log_cls.mode == MODE_APPEND and old_msg_date > a_week_ago:
+                # remove old_short_msg, GCALCLI_IRC_SEP, keeping old header
+                new_msg_lines[0:1] = old_msg_lines[:-2]
             msg_list[1:2] = new_msg_lines
         else:
             msg_list = ([content] if content else []) + new_msg_lines
@@ -145,14 +150,14 @@ def update_weechat_log(log_cls: WeechatLogData):
         if not (log := re_log.findall(content)):
             return
 
-        msg_list = list(log[0])
-        if log_cls.mode == MODE_DELETE_SHORT_MSG:  # only delete short msg
-            msg_list[1] = re.sub(
-                r'(?P<short_msg>(?:<.*>|\[.*\])\s+)', '', log[0][1])
-            if msg_list[1] == log[0][1]:
-                return  # no change
-        else:
-            del msg_list[1]
+        msg_list = [log[0][0], log[0][-1]]
+        if (log_cls.mode == MODE_DELETE_SHORT_MSG and
+                (short_msg := re.findall(
+                    fr'(?P<short_msg>(?:<.*>|\[.*\])\s+){GCALCLI_IRC_SEP}',
+                    log[0][1])
+                 )
+            ):
+            msg_list.insert(1, re.sub(short_msg[0], '', log[0][1]))
 
     with open(WEECHAT_LOG_FILENAME, "w") as f:
         f.write(os.linesep.join([m.strip() for m in msg_list if m]))
@@ -233,6 +238,6 @@ def notify_show(data, signal, message):
             FROM_IRC, MODE_APPEND, (name, msg), ('[', ']')))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
-        update_weechat_log(WeechatLogData(FROM_IRC))
+        update_weechat_log(WeechatLogData(FROM_IRC, MODE_DELETE_SHORT_MSG))
         update_weechat_log(WeechatLogData(FROM_GITLAB, MODE_DELETE_SHORT_MSG))
     return weechat.WEECHAT_RC_OK

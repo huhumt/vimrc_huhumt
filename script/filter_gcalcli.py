@@ -132,18 +132,16 @@ def remove_colour(input_str: str) -> str:
 
 
 def parse_event(cal_log: str, tomorrow_flag: bool) -> tuple[str, list]:
-    w_m_d = (datetime.today() + timedelta(days=tomorrow_flag)
-             ).strftime("%a %b %d")
+    event_date = datetime.today() + timedelta(days=tomorrow_flag)
+    w_m_d = event_date.strftime("%a %b %d")
     re_date = fr"(?:{w_m_d})(?P<date_log>.*(?:\r?\n(?!\r?\n).*)*)"
 
     event_list = list()
-    # temporary code, delete when ready
-    event_list.append({"time": "15:00", "event": "Pick up school"})
 
     if log_list := re.findall(re_date, cal_log):
         update_event_list(log_list[0], event_list)
     else:
-        if datetime.today().isoweekday() > 5:
+        if event_date.isoweekday() > 5:
             event_list += [{"time": ALL_DAY_EVENT_KEY, "event": "Weekends"}]
         else:
             event_list += [{"time": ALL_DAY_EVENT_KEY, "event": "On holiday"}]
