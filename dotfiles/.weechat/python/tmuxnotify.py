@@ -125,7 +125,7 @@ def update_weechat_log(log_cls: WeechatLogData):
 
         out_msg = remove_colour(new_msg)
         notify_event(log_cls.source, out_msg)
-        datetime_format = '%a %b %d %Y %H:%M'
+        datetime_format = '%a %m %d %Y %H:%M'
 
         short_msg = f"{log_cls.sep[0]}{out_msg[:32].strip()}{log_cls.sep[1]}"
         new_msg_lines = [
@@ -136,9 +136,10 @@ def update_weechat_log(log_cls: WeechatLogData):
         if log := re_log.findall(content):
             msg_list = list(log[0])
             old_msg_lines = msg_list[1].strip().splitlines()
-            old_msg_date = datetime.strptime(
-                old_msg_lines[0].split(log_cls.source)[-1], datetime_format)
             a_week_ago = datetime.now() - timedelta(days=7)
+            _, m, d, y, _ = old_msg_lines[0].split(log_cls.source)[-1].split()
+            old_msg_date = a_week_ago.replace(
+                year=int(y), month=int(m), day=int(d))
             # if old msg is too old, replace it rather than append
             if log_cls.mode == MODE_APPEND and old_msg_date > a_week_ago:
                 # remove old_short_msg, GCALCLI_IRC_SEP, keeping old header
@@ -151,16 +152,16 @@ def update_weechat_log(log_cls: WeechatLogData):
             return
 
         msg_list = [log[0][0], log[0][-1]]
-        if (log_cls.mode == MODE_DELETE_SHORT_MSG and
-                (short_msg := re.findall(
-                    fr'(?P<short_msg>(?:<.*>|\[.*\])\s+){GCALCLI_IRC_SEP}',
-                    log[0][1])
-                 )
-            ):
-            msg_list.insert(1, re.sub(short_msg[0], '', log[0][1]))
+        if log_cls.mode == MODE_DELETE_SHORT_MSG:
+            re_short = fr'(?P<short_msg>(?:<.*>|\[.*\])\s+){GCALCLI_IRC_SEP}'
+            if short_msg := re.findall(re_short, log[0][1]):
+                msg_list.insert(1, log[0][1].replace(short_msg[0], ''))
+            else:
+                return
 
-    with open(WEECHAT_LOG_FILENAME, "w") as f:
-        f.write(os.linesep.join([m.strip() for m in msg_list if m]))
+    if new_msg_list := [m.strip() for m in msg_list if m]:
+        with open(WEECHAT_LOG_FILENAME, "w") as f:
+            f.write(os.linesep.join(new_msg_list))
 
 
 def parse_today_event():
