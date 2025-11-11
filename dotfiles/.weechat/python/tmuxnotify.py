@@ -62,6 +62,8 @@ class WeechatLogData:
     source: str
     # update log file mode, can be append, replace and delete
     mode: int = MODE_DELETE
+    # short message header, for example: IRC, Git
+    short_header: str = ""
     # (HH:MM, event) for gcalcli, (name, msg) for irc
     logs: Optional[tuple] = None
     # short message sep tuple, for example ('<', '>')
@@ -127,7 +129,11 @@ def update_weechat_log(log_cls: WeechatLogData):
         notify_event(log_cls.source, out_msg)
         datetime_format = '%a %m %d %Y %H:%M'
 
-        short_msg = f"{log_cls.sep[0]}{out_msg[:32].strip()}{log_cls.sep[1]}"
+        short_msg = (
+            f"{log_cls.sep[0]}"
+            f"{log_cls.short_header}{out_msg[:32].strip()}"
+            f"{log_cls.sep[1]}"
+        )
         new_msg_lines = [
             log_cls.source + datetime.now().strftime(datetime_format),
             new_msg, short_msg, GCALCLI_IRC_SEP
@@ -208,10 +214,10 @@ def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
 
 def cron_timer_cb(data, remaining_calls):
     update_weechat_log(WeechatLogData(
-        FROM_GCALCLI, MODE_REPLACE, parse_today_event(), ('<', '>')))
+        FROM_GCALCLI, MODE_REPLACE, "", parse_today_event(), ('<', '>')))
     for gitlab_comment in gitlab_comment_from_email():
         update_weechat_log(WeechatLogData(
-            FROM_GITLAB, MODE_APPEND, gitlab_comment, ('[', ']')))
+            FROM_GITLAB, MODE_APPEND, "Gitlab: ", gitlab_comment, ('[', ']')))
     return weechat.WEECHAT_RC_OK
 
 
@@ -236,7 +242,7 @@ def notify_show(data, signal, message):
             COLOUR_YELLOW_UNDERLINE = '\033[4;33m'
             name = f"{COLOUR_YELLOW_UNDERLINE}pm: {COLOUR_OFF}{name}"
         update_weechat_log(WeechatLogData(
-            FROM_IRC, MODE_APPEND, (name, msg), ('[', ']')))
+            FROM_IRC, MODE_APPEND, "IRC: ", (name, msg), ('[', ']')))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         update_weechat_log(WeechatLogData(FROM_IRC, MODE_DELETE_SHORT_MSG))
