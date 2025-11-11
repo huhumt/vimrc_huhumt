@@ -16,7 +16,8 @@ COLOUR_PURPLE = '\033[0;35m'
 COLOUR_LIGHT_GRAY = '\033[0;37m'
 
 
-def to_colour(w_m_d: str, event_list: list, tomorrow_flag: bool) -> str:
+def to_colour(w_m_d: str, event_list: list, days_later: int) -> str:
+    colour_off_flag = days_later > 0
     now_h_m = datetime.now().time()
     colour_event = str()
 
@@ -36,7 +37,7 @@ def to_colour(w_m_d: str, event_list: list, tomorrow_flag: bool) -> str:
                 event.get("description_url")
             ]))
 
-            if tomorrow_flag:
+            if colour_off_flag:
                 in_event_flag = False
                 done_event_flag = False
             else:
@@ -76,8 +77,11 @@ def to_colour(w_m_d: str, event_list: list, tomorrow_flag: bool) -> str:
                 colour_event += f"{colour}{event}"
             colour_event += f"{COLOUR_OFF}\n"
 
-    if tomorrow_flag:
-        colour_header = f"{COLOUR_BG_BLUE}{w_m_d} (tomorrow){COLOUR_OFF}\n"
+    if colour_off_flag:
+        colour_header = (
+            f"{COLOUR_BG_BLUE}{w_m_d} ({days_later}"
+            f"{'days later' if days_later > 1 else 'tomorrow'}"
+            f"){COLOUR_OFF}\n")
     else:
         colour_header = f"{COLOUR_BG_BLUE}{w_m_d}{COLOUR_OFF}\n"
 
@@ -131,8 +135,8 @@ def remove_colour(input_str: str) -> str:
     return ansi_escape.sub("", input_str).strip()
 
 
-def parse_event(cal_log: str, tomorrow_flag: bool) -> tuple[str, list]:
-    event_date = datetime.today() + timedelta(days=tomorrow_flag)
+def parse_event(cal_log: str, days_later: int) -> tuple[str, list]:
+    event_date = datetime.today() + timedelta(days=days_later)
     w_m_d = event_date.strftime("%a %b %d")
     re_date = fr"(?:{w_m_d})(?P<date_log>.*(?:\r?\n(?!\r?\n).*)*)"
 
@@ -142,26 +146,32 @@ def parse_event(cal_log: str, tomorrow_flag: bool) -> tuple[str, list]:
         update_event_list(log_list[0], event_list)
     else:
         if event_date.isoweekday() > 5:
-            event_list += [{"time": ALL_DAY_EVENT_KEY, "event": "Weekends"}]
+            event_list = [{"time": ALL_DAY_EVENT_KEY, "event": "Weekends"}]
         else:
             event_list += [{"time": ALL_DAY_EVENT_KEY, "event": "On holiday"}]
 
     return w_m_d, event_list
 
 
-def read_from_file(filename: str, tomorrow_flag: bool) -> dict | None:
-    a_day_ago = (datetime.today() - timedelta(days=1-tomorrow_flag)
-                 ).strftime("%a %b %d")
+def read_from_file(filename: str, week_num: int) -> dict | None:
+    re_week_num = r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) '
     re_holiday = r'(?P<holiday>.*holiday)[ ]*\((?P<duration>\d+)[ ]*day[s]?\)'
+    weekday_to_num_dict = {
+        "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6, "Sun": 7
+    }
     try:
         with open(filename, "r") as f:
             content = remove_colour(f.read())
-            if holiday := re.findall(re_holiday, content, re.IGNORECASE)[0]:
-                name = holiday[0].strip()
-                day = int(holiday[1].strip())
+            if ((holiday := re.findall(re_holiday, content, re.IGNORECASE))
+                    and (old_week := re.findall(re_week_num, content))):
+                name = holiday[0][0].strip()
+                day = int(holiday[0][1].strip())
+                old_week_num = weekday_to_num_dict.get(old_week[0], week_num)
 
-                # can only be yesterday or today
-                if name and (left_day := day - int(a_day_ago in content)) > 0:
+                if (delta_days := week_num - old_week_num) < 0:
+                    delta_days += 7
+
+                if name and (left_day := day - delta_days) > 0:
                     day_label = 'days' if left_day > 1 else 'day'
                     return {
                         "time": ALL_DAY_EVENT_KEY,
@@ -169,20 +179,25 @@ def read_from_file(filename: str, tomorrow_flag: bool) -> dict | None:
                     }
     except FileNotFoundError:
         return None
-    except IndexError:
-        return None
 
 
 if __name__ == "__main__":
-    # display tomorrow event after 17:00
-    tomorrow_flag = datetime.now().hour > 16
+    today_date = datetime.today()
+    week_num = today_date.isoweekday()
+    if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
+        # display next Monday's event from Friday's 17:00
+        days_later = 8 - week_num
+    else:
+        # display tomorrow event after 17:00
+        days_later = 1 if today_date.hour > 16 else 0
+
     w_m_d, event_list = parse_event(remove_colour(
-        sys.stdin.buffer.read().decode('utf-8', 'ignore')), tomorrow_flag)
-    if holiday := read_from_file("/tmp/gcalcli_agenda.txt", tomorrow_flag):
+        sys.stdin.buffer.read().decode('utf-8', 'ignore')), days_later)
+    if holiday := read_from_file("/tmp/gcalcli_agenda.txt", week_num):
         event_list.append(holiday)
     if event_list:
         print(to_colour(
             w_m_d,
             sorted(event_list, key=lambda x: int(x["time"].replace(":", ""))),
-            tomorrow_flag
+            days_later
         ))
