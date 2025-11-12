@@ -78,10 +78,8 @@ def to_colour(w_m_d: str, event_list: list, days_later: int) -> str:
             colour_event += f"{COLOUR_OFF}\n"
 
     if colour_off_flag:
-        colour_header = (
-            f"{COLOUR_BG_BLUE}{w_m_d} ({days_later}"
-            f"{'days later' if days_later > 1 else 'tomorrow'}"
-            f"){COLOUR_OFF}\n")
+        d_flag = f"{days_later} days later" if days_later > 1 else "tomorrow"
+        colour_header = f"{COLOUR_BG_BLUE}{w_m_d} ({d_flag}){COLOUR_OFF}\n"
     else:
         colour_header = f"{COLOUR_BG_BLUE}{w_m_d}{COLOUR_OFF}\n"
 
@@ -193,7 +191,8 @@ if __name__ == "__main__":
 
     w_m_d, event_list = parse_event(remove_colour(
         sys.stdin.buffer.read().decode('utf-8', 'ignore')), days_later)
-    if holiday := read_from_file("/tmp/gcalcli_agenda.txt", week_num):
+    new_week_num = (today_date + timedelta(days=days_later)).isoweekday()
+    if holiday := read_from_file("/tmp/gcalcli_agenda.txt", new_week_num):
         event_list.append(holiday)
     if event_list:
         print(to_colour(
