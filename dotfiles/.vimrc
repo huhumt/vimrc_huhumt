@@ -414,9 +414,10 @@ augroup END
 " let g:miniBufExplModSelTarget = 1
 " let g:miniBufExplMaxSize = 1
 " let g:miniBufExplBuffersNeeded = 1
-let g:buftabline_numbers = 1
+let g:buftabline_numbers = 2
 let g:buftabline_indicators = 1
 let g:buftabline_separators = 1
+let g:buftabline_plug_max = 6
 
 " Support tagbar plugin
 nnoremap <Leader>t :TagbarToggle<CR>
@@ -871,10 +872,6 @@ set colorcolumn=80
 
 " highlight line number
 highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
-
-highlight link BufTabLineCurrent MarkWord3
-highlight link BufTabLineActive  MarkWord2
-highlight link BufTabLineHidden  CocMenuSel
 
 " change coc underline highlight
 " highlight MyErrorHi cterm=None ctermbg=lightgray ctermfg=NONE
