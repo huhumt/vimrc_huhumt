@@ -242,17 +242,17 @@ cno $c e <C-\>eCurrentFileDir("e")<cr>
 " https://www.tdaly.co.uk/post/vanilla-vim-statusline
 "" statusline
 function! StatuslineCurMode() abort
-    let l:statusline_currentmode = {
-           \ 'n'      : 'NORMAL ',
-           \ 'v'      : 'VISUAL ',
-           \ 'V'      : 'V·Line ',
-           \ "\<C-V>" : 'V·Block ',
-           \ 'i'      : 'INSERT ',
-           \ 'R'      : 'Replace ',
-           \ 'Rv'     : 'V·Replace ',
-           \ 'c'      : 'Command ',
+    let l:mode_map = {
+           \ 'n'      : 'NORMAL',
+           \ 'v'      : 'VISUAL',
+           \ 'V'      : 'V·Line',
+           \ "\<C-V>" : 'V·Block',
+           \ 'i'      : 'INSERT',
+           \ 'R'      : 'Replace',
+           \ 'Rv'     : 'V·Replace',
+           \ 'c'      : 'Command',
            \}
-    return get(l:statusline_currentmode, mode(), 'Thinking ')
+    return "%#User1# " . get(l:mode_map, mode(), 'Thinking') . " "
 endfunction
 
 function! StatuslineGitBranch() abort
@@ -265,9 +265,7 @@ function! StatuslineGitBranch() abort
     silent let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
 
     if l:git_branch !~ "fatal: not a git repository"
-        " it's quite strange that 2 whitespaces need to be added at the
-        " beginning to display a whitespace in statusline
-        return "  [Git](" . substitute(l:git_branch, '\n', '', 'g') . ") "
+        return "%#User2# [Git](" . substitute(l:git_branch, '\n', '', 'g') . ") "
     else
         return ""
     endif
@@ -275,26 +273,49 @@ endfunction
 
 function! StatuslineFilename() abort
     if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
-        return ctrlsf#utils#PreviewSectionC()
+        let l:filename = ctrlsf#utils#PreviewSectionC()
     else
-        return empty(bufname()) ? "new file" : expand('%:~:.')
+        let l:filename = empty(bufname()) ? "new file" : expand('%:~:.')
+    endif
+    return "%#User3# " . l:filename . " "
+endfunction
+
+function! StatuslineFlag() abort
+    " file flags (help, RO, modified)
+    let l:flags = "%y%m%r"
+    " vim gutentags running status
+    if exists('g:loaded_gutentags')
+        let l:gutentags_flags = gutentags#statusline()
+        if strlen(l:gutentags_flags)
+            let l:flags .= ("[updating " . l:gutentags_flags . "]")
+        endif
+    endif
+    return "%#User4# " . l:flags
+endfunction
+
+function! StatuslineRight() abort
+    return "%=%#User4#"
+        \ . "%{&fenc?&fenc:&enc}"
+        \ . "[%{&ff}]"
+        \ . "%#User2# Ln %l/%L|Col %v "
+        \ . "%#User4# :: %p%%"
+endfunction
+
+function! StatusLineCustom() abort
+    let l:mode = "%{%StatuslineCurMode()%}"
+    let l:filename = "%{%StatuslineFilename()%}"
+    let l:git_branch = "%{%StatuslineGitBranch()%}"
+    let l:flags = "%{%StatuslineFlag()%}"
+    let l:right = "%{%StatuslineRight()%}"
+    if winnr('$') > 1
+        return l:mode . l:filename . "%#User4#"
+    else
+        return l:mode . l:git_branch . l:filename . l:flags . l:right
     endif
 endfunction
 
 set laststatus=2
-set statusline=%1*\ %{StatuslineCurMode()}
-" git branch information from vim-fugitive plugin
-set statusline+=%2*\%{StatuslineGitBranch()}  " git branch info
-set statusline+=%3*\ %{StatuslineFilename()}\ " short filename
-set statusline+=%4*\ %y\ %h%m%r               " file flags (help, RO, modified)
-" vim gutentags running status
-set statusline+=%4*%{exists('g:loaded_gutentags')?gutentags#statusline():''}
-set statusline+=%=                           " right align
-set statusline+=%4*\ %{&fenc?&fenc:&enc}     " fileencodings
-set statusline+=%4*\[%{&ff}\]\               " fileformat
-set statusline+=%2*\ Ln\ %l/%L\\|Col\ %v\    " line count
-set statusline+=%4*\ ::                      " seperator
-set statusline+=%4*\ %p%%                    " precentage
+set statusline=%!StatusLineCustom()
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Folding
