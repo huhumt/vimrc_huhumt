@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index fccfd6d..d13bffe 100644
+index fccfd6d..70039c1 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -29,9 +29,13 @@ endif
@@ -11,7 +11,7 @@ index fccfd6d..d13bffe 100644
 -hi default link BufTabLineHidden          TabLine
 +" https://www.ditig.com/256-colors-cheat-sheet
 +highlight BufTabLineTabPad                       ctermbg=235   ctermfg=76
-+highlight BufTabLineBufnum    cterm=bold         ctermbg=235   ctermfg=126
++highlight BufTabLineBufnum    cterm=bold         ctermbg=142   ctermfg=126
 +highlight BufTabLineCurrent   cterm=underline    ctermbg=11    ctermfg=242
 +highlight BufTabLineActive                       ctermbg=12    ctermfg=120
 +highlight BufTabLineHidden                       ctermbg=239   ctermfg=223
