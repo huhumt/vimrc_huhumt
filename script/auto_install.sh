@@ -47,6 +47,7 @@ config_vim() {
        vim-buftabline.patch
        vim-gutentags.patch
        vim-table-mode.patch
+       vim-dirdiff.patch
     )
     for patch in ${patch_list[@]}; do
        patch_filename="$raw_repo_url/dotfiles/.vim/patches/$patch"

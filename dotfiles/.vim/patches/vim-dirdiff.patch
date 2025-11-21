@@ -1,0 +1,79 @@
+diff --git a/plugin/dirdiff.vim b/plugin/dirdiff.vim
+index 2389f7a..63fbe3b 100644
+--- a/plugin/dirdiff.vim
++++ b/plugin/dirdiff.vim
+@@ -197,7 +197,8 @@ function! <SID>DirDiff(srcA, srcB)
+     let DirDiffAbsSrcA = substitute(DirDiffAbsSrcA, '\\$\|/$', '', '')
+     let DirDiffAbsSrcB = substitute(DirDiffAbsSrcB, '\\$\|/$', '', '')
+ 
+-    let s:FilenameDiffWindow = tempname()
++    " let s:FilenameDiffWindow = tempname()
++    let s:FilenameDiffWindow = "/tmp/vim-dirdiff-win"
+     " We first write to that file
+     " Constructs the command line
+     let langStr = ""
+@@ -234,6 +235,7 @@ function! <SID>DirDiff(srcA, srcB)
+         return
+     endif
+     silent exe "edit ".s:FilenameDiffWindow
++    setlocal modifiable
+     echo "Defining [A] and [B] ... "
+     " We then do a substitution on the directory path
+     " We need to do substitution of the the LONGER string first, otherwise
+@@ -511,7 +513,9 @@ function! <SID>DirDiffOpen()
+                 let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
+                 call <SID>Drop(previousFile)
+                 silent exec "edit ".fileToOpen
+-                silent exec "bd ".bufnr(previousFile)
++                if previousFile != fileToOpen
++                    silent exec "bd ".bufnr(previousFile)
++                endif
+             endif
+         else
+             silent exec "split ".fileToOpen
+@@ -531,18 +535,24 @@ function! <SID>DirDiffOpen()
+                 call <SID>Drop(previousFileA)
+                 silent exec "edit ".s:FilenameA
+                 diffthis
+-                silent exec "bd ".bufnr(previousFileA)
++                if s:FilenameA != previousFileA
++                    silent exec "bd ".bufnr(previousFileA)
++                endif
+ 
+                 call <SID>Drop(previousFileB)
+                 silent exec "edit ".s:FilenameB
+                 diffthis
+-                silent exec "bd ".bufnr(previousFileB)
++                if s:FilenameB != previousFileB
++                    silent exec "bd ".bufnr(previousFileB)
++                endif
+             else
+                 let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
+                 call <SID>Drop(previousFile)
+                 silent exec "edit ".s:FilenameB
+-                silent exec "bd ".bufnr(previousFile)
+                 diffthis
++                if s:FilenameB != previousFile
++                    silent exec "bd ".bufnr(previousFile)
++                endif
+ 
+                 " To ensure that A is on the left and B on the right, splitright must be off
+                 silent exec "leftabove vert diffsplit ".s:FilenameA
+@@ -603,7 +613,7 @@ function! <SID>HighlightLine()
+     " This is necessary since the modified file would make the syntax
+     " disappear.
+     call <SID>SetupSyntax()
+-    redraw
++    redraw!
+ endfunction
+ 
+ " Removes the highlight from the selected line in the diff window
+@@ -620,7 +630,7 @@ function! <SID>DeHighlightLine()
+     setlocal nomodifiable
+     setlocal nomodified
+     exe (savedLine)
+-    redraw
++    redraw!
+ endfunction
+ 
+ " Returns the directory for buffer "A" or "B".  You need to be in the diff
