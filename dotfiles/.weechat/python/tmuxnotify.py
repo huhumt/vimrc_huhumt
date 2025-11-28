@@ -152,7 +152,11 @@ def update_weechat_log(log_cls: WeechatLogData):
                 new_msg_lines[0:1] = old_msg_lines[:-2]
             msg_list[1:2] = new_msg_lines
         else:
-            msg_list = ([content] if content else []) + new_msg_lines
+            # put gitlab message in head
+            if log_cls.source == FROM_GITLAB:
+                msg_list = new_msg_lines + ([content] if content else [])
+            else:
+                msg_list = ([content] if content else []) + new_msg_lines
     else:
         if not (log := re_log.findall(content)):
             return
