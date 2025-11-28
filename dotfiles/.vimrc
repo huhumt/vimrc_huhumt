@@ -584,7 +584,7 @@ let g:ctrlsf_auto_focus = {
     \ }
 let g:ctrlsf_backend = 'ag'
 let g:ctrlsf_extra_backend_args = {
-    \ 'ag': UserSilverSearcherArgs()
+    \ 'ag': UserSilverSearcherArgs() . ' --workers=1'
     \ }
 " \ 'ag': '--silent --word-regexp'
 " \ 'ag': '--silent --literal'
