@@ -127,7 +127,6 @@ def update_weechat_log(log_cls: WeechatLogData):
 
         out_msg = remove_colour(new_msg)
         notify_event(log_cls.source, out_msg)
-        datetime_format = '%a %m %d %Y %H:%M'
 
         short_msg = (
             f"{log_cls.sep[0]}"
@@ -135,21 +134,20 @@ def update_weechat_log(log_cls: WeechatLogData):
             f"{log_cls.sep[1]}"
         )
         new_msg_lines = [
-            log_cls.source + datetime.now().strftime(datetime_format),
+            log_cls.source + datetime.now().strftime('%a %m %d %Y %H:%M'),
             new_msg, short_msg, GCALCLI_IRC_SEP
         ]
 
         if log := re_log.findall(content):
             msg_list = list(log[0])
             old_msg_lines = msg_list[1].strip().splitlines()
-            a_week_ago = datetime.now() - timedelta(days=7)
-            _, m, d, y, _ = old_msg_lines[0].split(log_cls.source)[-1].split()
-            old_msg_date = a_week_ago.replace(
-                year=int(y), month=int(m), day=int(d))
-            # if old msg is too old, replace it rather than append
-            if log_cls.mode == MODE_APPEND and old_msg_date > a_week_ago:
-                # remove old_short_msg, GCALCLI_IRC_SEP, keeping old header
-                new_msg_lines[0:1] = old_msg_lines[:-2]
+            # append only when old message is not too long
+            if log_cls.mode == MODE_APPEND and len(old_msg_lines) < 30:
+                if (old_msg_lines[-2].startswith(log_cls.sep[0])
+                        and old_msg_lines[-2].endswith(log_cls.sep[1])):
+                    new_msg_lines[1:1] += old_msg_lines[1:-2]
+                else:
+                    new_msg_lines[1:1] += old_msg_lines[1:-1]
             msg_list[1:2] = new_msg_lines
         else:
             # put gitlab message in head
