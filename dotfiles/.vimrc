@@ -243,11 +243,11 @@ cno $c e <C-\>eCurrentFileDir("e")<cr>
 "" statusline
 function! StatuslineCurMode() abort
     let l:mode_map = {
-           \ 'n'      : 'NORMAL',
-           \ 'v'      : 'VISUAL',
+           \ 'n'      : 'Normal',
+           \ 'v'      : 'Visual',
            \ 'V'      : 'V·Line',
            \ "\<C-V>" : 'V·Block',
-           \ 'i'      : 'INSERT',
+           \ 'i'      : 'Insert',
            \ 'R'      : 'Replace',
            \ 'Rv'     : 'V·Replace',
            \ 'c'      : 'Command',
@@ -271,13 +271,14 @@ function! StatuslineGitBranch() abort
     endif
 endfunction
 
-function! StatuslineFilename() abort
+function! StatuslineFilename(active_win, nofile_flag) abort
     if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
         let l:filename = ctrlsf#utils#PreviewSectionC()
     else
+        if a:nofile_flag | return "%#User4#" | endif
         let l:filename = empty(bufname()) ? "new file" : expand('%:~:.')
     endif
-    return "%#User3# " . l:filename . " "
+    return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename . " "
 endfunction
 
 function! StatuslineFlag() abort
@@ -294,28 +295,42 @@ function! StatuslineFlag() abort
 endfunction
 
 function! StatuslineRight() abort
-    return "%=%#User4#"
-        \ . "%{&fenc?&fenc:&enc}"
-        \ . "[%{&ff}]"
+    let l:se = searchcount(#{maxcount:0})
+    if l:se.exact_match
+        let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
+    endif
+    return "%=%#User4#["
+        \ . get(l:, "se_show", "")
+        \ . "%{&fenc?&fenc:&enc}, %{&ff}] "
         \ . "%#User2# Ln %l/%L|Col %v "
         \ . "%#User4# :: %p%%"
 endfunction
 
-function! StatusLineCustom() abort
-    let l:mode = "%{%StatuslineCurMode()%}"
-    let l:filename = "%{%StatuslineFilename()%}"
-    let l:git_branch = "%{%StatuslineGitBranch()%}"
-    let l:flags = "%{%StatuslineFlag()%}"
-    let l:right = "%{%StatuslineRight()%}"
-    if winnr('$') > 1
-        return l:mode . l:filename . "%#User4#"
+function! StatusLineCustom(winid) abort
+    let l:nofile_flag = index(['nofile', 'quickfix', 'prompt', 'popup'],
+                \ getbufvar(winbufnr(a:winid), "&buftype")) != -1
+
+    if win_getid() == a:winid
+        let l:mode = "%{%StatuslineCurMode()%}"
+        let l:filename = l:nofile_flag ? "%{%StatuslineFilename(1, 1)%}"
+                    \ : "%{%StatuslineFilename(1, 0)%}"
+        if winwidth(0) == &columns && !l:nofile_flag
+            let l:git_branch = "%{%StatuslineGitBranch()%}"
+            let l:flags = "%{%StatuslineFlag()%}"
+        endif
+        if winwidth(0) * 2 + 5 > &columns
+            let l:right = "%{%StatuslineRight()%}"
+        endif
+        return l:mode . get(l:, "git_branch", "") . l:filename
+                \ . get(l:, "flags", "") . "%#User4#" . get(l:, "right", "")
     else
-        return l:mode . l:git_branch . l:filename . l:flags . l:right
+        return (l:nofile_flag ? "%{%StatuslineFilename(0, 1)%}"
+            \ : "%{%StatuslineFilename(0, 0)%}") . "%#User4#"
     endif
 endfunction
 
 set laststatus=2
-set statusline=%!StatusLineCustom()
+set statusline=%!StatusLineCustom(g:statusline_winid)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Folding
