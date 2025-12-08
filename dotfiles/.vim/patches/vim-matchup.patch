@@ -1,0 +1,65 @@
+diff --git a/autoload/matchup/matchparen.vim b/autoload/matchup/matchparen.vim
+index bee6a29..e9c083f 100644
+--- a/autoload/matchup/matchparen.vim
++++ b/autoload/matchup/matchparen.vim
+@@ -628,14 +628,15 @@ function! s:do_offscreen_popup(offscreen) abort " {{{1
+   let l:height = winheight(0) " height of current window
+   let l:adjust = matchup#quirks#status_adjust(a:offscreen)
+   let l:lnum = a:offscreen.lnum + l:adjust
+-  let l:line = l:lnum < line('.') ? l:row : l:row + l:height - 1
++  " let l:line = l:lnum < line('.') ? l:row : l:row + l:height - 1
+ 
+   " if popup would overlap with cursor
+-  if l:line == winline() + l:row - 1 | return | endif
++  " if l:line == winline() + l:row - 1 | return | endif
++  let l:line = winline() + l:row - 1
+ 
+   call popup_move(t:match_popup, {
+         \ 'line': l:line,
+-        \ 'col': l:col,
++        \ 'col': virtcol('$') + 9 + l:col,
+         \ 'maxheight': 1,
+         \})
+ 
+@@ -664,26 +665,26 @@ function! s:do_offscreen_popup(offscreen) abort " {{{1
+ endfunction
+ 
+ function! s:set_popup_text(lnum, adjust, offscreen) abort
+-  let l:text = ''
+-  if &number || &relativenumber
+-    if &relativenumber
+-      let l:displaynumber = abs(a:lnum - line('.'))
+-    else
+-      let l:displaynumber = a:lnum
+-    endif
+-    let l:text = printf('%*S ', wincol()-virtcol('.')-1, l:displaynumber)
+-  else
+-    let l:text = repeat(' ', wincol()-virtcol('.'))
+-  endif
++  let l:text = (a:lnum < line('.') ? ' ▲' : ' ▼') . " matched line " . a:lnum . ": "
++  " if &number || &relativenumber
++  "   if &relativenumber
++  "     let l:displaynumber = abs(a:lnum - line('.'))
++  "   else
++  "     let l:displaynumber = a:lnum
++  "   endif
++  "   let l:text .= printf('%*S ', wincol()-virtcol('.')-1, l:displaynumber)
++  " else
++  "   let l:text .= repeat(' ', wincol()-virtcol('.'))
++  " endif
+ 
+   " replace tab indent with spaces
+   " (popup window doesn't follow tabstop option of current buffer)
+-  let l:linestr = getline(a:lnum)
+-  let l:indent = repeat(' ', strdisplaywidth(matchstr(l:linestr, '^\s\+')))
+-  let l:linestr = substitute(l:linestr, '^\s\+', l:indent, '')
++  let l:linestr = trim(getline(a:lnum))
++  " let l:indent = repeat(' ', strdisplaywidth(matchstr(l:linestr, '^\s\+')))
++  " let l:linestr = substitute(l:linestr, '^\s\+', l:indent, '')
+ 
+-  let l:prop_place = len(l:text) + len(l:indent) + 1
+   let l:text .= l:linestr . ' '
++  let l:prop_place = len(l:text) + 1
+   if a:adjust
+     let l:prop_place = strlen(l:text) + 5
+     let l:text .= '… ' . a:offscreen.match . ' '
