@@ -321,7 +321,7 @@ function! StatusLineCustom(winid) abort
         if winwidth(0) * 2 + 5 > &columns
             let l:right = "%{%StatuslineRight()%}"
         endif
-        return l:mode . get(l:, "git_branch", "") . l:filename
+        return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
                 \ . get(l:, "flags", "") . "%#User4#" . get(l:, "right", "")
     else
         return (l:nofile_flag ? "%{%StatuslineFilename(0, 1)%}"
@@ -676,6 +676,7 @@ let g:cpp_simple_highlight = 1
 
 " vim-matchup corrupts with statusline
 " let g:matchup_matchparen_enabled = 0
+let g:matchup_matchparen_offscreen = {'method': 'popup', 'highlight': 'User1'}
 
 " configuration for vim-table-mode
 " autocmd BufEnter *.md let g:table_mode_corner='|'
