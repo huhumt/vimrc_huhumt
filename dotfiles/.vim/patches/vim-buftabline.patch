@@ -1,7 +1,28 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index fccfd6d..70039c1 100644
+index fccfd6d..4a47a02 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
+@@ -2,17 +2,17 @@
+ " Licence:     The MIT License (MIT)
+ " Commit:      $Format:%H$
+ " {{{ Copyright (c) 2015 Aristotle Pagaltzis <pagaltzis@gmx.de>
+-" 
++"
+ " Permission is hereby granted, free of charge, to any person obtaining a copy
+ " of this software and associated documentation files (the "Software"), to deal
+ " in the Software without restriction, including without limitation the rights
+ " to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ " copies of the Software, and to permit persons to whom the Software is
+ " furnished to do so, subject to the following conditions:
+-" 
++"
+ " The above copyright notice and this permission notice shall be included in
+ " all copies or substantial portions of the Software.
+-" 
++"
+ " THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ " IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ " FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 @@ -29,9 +29,13 @@ endif
  
  scriptencoding utf-8
@@ -129,7 +150,7 @@ index fccfd6d..70039c1 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -194,11 +220,23 @@ autocmd FileType qf call buftabline#update(0)
+@@ -194,11 +220,22 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
@@ -142,19 +163,18 @@ index fccfd6d..70039c1 100644
 +command! -bang -nargs=* BufTablineRemove call buftabline#action(1, '<bang>'=='!', <f-args>)
 +" action: 0 jump, >0 bd delete buffer
 +function! buftabline#action(action, bang, ...)
++	let l:valid_bufnums = filter(buftabline#user_buffers(), 'index(s:mru_list, v:val) != -1')
 +	if a:0 == 0
-+		return
++		if len(l:valid_bufnums) > 1 && a:action > 0
++			exec 'silent! bd' . (a:bang ? '! ' : '')
++		endif
 +	else
 +		let l:bufnums = map(copy(a:000),'v:val =~ ''\d\+'' ? v:val + 0 : v:val')
++		for l:bufnum in filter(l:bufnums, 'v:val > 0 && v:val <= len(l:valid_bufnums)')
++			exec 'silent! ' . (a:action > 0 ? 'bd' : 'b') . (a:bang ? '! ' : ' ') . l:valid_bufnums[l:bufnum-1]
++		endfor
 +	endif
-+
-+	let l:valid_bufnums = filter(buftabline#user_buffers(), 'index(s:mru_list, v:val) != -1')
-+	for l:bufnum in filter(l:bufnums, 'v:val > 0 && v:val <= len(l:valid_bufnums)')
-+		let l:cmd = 'silent! ' . (a:action > 0 ? 'bd' : 'b') . (a:bang ? '! ' : ' ') . l:valid_bufnums[l:bufnum-1]
-+		exec l:cmd
-+	endfor
 +endfunction
-+
  
  if v:version < 703
  	function s:transpile()
