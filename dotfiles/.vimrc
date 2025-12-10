@@ -281,29 +281,17 @@ function! StatuslineFilename(active_win, nofile_flag) abort
     return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename . " "
 endfunction
 
-function! StatuslineFlag() abort
-    " file flags (help, RO, modified)
-    let l:flags = "%y%m%r"
-    " vim gutentags running status
-    if exists('g:loaded_gutentags')
-        let l:gutentags_flags = gutentags#statusline()
-        if strlen(l:gutentags_flags)
-            let l:flags .= ("[updating " . l:gutentags_flags . "]")
-        endif
-    endif
-    return "%#User4# " . l:flags
-endfunction
-
 function! StatuslineRight() abort
     let l:se = searchcount(#{maxcount:0})
+    let l:lines_cnt = -(strlen(line('$')) * 2 + 1)
     if l:se.exact_match
         let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
     endif
     return "%=%#User4#["
         \ . get(l:, "se_show", "")
-        \ . "%{&fenc?&fenc:&enc}, %{&ff}] "
-        \ . "%#User2# Ln %l/%L|Col %v "
-        \ . "%#User4# :: %p%%"
+        \ . "%{&fenc?&fenc:&enc}, %{&ff}%(, %Y%)%(, %M%)%(, %R%)] "
+        \ . "%#User2# Ln %" . l:lines_cnt . "(%l/%L%)|Col %3(%v%) "
+        \ . "%#User4# :: %4(%p%%%)"
 endfunction
 
 function! StatusLineCustom(winid) abort
@@ -316,13 +304,12 @@ function! StatusLineCustom(winid) abort
                     \ : "%{%StatuslineFilename(1, 0)%}"
         if winwidth(0) == &columns && !l:nofile_flag
             let l:git_branch = "%{%StatuslineGitBranch()%}"
-            let l:flags = "%{%StatuslineFlag()%}"
         endif
         if winwidth(0) * 2 + 5 > &columns
             let l:right = "%{%StatuslineRight()%}"
         endif
         return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
-                \ . get(l:, "flags", "") . "%#User4#" . get(l:, "right", "")
+                \ . "%#User4#" . get(l:, "right", "")
     else
         return (l:nofile_flag ? "%{%StatuslineFilename(0, 1)%}"
             \ : "%{%StatuslineFilename(0, 0)%}") . "%#User4#"
