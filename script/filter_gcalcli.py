@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta
 import subprocess
+import argparse
 import sys
 import re
 
@@ -102,53 +103,62 @@ def search_and_short_url(urls: str) -> list:
     return url_list
 
 
-def update_event_list(date_log: str, event_list: list) -> None:
+def update_event_dict(date_log: str) -> dict:
+    re_week = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
+    re_month = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
     re_event = re.compile(
-        r'\s+(?P<time>\d{1,2}:\d{2})?\s*(?P<event>.*)'
+        fr'(?P<date>(?:{re_week}) (?:{re_month}) \d+)?'
+        r'[ ]+(?P<time>\d{1,2}:\d{2})?[ ]*(?P<event>.+)'
         r'(?:\s+Link: (?P<link>.+))?'
         r'(?:\s+Hangout Link: (?P<hangout_link>.+))?'
         r'(?:\s+Location: (?P<location>.+))?'
         r'(?:\s+Description:[-+\s]+(?P<description>[^+]+)[-+]+)?'
     )
+
+    cur_date = None
+    cur_date_list = []
+    event_dict = dict()
+
     for (
-        time, event, link, hangout_link, location, description
+        date, time, event, link, hangout_link, location, description
     ) in re_event.findall(date_log):
         meeting_room = re.compile(
             r'\(Meeting Room\)-Dale House-(.+?) \(').findall(location)
-        if event and event.lower() not in ("home", "office"):
-            if re.compile(r'\| Public holiday[ ]+\|').search(description):
-                event = f"Public holiday: {event}"
-            event_list.append({
+        # do not record if event in empty
+        # do not record event in "home" or "office"
+        # do not record regional holiday not valid in England
+        # do not record duplicated event
+        event_lower = event.lower().strip()
+        if (not event_lower) or event_lower in ("home", "office") or (
+            "(regional holiday)" in event_lower and "England" not in location
+        ) or event_lower in cur_date_list:
+            cur_event = None
+        else:
+            attr = re.compile(
+                r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
+            ).findall(description)
+            cur_event = {
                 "time": time if time else ALL_DAY_EVENT_KEY,
-                "event": event,
+                "event": (f"{attr[0]}: " if attr else "") + event,
                 "link": link,
                 "hangout_link": hangout_link,
                 "location": meeting_room[0] if meeting_room else location,
                 "description_url": " ".join(search_and_short_url(description))
-            })
+            }
+        if date:
+            cur_date = date
+            cur_date_list = [event_lower]
+            event_dict.update({date: [cur_event] if cur_event else []})
+        else:
+            cur_date_list.append(event_lower)
+            if cur_date and cur_event:
+                event_dict[cur_date].append(cur_event)
+    return event_dict
 
 
 def remove_colour(input_str: str) -> str:
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", input_str).strip()
-
-
-def parse_event(cal_log: str, days_later: int) -> tuple[str, list]:
-    event_date = datetime.today() + timedelta(days=days_later)
-    w_m_d = event_date.strftime("%a %b %d")
-    re_date = fr"(?:{w_m_d})(?P<date_log>.*(?:\r?\n(?!\r?\n).*)*)"
-
-    event_list = list()
-
-    if log_list := re.findall(re_date, cal_log):
-        update_event_list(log_list[0], event_list)
-    else:
-        if event_date.isoweekday() > 5:
-            event_list = [{"time": ALL_DAY_EVENT_KEY, "event": "Weekends"}]
-        else:
-            event_list += [{"time": ALL_DAY_EVENT_KEY, "event": "On holiday"}]
-
-    return w_m_d, event_list
 
 
 def read_from_file(filename: str, week_num: int) -> dict | None:
@@ -179,18 +189,27 @@ def read_from_file(filename: str, week_num: int) -> dict | None:
         return None
 
 
-if __name__ == "__main__":
+def main_out_agenda(event_dict: dict) -> None:
     today_date = datetime.today()
     week_num = today_date.isoweekday()
     if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
-        # display next Monday's event from Friday's 17:00
+        # display next Monday's event from Friday's afternoon
         days_later = 8 - week_num
     else:
         # display tomorrow event after 17:00
         days_later = 1 if today_date.hour > 16 else 0
 
-    w_m_d, event_list = parse_event(remove_colour(
-        sys.stdin.buffer.read().decode('utf-8', 'ignore')), days_later)
+    event_date = datetime.today() + timedelta(days=days_later)
+    w_m_d = event_date.strftime("%a %b %d")
+
+    if w_m_d in event_dict:
+        event_list = event_dict.get(w_m_d, [])
+    else:
+        event_list = [{
+            "time": ALL_DAY_EVENT_KEY,
+            "event": "Weekends" if event_date.isoweekday() > 5 else "On holiday"
+        }]
+
     new_week_num = (today_date + timedelta(days=days_later)).isoweekday()
     if holiday := read_from_file("/tmp/gcalcli_agenda.txt", new_week_num):
         event_list.append(holiday)
@@ -200,3 +219,21 @@ if __name__ == "__main__":
             sorted(event_list, key=lambda x: int(x["time"].replace(":", ""))),
             days_later
         ))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Filter gcalcli agenda message")
+    parser.add_argument(
+        "--out-event-only", dest="out_event_only", action="store_true",
+        help="Output coloured agenda message")
+
+    args = parser.parse_args()
+    agenda = remove_colour(sys.stdin.buffer.read().decode('utf-8', 'ignore'))
+    event_dict = update_event_dict(agenda)
+    if args.out_event_only:
+        for key, event_list in event_dict.items():
+            for event in event_list:
+                print("|".join([key, event.get("time"), event.get("event")]))
+    else:
+        main_out_agenda(event_dict)
