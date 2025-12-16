@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime, timedelta
+from collections import OrderedDict
 import subprocess
 import argparse
+import json
 import sys
 import re
 
@@ -15,6 +17,7 @@ COLOUR_BG_YELLOW = '\033[43m'
 COLOUR_GREEN = '\033[0;32m'
 COLOUR_PURPLE = '\033[0;35m'
 COLOUR_LIGHT_GRAY = '\033[0;37m'
+GCALCLI_FILENAME = "/tmp/gcalcli_agenda.json"
 
 
 def to_colour(w_m_d: str, event_list: list, days_later: int) -> str:
@@ -103,7 +106,7 @@ def search_and_short_url(urls: str) -> list:
     return url_list
 
 
-def update_event_dict(date_log: str) -> dict:
+def update_event_dict(date_log: str) -> OrderedDict:
     re_week = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
     re_month = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
     re_event = re.compile(
@@ -117,7 +120,7 @@ def update_event_dict(date_log: str) -> dict:
 
     cur_date = None
     cur_date_list = []
-    event_dict = dict()
+    event_dict = OrderedDict()
 
     for (
         date, time, event, link, hangout_link, location, description
@@ -161,35 +164,36 @@ def remove_colour(input_str: str) -> str:
     return ansi_escape.sub("", input_str).strip()
 
 
-def read_from_file(filename: str, week_num: int) -> dict | None:
-    re_week_num = r'^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) '
-    re_holiday = r'(?P<holiday>.*holiday)[ ]*\((?P<duration>\d+)[ ]*day[s]?\)'
-    weekday_to_num_dict = {
-        "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6, "Sun": 7
-    }
+def read_from_file(w_m_d: str, new_w_m_d: str, days_later: int) -> tuple[bool, dict] | None:
     try:
-        with open(filename, "r") as f:
-            content = remove_colour(f.read())
-            if ((holiday := re.findall(re_holiday, content, re.IGNORECASE))
-                    and (old_week := re.findall(re_week_num, content))):
-                name = holiday[0][0].strip()
-                day = int(holiday[0][1].strip())
-                old_week_num = weekday_to_num_dict.get(old_week[0], week_num)
-
-                if (delta_days := week_num - old_week_num) < 0:
-                    delta_days += 7
-
-                if name and (left_day := day - delta_days) > 0:
-                    day_label = 'days' if left_day > 1 else 'day'
-                    return {
-                        "time": ALL_DAY_EVENT_KEY,
-                        "event": f"{name} ({left_day} {day_label})"
-                    }
+        with open(GCALCLI_FILENAME,
+                  "r", encoding="utf-8", errors="ignore") as f:
+            holiday_dict: OrderedDict = json.load(f)
     except FileNotFoundError:
         return None
 
+    for today_event_dict in holiday_dict.get(w_m_d, []):
+        event = today_event_dict.get("event")
+        if holiday := re.findall(
+                r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)',
+                event, re.IGNORECASE):
+            name = holiday[0][0]
+            duration = int(holiday[0][1].strip())
 
-def main_out_agenda(event_dict: dict) -> None:
+            if (left_day := duration - days_later) > 0:
+                day_label = 'days' if left_day > 1 else 'day'
+                today_event_dict.update({
+                    "event": f"{name}({left_day} {day_label})"
+                })
+                return (today_event_dict in holiday_dict.get(new_w_m_d, []),
+                        today_event_dict)
+
+
+def to_date(from_date: datetime) -> str:
+    return from_date.strftime("%a %b %d")
+
+
+def main_out_agenda(event_dict: dict, to_file: bool) -> None:
     today_date = datetime.today()
     week_num = today_date.isoweekday()
     if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
@@ -199,8 +203,8 @@ def main_out_agenda(event_dict: dict) -> None:
         # display tomorrow event after 17:00
         days_later = 1 if today_date.hour > 16 else 0
 
-    event_date = datetime.today() + timedelta(days=days_later)
-    w_m_d = event_date.strftime("%a %b %d")
+    event_date = today_date + timedelta(days=days_later)
+    w_m_d = to_date(event_date)
 
     if w_m_d in event_dict:
         event_list = event_dict.get(w_m_d, [])
@@ -210,15 +214,19 @@ def main_out_agenda(event_dict: dict) -> None:
             "event": "Weekends" if event_date.isoweekday() > 5 else "On holiday"
         }]
 
-    new_week_num = (today_date + timedelta(days=days_later)).isoweekday()
-    if holiday := read_from_file("/tmp/gcalcli_agenda.txt", new_week_num):
-        event_list.append(holiday)
+    if to_file and (holiday := read_from_file(
+            to_date(today_date), to_date(event_date), days_later)):
+        holiday_exist_flag, holiday_dict = holiday
+        event_list.append(holiday_dict)
+        to_file &= (not holiday_exist_flag)
+
+    event_list.sort(key=lambda x: int(x["time"].replace(":", "")))
     if event_list:
-        print(to_colour(
-            w_m_d,
-            sorted(event_list, key=lambda x: int(x["time"].replace(":", ""))),
-            days_later
-        ))
+        print(to_colour(w_m_d, event_list, days_later))
+
+    if to_file:
+        with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
+            json.dump(event_dict, f, indent=4)
 
 
 if __name__ == "__main__":
@@ -227,13 +235,32 @@ if __name__ == "__main__":
     parser.add_argument(
         "--out-event-only", dest="out_event_only", action="store_true",
         help="Output coloured agenda message")
+    parser.add_argument(
+        "--from-file", dest="from_file", action="store_true", default=False,
+        help="Read agenda message from file GCALCLI_FILENAME")
+    parser.add_argument(
+        "--to-file", dest="to_file", action="store_true", default=True,
+        help="Save agenda message to file GCALCLI_FILENAME")
 
     args = parser.parse_args()
-    agenda = remove_colour(sys.stdin.buffer.read().decode('utf-8', 'ignore'))
-    event_dict = update_event_dict(agenda)
-    if args.out_event_only:
-        for key, event_list in event_dict.items():
-            for event in event_list:
-                print("|".join([key, event.get("time"), event.get("event")]))
+
+    if args.from_file:
+        try:
+            with open(GCALCLI_FILENAME,
+                      "r", encoding="utf-8", errors="ignore") as f:
+                event_dict = json.load(f)
+                args.to_file = False  # do not write to file if read from file
+        except FileNotFoundError:
+            exit()
     else:
-        main_out_agenda(event_dict)
+        event_dict = update_event_dict(remove_colour(
+            sys.stdin.buffer.read().decode('utf-8', 'ignore')))
+
+    if args.out_event_only:
+        for today_event in event_dict.get(to_date(datetime.today()), []):
+            event_time = today_event.get("time")
+            event_time = "" if event_time == ALL_DAY_EVENT_KEY else event_time
+            event = today_event.get("event")
+            print(f"{event_time}    {event}")
+    else:
+        main_out_agenda(event_dict, args.to_file)
