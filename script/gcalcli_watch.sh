@@ -34,20 +34,15 @@ watch -n 200 -c -t -x bash -c '
   fi
 
   if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "20" ]; then
-    # email_date=$(date "+%a, %d %b %Y")
-    # if gitlab_reply=$(ag --nofilename --nobreak --only-matching \
-    #   "Date: ${email_date}[\s\S]+?\K.+commented[^:]*:[\s\S]+?--" \
-    #   "$HOME/.config/neomutt/mails" | perl -p0e "s/((\r?\n){2}|=\r?\n|--)//g"); then
-    #   echo "[${email_date}] ${gitlab_reply}" >> /tmp/gitlab_comment_notification
-    # fi
-
-    if cal_event=$(gcalcli --config-folder $HOME/.config/gcalcli \
-    --nocolor --lineart ascii agenda \
-    --details location \
-    --details url \
-    --details description | python $HOME/.local/bin/filter_gcalcli.py); then
-      echo "$cal_event" && echo "$cal_event" > /tmp/gcalcli_agenda.txt && trans --display-from-local-dict
+    agenda_start_date=$(date +%Y-%m-%d)
+    agenda_end_date="$(date +%F -d @$(($(date +%s -d "${agenda_start_date}") + 30*86400)))"
+    if cal_event=$(gcalcli --config-folder "$HOME/.config/gcalcli" \
+      --nocolor --lineart ascii agenda --details location --details url \
+      --details description "${agenda_start_date}" "${agenda_end_date}" |
+      python "$HOME/.local/bin/filter_gcalcli.py" --to-file); then
+      echo "${cal_event}"
+      trans --display-from-local-dict
     fi
   else
-    cat /tmp/gcalcli_agenda.txt
+    python "$HOME/.local/bin/filter_gcalcli.py" --from-file
   fi'
