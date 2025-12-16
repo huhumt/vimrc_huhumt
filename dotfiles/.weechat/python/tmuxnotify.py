@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
 
+import subprocess
 import weechat
 import os
 import re
@@ -35,7 +36,6 @@ for option, default_value in settings.items():
         weechat.config_set_plugin(option, default_value)
 
 WEECHAT_LOG_FILENAME = "/tmp/weechat_msg.txt"
-GCALCLI_LOG_FILENAME = "/tmp/gcalcli_agenda.txt"
 FROM_SOURCE_TEMPLATE = ("=== From {log_source}, reported at: ")
 FROM_GCALCLI, FROM_IRC, FROM_GITLAB = (
     FROM_SOURCE_TEMPLATE.format(log_source="gcalcli agenda"),
@@ -174,29 +174,22 @@ def update_weechat_log(log_cls: WeechatLogData):
 
 def parse_today_event():
     today_date = datetime.today()
+    re_event = r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s+(?P<event>.*)"
 
-    # before 8:00AM or after 8:00PM, it's out of work hour
-    if today_date.hour not in range(8, 20):
-        return None
+    today_event = subprocess.run([
+        "python",
+        os.path.join(os.path.expanduser('~'), ".local/bin/filter_gcalcli.py"),
+        "--from-file",
+        "--out-event-only"
+    ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
-    try:
-        with open(GCALCLI_LOG_FILENAME, "r") as r_fd:
-            content = remove_colour(r_fd.read())
-    except FileNotFoundError:
-        pass
-    else:
-        if content.startswith(today_date.strftime("%a %b %d")):
-            re_event = r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s+(?P<event>.*)"
-            for cur_hour, cur_minute, cur_event in filter(
-                    lambda x: all(x), re.findall(re_event, content)):
-                event_time = today_date.replace(
-                    hour=int(cur_hour), minute=int(cur_minute))
-                reminder_s = (
-                    event_time - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4))
-                reminder_e = (
-                    event_time + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2))
-                if today_date > reminder_s and today_date < reminder_e:
-                    return (f"{cur_hour}:{cur_minute}", cur_event.strip())
+    for cur_hour, cur_minute, cur_event in filter(
+            lambda x: all(x), re.findall(re_event, today_event)):
+        e_t = today_date.replace(hour=int(cur_hour), minute=int(cur_minute))
+        r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
+        r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
+        if today_date > r_s and today_date < r_e:
+            return (f"{cur_hour}:{cur_minute}", cur_event.strip())
     return None
 
 
