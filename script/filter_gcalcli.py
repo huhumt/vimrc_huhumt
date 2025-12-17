@@ -9,7 +9,7 @@ import json
 import sys
 import re
 
-ALL_DAY_EVENT_KEY = "00:00"
+ALL_DAY_EVENT_KEY = "All day event"
 # https://stackoverflow.com/a/28938235
 COLOUR_OFF = '\033[0m'
 COLOUR_BG_BLUE = '\033[44m'
@@ -17,77 +17,47 @@ COLOUR_BG_YELLOW = '\033[43m'
 COLOUR_GREEN = '\033[0;32m'
 COLOUR_PURPLE = '\033[0;35m'
 COLOUR_LIGHT_GRAY = '\033[0;37m'
-GCALCLI_FILENAME = "/tmp/gcalcli_agenda.json"
+HEADER_COLOUR = COLOUR_BG_BLUE + "{header}" + COLOUR_OFF
+ALL_DAY_COLOUR = "    " + COLOUR_PURPLE + "{name} (All Day)" + COLOUR_OFF
+NORMAL_EVENT_COLOUR = "    {event}"
+DONE_EVENT_COLOUR = "    " + COLOUR_LIGHT_GRAY + "{event}" + COLOUR_OFF
+IN_EVENT_COLOUR = (COLOUR_BG_YELLOW + "[*] {event}"
+                   + COLOUR_GREEN + "{url}" + COLOUR_OFF)
 
 
-def to_colour(w_m_d: str, event_list: list, days_later: int) -> str:
-    colour_off_flag = days_later > 0
+def to_colour(header: str, event_list: list, colour_en: bool) -> str:
     now_h_m = datetime.now().time()
-    colour_event = str()
+    event_name_list = list()
+    colour_out_str = HEADER_COLOUR.format(header=header)
 
     for event in event_list:
         event_time = event.get("time")
         event_name = event.get("event")
 
-        if event_time == ALL_DAY_EVENT_KEY:
-            colour_event = (
-                f"    {COLOUR_PURPLE}"
-                f"{event_name} (All Day){COLOUR_OFF}\n"
-            ) + colour_event
-        else:
-            display_list = list(filter(None, [
-                event.get("location"),
-                event.get("hangout_link"),
-                event.get("description_url")
-            ]))
-
-            if colour_off_flag:
-                in_event_flag = False
-                done_event_flag = False
+        if event_name not in event_name_list:
+            event_name_list.append(event_name)
+            if event_time == ALL_DAY_EVENT_KEY:
+                colour_str = ALL_DAY_COLOUR.format(name=event_name)
             else:
+                event_loc = re.sub(
+                    r'(.+)', r' (\1)', event.get("location").strip())
+                event_url = '\n    ' + '\n    '.join(list(filter(None, [
+                    event.get("hangout_link"), event.get("description_url")])))
+                cur_event = f"{event_time}  {event_name}{event_loc}"
+
                 reminder_c = datetime.strptime(event_time, "%H:%M")
                 reminder_s = (reminder_c - timedelta(minutes=15)).time()
                 reminder_e = (reminder_c + timedelta(minutes=5)).time()
-                in_event_flag = now_h_m > reminder_s and now_h_m < reminder_e
-                done_event_flag = now_h_m > reminder_e
-
-            if in_event_flag:
-                colour_event_list = {
-                    COLOUR_BG_YELLOW: (
-                        f"[*] {event_time}  {event_name}"
-                        + (f" ({display_list[0]})" if display_list else "")
-                    ),
-                    COLOUR_GREEN: "".join(
-                        [f'\n    {s}'
-                         for s in display_list[1:] if len(display_list) > 1]
-                    )
-                }
-            elif done_event_flag:
-                colour_event_list = {
-                    COLOUR_LIGHT_GRAY: (
-                        f"    {event_time}  {event_name}"
-                        + (f" ({display_list[0]})" if display_list else "")
-                    )
-                }
-            else:
-                colour_event_list = {
-                    COLOUR_OFF: (
-                        f"    {event_time}  {event_name}"
-                        + (f" ({display_list[0]})" if display_list else "")
-                    )
-                }
-
-            for colour, event in colour_event_list.items():
-                colour_event += f"{colour}{event}"
-            colour_event += f"{COLOUR_OFF}\n"
-
-    if colour_off_flag:
-        d_flag = f"{days_later} days later" if days_later > 1 else "tomorrow"
-        colour_header = f"{COLOUR_BG_BLUE}{w_m_d} ({d_flag}){COLOUR_OFF}\n"
-    else:
-        colour_header = f"{COLOUR_BG_BLUE}{w_m_d}{COLOUR_OFF}\n"
-
-    return f"{colour_header}{colour_event}"
+                # colour disabled or event not start yet
+                if (not colour_en) or (now_h_m < reminder_s):
+                    colour_str = NORMAL_EVENT_COLOUR.format(event=cur_event)
+                elif now_h_m > reminder_e:  # colour enabled and event finished
+                    colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
+                else:  # colour enabled and now in the event
+                    colour_str = IN_EVENT_COLOUR.format(
+                        event=cur_event, url=event_url)
+            colour_out_str += f"\n{colour_str}"
+    return colour_out_str
 
 
 def hyperlinks_text(url: str, hyper_txt: str) -> str:
@@ -107,10 +77,10 @@ def search_and_short_url(urls: str) -> list:
 
 
 def update_event_dict(date_log: str) -> OrderedDict:
-    re_week = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
-    re_month = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
+    re_week = '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
+    re_month = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
     re_event = re.compile(
-        fr'(?P<date>(?:{re_week}) (?:{re_month}) \d+)?'
+        fr'(?P<date>(?:{re_week} {re_month} |\d+-\d+-)\d+)?'
         r'[ ]+(?P<time>\d{1,2}:\d{2})?[ ]*(?P<event>.+)'
         r'(?:\s+Link: (?P<link>.+))?'
         r'(?:\s+Hangout Link: (?P<hangout_link>.+))?'
@@ -148,12 +118,15 @@ def update_event_dict(date_log: str) -> OrderedDict:
                 "location": meeting_room[0] if meeting_room else location,
                 "description_url": " ".join(search_and_short_url(description))
             }
-        if date:
-            cur_date = date
+        if date and (date != cur_date):
             cur_date_list = [event_lower]
-            event_dict.update({date: [cur_event] if cur_event else []})
+            cur_date = date
         else:
             cur_date_list.append(event_lower)
+
+        if date and (date not in event_dict):
+            event_dict.update({date: [cur_event] if cur_event else []})
+        else:
             if cur_date and cur_event:
                 event_dict[cur_date].append(cur_event)
     return event_dict
@@ -164,15 +137,8 @@ def remove_colour(input_str: str) -> str:
     return ansi_escape.sub("", input_str).strip()
 
 
-def read_from_file(w_m_d: str, new_w_m_d: str, days_later: int) -> tuple[bool, dict] | None:
-    try:
-        with open(GCALCLI_FILENAME,
-                  "r", encoding="utf-8", errors="ignore") as f:
-            holiday_dict: OrderedDict = json.load(f)
-    except FileNotFoundError:
-        return None
-
-    for today_event_dict in holiday_dict.get(w_m_d, []):
+def update_from_file(event_dict, days_later: int) -> dict | None:
+    for today_event_dict in event_dict:
         event = today_event_dict.get("event")
         if holiday := re.findall(
                 r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)',
@@ -185,82 +151,110 @@ def read_from_file(w_m_d: str, new_w_m_d: str, days_later: int) -> tuple[bool, d
                 today_event_dict.update({
                     "event": f"{name}({left_day} {day_label})"
                 })
-                return (today_event_dict in holiday_dict.get(new_w_m_d, []),
-                        today_event_dict)
+                return today_event_dict
 
 
-def to_date(from_date: datetime) -> str:
-    return from_date.strftime("%a %b %d")
+def detect_date_format(date_str: str) -> str | None:
+    # current only support these two formats
+    #  "%a %b %d" is from 'gcalcli agenda'
+    #  "%Y-%m-%d" is from 'gcalcli search'
+    date_format_list = ["%a %b %d", "%Y-%m-%d"]
+    for date_format in date_format_list:
+        try:
+            datetime.strptime(date_str, date_format)
+        except ValueError:
+            pass
+        else:
+            return date_format
+    print(f"{date_str} is not support, can not continue")
+    return None
 
 
-def main_out_agenda(event_dict: dict, to_file: bool) -> None:
+def to_date(from_date: datetime, date_format: str) -> str:
+    return from_date.strftime(date_format)
+
+
+def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
     today_date = datetime.today()
-    week_num = today_date.isoweekday()
-    if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
-        # display next Monday's event from Friday's afternoon
-        days_later = 8 - week_num
-    else:
-        # display tomorrow event after 17:00
-        days_later = 1 if today_date.hour > 16 else 0
+
+    if days_later < 0:
+        week_num = today_date.isoweekday()
+        if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
+            # display next Monday's event from Friday's afternoon
+            days_later = 8 - week_num
+        else:
+            # display tomorrow event after 17:00
+            days_later = 1 if today_date.hour > 16 else 0
 
     event_date = today_date + timedelta(days=days_later)
-    w_m_d = to_date(event_date)
+    w_m_d = to_date(event_date, date_format)
+    # this is a pointer to event_dict, if key w_m_d:
+    #   * in dict, any modification on this pointer will be auto saved to dict
+    #   * not in dict, null pointer, work as local variable, won't update dict
+    event_list = event_dict.get(w_m_d, []) or [{
+        "time": ALL_DAY_EVENT_KEY,
+        "event": "Weekends" if event_date.isoweekday() > 5 else "No Event found"
+    }]
 
-    if w_m_d in event_dict:
-        event_list = event_dict.get(w_m_d, [])
-    else:
-        event_list = [{
-            "time": ALL_DAY_EVENT_KEY,
-            "event": "Weekends" if event_date.isoweekday() > 5 else "On holiday"
-        }]
+    if file_dict and (holiday := update_from_file(
+            file_dict.get(to_date(today_date, date_format), []), days_later)):
+        if holiday not in event_list:
+            event_list.append(holiday)
 
-    if to_file and (holiday := read_from_file(
-            to_date(today_date), to_date(event_date), days_later)):
-        holiday_exist_flag, holiday_dict = holiday
-        event_list.append(holiday_dict)
-        to_file &= (not holiday_exist_flag)
-
-    event_list.sort(key=lambda x: int(x["time"].replace(":", "")))
-    if event_list:
-        print(to_colour(w_m_d, event_list, days_later))
-
-    if to_file:
-        with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
-            json.dump(event_dict, f, indent=4)
+    event_list.sort(
+        key=lambda x: int(re.sub(r'(\d+)?:?(\d+)?.*', r'\1\2', x["time"]) or 0)
+    )
+    header_list = ["", " (tomorrow)", f" ({days_later} days later)"]
+    header = header_list[days_later if days_later < len(header_list) else -1]
+    print(to_colour(f"{w_m_d}{header}", event_list, days_later == 0))
 
 
 if __name__ == "__main__":
+    GCALCLI_FILENAME = "/tmp/gcalcli_agenda.json"
+
     parser = argparse.ArgumentParser(
         description="Filter gcalcli agenda message")
     parser.add_argument(
         "--out-event-only", dest="out_event_only", action="store_true",
-        help="Output coloured agenda message")
+        help="Output today's event only")
     parser.add_argument(
         "--from-file", dest="from_file", action="store_true", default=False,
-        help="Read agenda message from file GCALCLI_FILENAME")
+        help=f"Read agenda message from file GCALCLI_FILENAME")
     parser.add_argument(
-        "--to-file", dest="to_file", action="store_true", default=True,
-        help="Save agenda message to file GCALCLI_FILENAME")
+        "--days-later", dest="days_later", type=int, default=-1,
+        help="Display n days later agenda, must be within 30 days")
 
     args = parser.parse_args()
 
-    if args.from_file:
-        try:
-            with open(GCALCLI_FILENAME,
-                      "r", encoding="utf-8", errors="ignore") as f:
-                event_dict = json.load(f)
-                args.to_file = False  # do not write to file if read from file
-        except FileNotFoundError:
+    try:
+        with open(GCALCLI_FILENAME,
+                  "r", encoding="utf-8", errors="ignore") as f:
+            from_file_event_dict = json.load(f)
+    except FileNotFoundError:
+        from_file_event_dict = None
+
+    if args.from_file or sys.stdin.isatty():
+        if from_file_event_dict:
+            event_dict = from_file_event_dict
+        else:
             exit()
     else:
         event_dict = update_event_dict(remove_colour(
             sys.stdin.buffer.read().decode('utf-8', 'ignore')))
 
+    if not (date_format := detect_date_format(list(event_dict.keys())[0])):
+        raise ValueError(f"Invalid input data {event_dict}")
+
     if args.out_event_only:
-        for today_event in event_dict.get(to_date(datetime.today()), []):
+        today_key = to_date(datetime.today(), date_format)
+        for today_event in event_dict.get(today_key, []):
             event_time = today_event.get("time")
             event_time = "" if event_time == ALL_DAY_EVENT_KEY else event_time
             event = today_event.get("event")
             print(f"{event_time}    {event}")
     else:
-        main_out_agenda(event_dict, args.to_file)
+        main_out_agenda(event_dict, from_file_event_dict,
+                        date_format, args.days_later)
+        if event_dict != from_file_event_dict:  # do not update if no changes
+            with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
+                json.dump(event_dict, f, indent=4)

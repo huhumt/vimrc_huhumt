@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2016
 watch -n 200 -c -t -x bash -c '
   cur_hour=$(date +%k)
 
@@ -37,9 +38,9 @@ watch -n 200 -c -t -x bash -c '
     agenda_start_date=$(date +%Y-%m-%d)
     agenda_end_date="$(date +%F -d @$(($(date +%s -d "${agenda_start_date}") + 30*86400)))"
     if cal_event=$(gcalcli --config-folder "$HOME/.config/gcalcli" \
-      --nocolor --lineart ascii agenda --details location --details url \
-      --details description "${agenda_start_date}" "${agenda_end_date}" |
-      python "$HOME/.local/bin/filter_gcalcli.py" --to-file); then
+      --nocolor --lineart ascii search --details location --details url \
+      --details description "*" "${agenda_start_date}" "${agenda_end_date}" |
+      python "$HOME/.local/bin/filter_gcalcli.py"); then
       echo "${cal_event}"
       trans --display-from-local-dict
     fi
