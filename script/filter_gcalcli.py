@@ -191,7 +191,7 @@ def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
     # this is a pointer to event_dict, if key w_m_d:
     #   * in dict, any modification on this pointer will be auto saved to dict
     #   * not in dict, null pointer, work as local variable, won't update dict
-    event_list = event_dict.get(w_m_d, []) or [{
+    event_list = event_dict.get(w_m_d) or [{
         "time": ALL_DAY_EVENT_KEY,
         "event": "Weekends" if event_date.isoweekday() > 5 else "No Event found"
     }]
@@ -204,6 +204,7 @@ def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
     event_list.sort(
         key=lambda x: int(re.sub(r'(\d+)?:?(\d+)?.*', r'\1\2', x["time"]) or 0)
     )
+    event_dict.update({w_m_d: event_list})
     header_list = ["", " (tomorrow)", f" ({days_later} days later)"]
     header = header_list[days_later if days_later < len(header_list) else -1]
     print(to_colour(f"{w_m_d}{header}", event_list, days_later == 0))

@@ -12,12 +12,14 @@
 # Original author: lavaramano <lavaramano AT gmail DOT com>
 
 from datetime import datetime, timedelta
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Optional
 from pathlib import Path
 
 import subprocess
 import weechat
+import json
 import os
 import re
 
@@ -35,15 +37,9 @@ for option, default_value in settings.items():
     if weechat.config_get_plugin(option) == "":
         weechat.config_set_plugin(option, default_value)
 
-WEECHAT_LOG_FILENAME = "/tmp/weechat_msg.txt"
-FROM_SOURCE_TEMPLATE = ("=== From {log_source}, reported at: ")
-FROM_GCALCLI, FROM_IRC, FROM_GITLAB = (
-    FROM_SOURCE_TEMPLATE.format(log_source="gcalcli agenda"),
-    FROM_SOURCE_TEMPLATE.format(log_source="IRC message"),
-    FROM_SOURCE_TEMPLATE.format(log_source="gitlab comment")
-)
-MODE_APPEND, MODE_REPLACE, MODE_DELETE, MODE_DELETE_SHORT_MSG = range(4)
-GCALCLI_IRC_SEP = ('=' * 80)
+FROM_IRC, FROM_GCALCLI, FROM_GITLAB = (
+    "From irc message", "From gcalcli agenda", "From gitlab comment")
+MODE_REPLACE, MODE_APPEND, MODE_DELETE, MODE_DELETE_SHORT_MSG = range(4)
 WEECHAT_CRON_INTERVAL = 5  # in minutes
 
 # Hook privmsg/hilights
@@ -58,16 +54,14 @@ weechat.hook_timer(
 
 @dataclass
 class WeechatLogData:
-    # reported from gcalcli or irc
+    # reported from gcalcli, irc or gitlab
     source: str
-    # update log file mode, can be append, replace and delete
-    mode: int = MODE_DELETE
-    # short message header, for example: IRC, Git
-    short_header: str = ""
-    # (HH:MM, event) for gcalcli, (name, msg) for irc
-    logs: Optional[tuple] = None
-    # short message sep tuple, for example ('<', '>')
-    sep: Optional[tuple] = None
+    # process mode
+    mode: int = MODE_DELETE_SHORT_MSG
+    # (HH:MM, event) for gcalcli, (name, msg) for irc and gitlab
+    log: Optional[str] = None
+    # short message header template, for example: <IRC: (msg)>, [Git: <msg>]
+    short_header_template: Optional[str] = None
 
 
 def notify_cmd_hyperlink(message):
@@ -108,68 +102,45 @@ def remove_colour(input_str):
     return ansi_escape.sub("", input_str).strip()
 
 
-def update_weechat_log(log_cls: WeechatLogData):
-    re_log = re.compile(
-        fr'(?P<first>[\s\S]+?{GCALCLI_IRC_SEP})?'
-        fr'(?P<msg>(?:\r?\n)?{log_cls.source}[\s\S]+?{GCALCLI_IRC_SEP})'
-        r'(?P<last>[\s\S]*)'
-    )
-
+def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
     try:
-        with open(WEECHAT_LOG_FILENAME, "r") as f:
-            content = f.read()
+        with open(filename, "r", encoding="utf-8") as f:
+            file_log_dict: OrderedDict = json.load(f)
     except FileNotFoundError:
-        content = ""
+        file_log_dict = OrderedDict()
 
-    if log_cls.logs and log_cls.sep and log_cls.mode < MODE_DELETE:
-        if (new_msg := ": ".join(log_cls.logs).replace('`', '')) in content:
-            return  # avoid duplicated message
-
-        out_msg = remove_colour(new_msg)
-        notify_event(log_cls.source, out_msg)
-
-        short_msg = (
-            f"{log_cls.sep[0]}"
-            f"{log_cls.short_header}{out_msg[:32].strip()}"
-            f"{log_cls.sep[1]}"
-        )
-        new_msg_lines = [
-            log_cls.source + datetime.now().strftime('%a %m %d %Y %H:%M'),
-            new_msg, short_msg, GCALCLI_IRC_SEP
-        ]
-
-        if log := re_log.findall(content):
-            msg_list = list(log[0])
-            old_msg_lines = msg_list[1].strip().splitlines()
-            # append only when old message is not too long
-            if log_cls.mode == MODE_APPEND and len(old_msg_lines) < 30:
-                if (old_msg_lines[-2].startswith(log_cls.sep[0])
-                        and old_msg_lines[-2].endswith(log_cls.sep[1])):
-                    new_msg_lines[1:1] += old_msg_lines[1:-2]
-                else:
-                    new_msg_lines[1:1] += old_msg_lines[1:-1]
-            msg_list[1:2] = new_msg_lines
+    short_msg_key = "short_msg"
+    log_dict = file_log_dict.get(log.source) or {}
+    # if not in delete mode but log.log is invalid, switch to delete mode
+    if log.mode >= MODE_DELETE or (not log.log):
+        if log.mode == MODE_DELETE_SHORT_MSG:
+            log_dict.update({short_msg_key: ""})  # delete short msg only
         else:
-            # put gitlab message in head
-            if log_cls.source == FROM_GITLAB:
-                msg_list = new_msg_lines + ([content] if content else [])
-            else:
-                msg_list = ([content] if content else []) + new_msg_lines
+            file_log_dict.update({log.source: ""})  # delete all
     else:
-        if not (log := re_log.findall(content)):
-            return
+        full_msg_key = "messages"
+        full_msg = log_dict.get(full_msg_key) or {}
 
-        msg_list = [log[0][0], log[0][-1]]
-        if log_cls.mode == MODE_DELETE_SHORT_MSG:
-            re_short = fr'(?P<short_msg>(?:<.*>|\[.*\])\s+){GCALCLI_IRC_SEP}'
-            if short_msg := re.findall(re_short, log[0][1]):
-                msg_list.insert(1, log[0][1].replace(short_msg[0], ''))
-            else:
-                return
+        new_msg = log.log.replace('`', '').strip()
+        # ignore duplicated message if not in delete mode
+        if (out_msg := remove_colour(new_msg)) in full_msg.values():
+            return None
 
-    if new_msg_list := [m.strip() for m in msg_list if m]:
-        with open(WEECHAT_LOG_FILENAME, "w") as f:
-            f.write(os.linesep.join(new_msg_list))
+        notify_event(log.source, new_msg)
+        short_msg = (log.short_header_template or "").format(out_msg[:32])
+        new_msg_dict = {datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): out_msg}
+
+        if log.mode == MODE_REPLACE or (not log_dict):
+            file_log_dict.update({log.source: {
+                short_msg_key: short_msg, full_msg_key: new_msg_dict}})
+        else:  # append mode, and key already in
+            if len(full_msg) > 30:  # too many logs
+                oldest_key = list(full_msg.keys())[0]
+                full_msg.pop(oldest_key)  # remove oldest log
+            full_msg.update(new_msg_dict)
+            log_dict.update({short_msg_key: short_msg, full_msg_key: full_msg})
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(file_log_dict, f, indent=4)
 
 
 def parse_today_event():
@@ -189,8 +160,7 @@ def parse_today_event():
         r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
         r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
         if today_date > r_s and today_date < r_e:
-            return (f"{cur_hour}:{cur_minute}", cur_event.strip())
-    return None
+            return f"{cur_hour}:{cur_minute} {cur_event.strip()}"
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
@@ -203,16 +173,16 @@ def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
         with open(email, 'r', encoding='utf-8', errors='ignore') as f:
             for name, comment in re.findall(re_comment, f.read()):
                 comment = re.sub(r'(=\r?\n)', '', comment.strip())
-                comment_list += [(name.strip(), comment.splitlines()[0])]
+                comment_list += [f"{name.strip()} {comment.splitlines()[0]}"]
     return comment_list
 
 
 def cron_timer_cb(data, remaining_calls):
     update_weechat_log(WeechatLogData(
-        FROM_GCALCLI, MODE_REPLACE, "", parse_today_event(), ('<', '>')))
+        FROM_GCALCLI, MODE_REPLACE, parse_today_event(), "<{}>"))
     for gitlab_comment in gitlab_comment_from_email():
         update_weechat_log(WeechatLogData(
-            FROM_GITLAB, MODE_APPEND, "Gitlab: ", gitlab_comment, ('[', ']')))
+            FROM_GITLAB, MODE_APPEND, gitlab_comment, "[Gitlab: {}]"))
     return weechat.WEECHAT_RC_OK
 
 
@@ -232,12 +202,8 @@ def notify_show(data, signal, message):
         elif (name == "*status") or (name == "--" and msg.startswith("irc")):
             return weechat.WEECHAT_RC_OK
 
-        if signal == "weechat_pv":
-            COLOUR_OFF = '\033[0m'
-            COLOUR_YELLOW_UNDERLINE = '\033[4;33m'
-            name = f"{COLOUR_YELLOW_UNDERLINE}pm: {COLOUR_OFF}{name}"
         update_weechat_log(WeechatLogData(
-            FROM_IRC, MODE_APPEND, "IRC: ", (name, msg), ('[', ']')))
+            FROM_IRC, MODE_APPEND, f"{name}: {msg}", "[IRC: {}]"))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         update_weechat_log(WeechatLogData(FROM_IRC, MODE_DELETE_SHORT_MSG))
