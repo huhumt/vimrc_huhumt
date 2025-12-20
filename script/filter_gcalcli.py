@@ -39,11 +39,9 @@ def to_colour(header: str, event_list: list, colour_en: bool) -> str:
             if event_time == ALL_DAY_EVENT_KEY:
                 colour_str = ALL_DAY_COLOUR.format(name=event_name)
             else:
-                event_loc = re.sub(
-                    r'(.+)', r' (\1)', event.get("location").strip())
-                event_url = '\n    ' + '\n    '.join(list(filter(None, [
-                    event.get("hangout_link"), event.get("description_url")])))
-                cur_event = f"{event_time}  {event_name}{event_loc}"
+                if event_urls := event.get("urls", ""):
+                    event_urls = "\n    ".join([""] + event_urls)
+                cur_event = f"{event_time}  {event_name}"
 
                 reminder_c = datetime.strptime(event_time, "%H:%M")
                 reminder_s = (reminder_c - timedelta(minutes=15)).time()
@@ -55,7 +53,7 @@ def to_colour(header: str, event_list: list, colour_en: bool) -> str:
                     colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
                 else:  # colour enabled and now in the event
                     colour_str = IN_EVENT_COLOUR.format(
-                        event=cur_event, url=event_url)
+                        event=cur_event, url=event_urls)
             colour_out_str += f"\n{colour_str}"
     return colour_out_str
 
@@ -65,15 +63,14 @@ def hyperlinks_text(url: str, hyper_txt: str) -> str:
     return hyperlinks.format("", url, hyper_txt)
 
 
-def search_and_short_url(urls: str) -> list:
+def search_and_short_url(urls: str, sep=" ") -> str:
     url_list = list()
     for href in re.compile(r'<a href="(?P<url>[^"]+)"').findall(urls):
-        url_list.append(subprocess.run([
-            'shorten_url',
-            "--url-min-length=16",
-            re.sub(r'[\s\|]', '', href)
-        ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip())
-    return url_list
+        if (url := subprocess.run([
+            'shorten_url', "--url-min-length=16", re.sub(r'[\s\|]', '', href)
+        ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()) not in url_list:
+            url_list.append(url)
+    return sep.join(url_list)
 
 
 def update_event_dict(date_log: str) -> OrderedDict:
@@ -95,29 +92,32 @@ def update_event_dict(date_log: str) -> OrderedDict:
     for (
         date, time, event, link, hangout_link, location, description
     ) in re_event.findall(date_log):
-        meeting_room = re.compile(
-            r'\(Meeting Room\)-Dale House-(.+?) \(').findall(location)
+        re_meetint_room = r'\(Meeting Room\)-Dale House-(.+?) \('
+        if meeting_room := re.findall(re_meetint_room, location):
+            event_loc = f" ({meeting_room[0].strip()})"
+        else:
+            event_loc = re.sub(r'(.+)', r' (\1)', location.strip())
+
+        event = f"{event.strip()}{event_loc}"
+        re_attr = r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
+        if attr := re.findall(re_attr, description):
+            event = f"{attr[0]}: {event}"
         # do not record if event in empty
         # do not record event in "home" or "office"
         # do not record regional holiday not valid in England
         # do not record duplicated event
-        event_lower = event.lower().strip()
+        event_lower = event.lower()
         if (not event_lower) or event_lower in ("home", "office") or (
             "(regional holiday)" in event_lower and "England" not in location
         ) or event_lower in cur_date_list:
             cur_event = None
         else:
-            attr = re.compile(
-                r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
-            ).findall(description)
             cur_event = {
-                "time": time if time else ALL_DAY_EVENT_KEY,
-                "event": (f"{attr[0]}: " if attr else "") + event,
-                "link": link,
-                "hangout_link": hangout_link,
-                "location": meeting_room[0] if meeting_room else location,
-                "description_url": " ".join(search_and_short_url(description))
+                "time": time or ALL_DAY_EVENT_KEY, "event": event, "link": link
             }
+            if urls := list(filter(None, [
+                    hangout_link, search_and_short_url(description)])):
+                cur_event.update({"urls": urls})
         if date and (date != cur_date):
             cur_date_list = [event_lower]
             cur_date = date
@@ -201,8 +201,8 @@ def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
         if holiday not in event_list:
             event_list.append(holiday)
 
-    event_list.sort(
-        key=lambda x: int(re.sub(r'(\d+)?:?(\d+)?.*', r'\1\2', x["time"]) or 0)
+    event_list.sort(key=lambda x: int(
+        re.sub(r'(\d+)?:?(\d+)?.*', r'\1\2', x["time"]) or 0)
     )
     event_dict.update({w_m_d: event_list})
     header_list = ["", " (tomorrow)", f" ({days_later} days later)"]
