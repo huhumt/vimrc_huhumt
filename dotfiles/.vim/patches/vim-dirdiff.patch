@@ -1,5 +1,5 @@
 diff --git a/plugin/dirdiff.vim b/plugin/dirdiff.vim
-index 2389f7a..63fbe3b 100644
+index 2389f7a..deb0f2b 100644
 --- a/plugin/dirdiff.vim
 +++ b/plugin/dirdiff.vim
 @@ -197,7 +197,8 @@ function! <SID>DirDiff(srcA, srcB)
@@ -20,46 +20,107 @@ index 2389f7a..63fbe3b 100644
      echo "Defining [A] and [B] ... "
      " We then do a substitution on the directory path
      " We need to do substitution of the the LONGER string first, otherwise
-@@ -511,7 +513,9 @@ function! <SID>DirDiffOpen()
+@@ -414,21 +416,31 @@ function <SID>ToggleHex()
+ endfunction
+ 
+ function! <SID>DirDiffHexmode()
+-    wincmd k
+-    call <SID>ToggleHex()
+-    wincmd l
+-    call <SID>ToggleHex()
++    " Support hex mode only for existing files (not directories).
++    if filereadable(s:FilenameA)
++        call <SID>GotoFileAWindow()
++        call <SID>ToggleHex()
++    endif
++    if filereadable(s:FilenameB)
++        call <SID>GotoFileBWindow()
++        call <SID>ToggleHex()
++    endif
+     " Go back to the diff window
+-    wincmd j
++    call <SID>GotoDiffWindow()
+ endfunction
+ 
+ function! <SID>DirDiffWrapmode()
+-    wincmd k
+-    setlocal wrap!
+-    wincmd l
+-    setlocal wrap!
++    " Support wrap mode only for existing files (not directories).
++    if filereadable(s:FilenameA)
++        call <SID>GotoFileAWindow()
++        setlocal wrap!
++    endif
++    if filereadable(s:FilenameB)
++        call <SID>GotoFileBWindow()
++        setlocal wrap!
++    endif
+     " Go back to the diff window
+-    wincmd j
++    call <SID>GotoDiffWindow()
+ endfunction
+ 
+ function! <SID>EscapeFileName(path)
+@@ -455,10 +467,30 @@ function! <SID>Drop(fname)
+     if winid > 0
+         call win_gotoid(winid)
+     else
+-        exe 'edit ' a:fname
++        " If the Netrw plugin is configured in tree style listing mode
++        " (i.e. g:netrw_liststyle = 3), then a buffer named 'NetrwTreeListing'
++        " is shown (i.e. active window). This happens only after the original
++        " buffer, which has the directory as its name, is focused for the first
++        " time. We work around this by comparing the 'netrw_curdir' variable of
++        " the 'NetrwTreeListing' buffer against the directory name.
++        let netrw_buffer = bufnr("NetrwTreeListing")
++        let netrw_winid = bufwinid(netrw_buffer)
++        if netrw_winid > 0 && a:fname == getbufvar(netrw_buffer, "netrw_curdir")
++            call win_gotoid(netrw_winid)
++        else
++            exe 'edit ' a:fname
++        endif
+     endif
+ endfunction
+ 
++function! <SID>GotoFileAWindow()
++    call <SID>Drop(s:FilenameA)
++endfunction
++
++function! <SID>GotoFileBWindow()
++    call <SID>Drop(s:FilenameB)
++endfunction
++
+ function! <SID>GotoDiffWindow()
+     call <SID>Drop(s:FilenameDiffWindow)
+ endfunction
+@@ -511,7 +543,11 @@ function! <SID>DirDiffOpen()
                  let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
                  call <SID>Drop(previousFile)
                  silent exec "edit ".fileToOpen
 -                silent exec "bd ".bufnr(previousFile)
-+                if previousFile != fileToOpen
-+                    silent exec "bd ".bufnr(previousFile)
-+                endif
++                " The Netrw plugin creates an 'unlisted' buffer for directories.
++                " Running 'bd {buffer}' on an unlisted buffer produces the following error:
++                " E516: No buffers were deleted.
++                " Suppress the error with 'silent!'.
++                silent! exec "bd ".bufnr(previousFile)
              endif
          else
              silent exec "split ".fileToOpen
-@@ -531,18 +535,24 @@ function! <SID>DirDiffOpen()
-                 call <SID>Drop(previousFileA)
-                 silent exec "edit ".s:FilenameA
-                 diffthis
--                silent exec "bd ".bufnr(previousFileA)
-+                if s:FilenameA != previousFileA
-+                    silent exec "bd ".bufnr(previousFileA)
-+                endif
- 
-                 call <SID>Drop(previousFileB)
-                 silent exec "edit ".s:FilenameB
-                 diffthis
--                silent exec "bd ".bufnr(previousFileB)
-+                if s:FilenameB != previousFileB
-+                    silent exec "bd ".bufnr(previousFileB)
-+                endif
-             else
+@@ -541,7 +577,11 @@ function! <SID>DirDiffOpen()
                  let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
                  call <SID>Drop(previousFile)
                  silent exec "edit ".s:FilenameB
 -                silent exec "bd ".bufnr(previousFile)
++                " The Netrw plugin creates an 'unlisted' buffer for directories.
++                " Running 'bd {buffer}' on an unlisted buffer produces the following error:
++                " E516: No buffers were deleted.
++                " Suppress the error with 'silent!'.
++                silent! exec "bd ".bufnr(previousFile)
                  diffthis
-+                if s:FilenameB != previousFile
-+                    silent exec "bd ".bufnr(previousFile)
-+                endif
  
                  " To ensure that A is on the left and B on the right, splitright must be off
-                 silent exec "leftabove vert diffsplit ".s:FilenameA
-@@ -603,7 +613,7 @@ function! <SID>HighlightLine()
+@@ -603,7 +643,7 @@ function! <SID>HighlightLine()
      " This is necessary since the modified file would make the syntax
      " disappear.
      call <SID>SetupSyntax()
@@ -68,7 +129,7 @@ index 2389f7a..63fbe3b 100644
  endfunction
  
  " Removes the highlight from the selected line in the diff window
-@@ -620,7 +630,7 @@ function! <SID>DeHighlightLine()
+@@ -620,7 +660,7 @@ function! <SID>DeHighlightLine()
      setlocal nomodifiable
      setlocal nomodified
      exe (savedLine)
