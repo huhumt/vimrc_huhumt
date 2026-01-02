@@ -34,11 +34,11 @@ watch -n 200 -c -t -x bash -c '
     done
   fi
 
-  if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "20" ]; then
+  if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "19" ]; then
     agenda_start_date=$(date +%Y-%m-%d)
     agenda_end_date="$(date +%F -d @$(($(date +%s -d "${agenda_start_date}") + 30*86400)))"
     if cal_event=$(gcalcli --config-folder "$HOME/.config/gcalcli" \
-      --nocolor --lineart ascii search --details location --details url \
+      --nocolor --lineart ascii search --details calendar --details location --details url \
       --details description "*" "${agenda_start_date}" "${agenda_end_date}" |
       python "$HOME/.local/bin/filter_gcalcli.py"); then
       echo "${cal_event}"
