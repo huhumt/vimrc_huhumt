@@ -15,46 +15,50 @@ COLOUR_OFF = '\033[0m'
 COLOUR_BG_BLUE = '\033[44m'
 COLOUR_BG_YELLOW = '\033[43m'
 COLOUR_GREEN = '\033[0;32m'
-COLOUR_PURPLE = '\033[0;35m'
+COLOUR_PURPLE_BOLD = '\033[1;35m'
 COLOUR_LIGHT_GRAY = '\033[0;37m'
+COLOUR_DARK_GRAY = '\033[2;37m'
 HEADER_COLOUR = COLOUR_BG_BLUE + "{header}" + COLOUR_OFF
-ALL_DAY_COLOUR = "    " + COLOUR_PURPLE + "{name} (All Day)" + COLOUR_OFF
+ALL_DAY_COLOUR = "    {colour}{name}" + COLOUR_OFF
 NORMAL_EVENT_COLOUR = "    {event}"
-DONE_EVENT_COLOUR = "    " + COLOUR_LIGHT_GRAY + "{event}" + COLOUR_OFF
+DONE_EVENT_COLOUR = "    " + COLOUR_DARK_GRAY + "{event}" + COLOUR_OFF
 IN_EVENT_COLOUR = (COLOUR_BG_YELLOW + "[*] {event}"
                    + COLOUR_GREEN + "{url}" + COLOUR_OFF)
 
 
 def to_colour(header: str, event_list: list, colour_en: bool) -> str:
     now_h_m = datetime.now().time()
-    event_name_list = list()
     colour_out_str = HEADER_COLOUR.format(header=header)
 
     for event in event_list:
         event_time = event.get("time")
         event_name = event.get("event")
 
-        if event_name not in event_name_list:
-            event_name_list.append(event_name)
-            if event_time == ALL_DAY_EVENT_KEY:
-                colour_str = ALL_DAY_COLOUR.format(name=event_name)
+        if event_time == ALL_DAY_EVENT_KEY:
+            if event.get("england_holiday", False):
+                colour = COLOUR_PURPLE_BOLD
+                event_name += " (All day)"
             else:
-                if event_urls := event.get("urls", ""):
-                    event_urls = "\n    ".join([""] + event_urls)
-                cur_event = f"{event_time}  {event_name}"
+                colour = COLOUR_LIGHT_GRAY
+                event_name += " (Not holiday)"
+            colour_str = ALL_DAY_COLOUR.format(colour=colour, name=event_name)
+        else:
+            if event_urls := event.get("urls", ""):
+                event_urls = "\n    ".join([""] + event_urls)
+            cur_event = f"{event_time}  {event_name}"
 
-                reminder_c = datetime.strptime(event_time, "%H:%M")
-                reminder_s = (reminder_c - timedelta(minutes=15)).time()
-                reminder_e = (reminder_c + timedelta(minutes=5)).time()
-                # colour disabled or event not start yet
-                if (not colour_en) or (now_h_m < reminder_s):
-                    colour_str = NORMAL_EVENT_COLOUR.format(event=cur_event)
-                elif now_h_m > reminder_e:  # colour enabled and event finished
-                    colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
-                else:  # colour enabled and now in the event
-                    colour_str = IN_EVENT_COLOUR.format(
-                        event=cur_event, url=event_urls)
-            colour_out_str += f"\n{colour_str}"
+            reminder_c = datetime.strptime(event_time, "%H:%M")
+            reminder_s = (reminder_c - timedelta(minutes=15)).time()
+            reminder_e = (reminder_c + timedelta(minutes=5)).time()
+            # colour disabled or event not start yet
+            if (not colour_en) or (now_h_m < reminder_s):
+                colour_str = NORMAL_EVENT_COLOUR.format(event=cur_event)
+            elif now_h_m > reminder_e:  # colour enabled and event finished
+                colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
+            else:  # colour enabled and now in the event
+                colour_str = IN_EVENT_COLOUR.format(
+                    event=cur_event, url=event_urls)
+        colour_out_str += f"\n{colour_str}"
     return colour_out_str
 
 
@@ -79,6 +83,7 @@ def update_event_dict(date_log: str) -> OrderedDict:
     re_event = re.compile(
         fr'(?P<date>(?:{re_week} {re_month} |\d+-\d+-)\d+)?'
         r'[ ]+(?P<time>\d{1,2}:\d{2})?[ ]*(?P<event>.+)'
+        r'(?:\s+Calendar: (?P<calendar>.+))?'
         r'(?:\s+Link: (?P<link>.+))?'
         r'(?:\s+Hangout Link: (?P<hangout_link>.+))?'
         r'(?:\s+Location: (?P<location>.+))?'
@@ -90,30 +95,46 @@ def update_event_dict(date_log: str) -> OrderedDict:
     event_dict = OrderedDict()
 
     for (
-        date, time, event, link, hangout_link, location, description
+        date, time, event, calendar, link, hangout_link, location, description
     ) in re_event.findall(date_log):
+        england_holiday = all([
+            "United Kingdom" in calendar,
+            "England" in location or "United Kingdom" in location
+        ])
+        event = re.sub(r' \(?regional holiday\)?', '',
+                       event.strip(), flags=re.IGNORECASE)
         re_meetint_room = r'\(Meeting Room\)-Dale House-(.+?) \('
         if meeting_room := re.findall(re_meetint_room, location):
-            event_loc = f" ({meeting_room[0].strip()})"
+            event_attr = meeting_room[0].strip()
+        elif location and not england_holiday:
+            event_attr = location
         else:
-            event_loc = re.sub(r'(.+)', r' (\1)', location.strip())
+            event_attr = re.sub("holidays ", "", calendar, flags=re.IGNORECASE)
+            re_attr = r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
+            if attr := re.findall(re_attr, description):
+                event = f"{attr[0]}: {event}"
+                if attr[0] == "Observance":
+                    event_attr = None
 
-        event = f"{event.strip()}{event_loc}"
-        re_attr = r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
-        if attr := re.findall(re_attr, description):
-            event = f"{attr[0]}: {event}"
-        # do not record if event in empty
-        # do not record event in "home" or "office"
-        # do not record regional holiday not valid in England
-        # do not record duplicated event
         event_lower = event.lower()
-        if (not event_lower) or event_lower in ("home", "office") or (
-            "(regional holiday)" in event_lower and "England" not in location
-        ) or event_lower in cur_date_list:
+        # do not record event in "home" or "office"
+        # do not record calendar named "Holiday Calendar"
+        # do not record duplicated event
+        # do not record if event in empty
+        if any([
+                event_lower in ("home", "office"),
+                calendar == "Holiday Calendar",
+                event_lower in cur_date_list,
+                not event_lower
+        ]):
             cur_event = None
         else:
             cur_event = {
-                "time": time or ALL_DAY_EVENT_KEY, "event": event, "link": link
+                "england_holiday": england_holiday,
+                "calendar": calendar,
+                "event": event + (f" ({event_attr})" if event_attr else ""),
+                "time": time or ALL_DAY_EVENT_KEY,
+                "link": link
             }
             if urls := list(filter(None, [
                     hangout_link, search_and_short_url(description)])):
@@ -124,11 +145,11 @@ def update_event_dict(date_log: str) -> OrderedDict:
         else:
             cur_date_list.append(event_lower)
 
-        if date and (date not in event_dict):
-            event_dict.update({date: [cur_event] if cur_event else []})
-        else:
-            if cur_date and cur_event:
+        if cur_date and cur_event:
+            if cur_date in event_dict:
                 event_dict[cur_date].append(cur_event)
+            else:
+                event_dict.update({cur_date: [cur_event]})
     return event_dict
 
 
@@ -138,18 +159,14 @@ def remove_colour(input_str: str) -> str:
 
 
 def update_from_file(event_dict, days_later: int) -> dict | None:
+    re_holiday = r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)'
     for today_event_dict in event_dict:
         event = today_event_dict.get("event")
-        if holiday := re.findall(
-                r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)',
-                event, re.IGNORECASE):
-            name = holiday[0][0]
-            duration = int(holiday[0][1].strip())
-
-            if (left_day := duration - days_later) > 0:
+        for name, duration in re.findall(re_holiday, event, re.IGNORECASE):
+            if (left_day := int(duration) - days_later) > 0:
                 day_label = 'days' if left_day > 1 else 'day'
                 today_event_dict.update({
-                    "event": f"{name}({left_day} {day_label})"
+                    "event": f"{name} ({left_day} {day_label})"
                 })
                 return today_event_dict
 
@@ -196,7 +213,7 @@ def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
         "event": "Weekends" if event_date.isoweekday() > 5 else "No Event found"
     }]
 
-    if file_dict and (holiday := update_from_file(
+    if file_dict and event_dict != file_dict and (holiday := update_from_file(
             file_dict.get(to_date(today_date, date_format), []), days_later)):
         if holiday not in event_list:
             event_list.append(holiday)
