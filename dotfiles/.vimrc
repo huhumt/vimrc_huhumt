@@ -282,16 +282,16 @@ function! StatuslineFilename(active_win, nofile_flag) abort
 endfunction
 
 function! StatuslineRight() abort
-    let l:se = searchcount(#{maxcount:0})
     let l:lines_cnt = -(strlen(line('$')) * 2 + 1)
+    let l:se = searchcount(#{maxcount:0})
     if l:se.exact_match
         let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
     endif
     return "%=%#User4#["
         \ . get(l:, "se_show", "")
-        \ . "%{&fenc?&fenc:&enc}, %{&ff}%(, %Y%)%(, %M%)%(, %R%)] "
-        \ . "%#User2# Ln %" . l:lines_cnt . "(%l/%L%)|Col %3(%v%) "
-        \ . "%#User4# :: %4(%p%%%)"
+        \ . "%{&fenc?&fenc:&enc},%{&ff}%(,%Y%)%(,%M%)%(,%R%)] "
+        \ . "%#User2# Ln %" . l:lines_cnt . "(%l/%L%)%9(| Col %v%) "
+        \ . "%#User4# ::%4(%p%%%)"
 endfunction
 
 function! StatusLineCustom(winid) abort
@@ -302,11 +302,14 @@ function! StatusLineCustom(winid) abort
         let l:mode = "%{%StatuslineCurMode()%}"
         let l:filename = l:nofile_flag ? "%{%StatuslineFilename(1, 1)%}"
                     \ : "%{%StatuslineFilename(1, 0)%}"
-        if winwidth(0) == &columns && !l:nofile_flag
-            let l:git_branch = "%{%StatuslineGitBranch()%}"
-        endif
-        if winwidth(0) * 2 + 5 > &columns
-            let l:right = "%{%StatuslineRight()%}"
+        if &columns > 100
+            if winwidth(0) == &columns && !l:nofile_flag
+                let l:git_branch = "%{%StatuslineGitBranch()%}"
+            endif
+
+            if winwidth(0) * 2 + 5 > &columns
+                let l:right = "%{%StatuslineRight()%}"
+            endif
         endif
         return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
                 \ . "%#User4#" . get(l:, "right", "")
@@ -572,6 +575,9 @@ let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
 let g:Lf_ShowDevIcons = 0
 " let g:Lf_PreviewInPopup = 0
 let g:Lf_PreviewPosition = 'right'
+let g:Lf_Ctags=""
+let g:Lf_Gtags=""
+let g:Lf_MruEnable = 0
 
 " Support ctrlsp plugin
 let g:ctrlsf_default_view_mode = 'compact'
