@@ -43,10 +43,7 @@ def to_colour(header: str, event_list: list, colour_en: bool) -> str:
                 event_name += " (Not holiday)"
             colour_str = ALL_DAY_COLOUR.format(colour=colour, name=event_name)
         else:
-            if event_urls := event.get("urls", ""):
-                event_urls = "\n    ".join([""] + event_urls)
             cur_event = f"{event_time}  {event_name}"
-
             reminder_c = datetime.strptime(event_time, "%H:%M")
             reminder_s = (reminder_c - timedelta(minutes=15)).time()
             reminder_e = (reminder_c + timedelta(minutes=5)).time()
@@ -56,6 +53,8 @@ def to_colour(header: str, event_list: list, colour_en: bool) -> str:
             elif now_h_m > reminder_e:  # colour enabled and event finished
                 colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
             else:  # colour enabled and now in the event
+                if event_urls := (event["urls"][1:] or ""):
+                    event_urls = "\n    ".join([""] + event_urls)
                 colour_str = IN_EVENT_COLOUR.format(
                     event=cur_event, url=event_urls)
         colour_out_str += f"\n{colour_str}"
@@ -109,12 +108,13 @@ def update_event_dict(date_log: str) -> OrderedDict:
         elif location and not england_holiday:
             event_attr = location
         else:
-            event_attr = re.sub("holidays ", "", calendar, flags=re.IGNORECASE)
+            event_attr = None
             re_attr = r'\| (?P<attr>Public holiday|Observance)[ ]+\|'
             if attr := re.findall(re_attr, description):
                 event = f"{attr[0]}: {event}"
-                if attr[0] == "Observance":
-                    event_attr = None
+                if attr[0] == "Public holiday":
+                    event_attr = re.sub(
+                        "holidays ", "", calendar, flags=re.IGNORECASE)
 
         event_lower = event.lower()
         # do not record event in "home" or "office"
@@ -134,11 +134,9 @@ def update_event_dict(date_log: str) -> OrderedDict:
                 "calendar": calendar,
                 "event": event + (f" ({event_attr})" if event_attr else ""),
                 "time": time or ALL_DAY_EVENT_KEY,
-                "link": link
+                "urls": [link] + list(filter(None, [
+                    hangout_link, search_and_short_url(description)]))
             }
-            if urls := list(filter(None, [
-                    hangout_link, search_and_short_url(description)])):
-                cur_event.update({"urls": urls})
         if date and (date != cur_date):
             cur_date_list = [event_lower]
             cur_date = date
@@ -209,8 +207,9 @@ def main_out_agenda(event_dict, file_dict, date_format, days_later) -> None:
     #   * in dict, any modification on this pointer will be auto saved to dict
     #   * not in dict, null pointer, work as local variable, won't update dict
     event_list = event_dict.get(w_m_d) or [{
+        "england_holiday": True,
         "time": ALL_DAY_EVENT_KEY,
-        "event": "Weekends" if event_date.isoweekday() > 5 else "No Event found"
+        "event": "Weekend" if event_date.isoweekday() > 5 else "No Event found"
     }]
 
     if file_dict and event_dict != file_dict and (holiday := update_from_file(
