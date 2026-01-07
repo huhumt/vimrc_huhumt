@@ -3,9 +3,9 @@
 
 from datetime import datetime, timedelta
 from collections import OrderedDict
+from pathlib import Path
 import subprocess
 import argparse
-import requests
 import json
 import sys
 import re
@@ -32,9 +32,8 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
     now_h_m = datetime.now().time()
     colour_out_str = HEADER_COLOUR.format(day=day, header=header)
 
-    for k, v in sorted(event_dict.items(), key=lambda v: int(
-            re.sub(fr'{ALL_DAY_EVENT_KEY}|{ALL_DAY_HOLIDAY_KEY}|:',
-                   r'0', v[1]["time"]))
+    for k, v in sorted(event_dict.items(), key=lambda v: int(re.sub(
+        fr'{ALL_DAY_EVENT_KEY}|{ALL_DAY_HOLIDAY_KEY}|:', r'0', v[1]["time"]))
     ):
         event_time = v.get("time")
         event_name = k[:40]
@@ -46,105 +45,64 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
             colour_str = ALL_DAY_COLOUR.format(
                 colour=COLOUR_LIGHT_GRAY, name=f"{event_name} (Not holiday)")
         else:
-            cur_event = f"{event_time}  {event_name}"
+            event = f"{event_time}  {event_name}"
             reminder_c = datetime.strptime(event_time, "%H:%M")
             reminder_s = (reminder_c - timedelta(minutes=15)).time()
             reminder_e = (reminder_c + timedelta(minutes=5)).time()
             # colour disabled or event not start yet
             if (not colour_en) or (now_h_m < reminder_s):
-                colour_str = NORMAL_EVENT_COLOUR.format(event=cur_event)
+                colour_str = NORMAL_EVENT_COLOUR.format(event=event)
             elif now_h_m > reminder_e:  # colour enabled and event finished
-                colour_str = DONE_EVENT_COLOUR.format(event=cur_event)
+                colour_str = DONE_EVENT_COLOUR.format(event=event)
             else:  # colour enabled and now in the event
-                if event_urls := (v["urls"][1:] or ""):
-                    event_urls = "\n    ".join([""] + event_urls)
-                colour_str = IN_EVENT_COLOUR.format(
-                    event=cur_event, url=event_urls)
+                if url := (v["urls"][1:] or ""):
+                    url = "\n    ".join([""] + url)
+                colour_str = IN_EVENT_COLOUR.format(event=event, url=url)
         colour_out_str += f"\n{colour_str}"
     return colour_out_str
 
 
-def get_weather(loc: str) -> list | None:
-    WWO_CODE = {
-        "113": "Sunny",
-        "116": "PartlyCloudy",
-        "119": "Cloudy",
-        "122": "VeryCloudy",
-        "143": "Fog",
-        "176": "LightShowers",
-        "179": "LightSleetShowers",
-        "182": "LightSleet",
-        "185": "LightSleet",
-        "200": "ThunderyShowers",
-        "227": "LightSnow",
-        "230": "HeavySnow",
-        "248": "Fog",
-        "260": "Fog",
-        "263": "LightShowers",
-        "266": "LightRain",
-        "281": "LightSleet",
-        "284": "LightSleet",
-        "293": "LightRain",
-        "296": "LightRain",
-        "299": "HeavyShowers",
-        "302": "HeavyRain",
-        "305": "HeavyShowers",
-        "308": "HeavyRain",
-        "311": "LightSleet",
-        "314": "LightSleet",
-        "317": "LightSleet",
-        "320": "LightSnow",
-        "323": "LightSnowShowers",
-        "326": "LightSnowShowers",
-        "329": "HeavySnow",
-        "332": "HeavySnow",
-        "335": "HeavySnowShowers",
-        "338": "HeavySnow",
-        "350": "LightSleet",
-        "353": "LightShowers",
-        "356": "HeavyShowers",
-        "359": "HeavyRain",
-        "362": "LightSleetShowers",
-        "365": "LightSleetShowers",
-        "368": "LightSnowShowers",
-        "371": "HeavySnowShowers",
-        "374": "LightSleetShowers",
-        "377": "LightSleet",
-        "386": "ThunderyShowers",
-        "389": "ThunderyHeavyRain",
-        "392": "ThunderySnowShowers",
-        "395": "HeavySnowShowers",
+def get_weather(today_date: datetime) -> str | None:
+    weather_symbol_dict = {
+        "SUN": "🔆",
+        "LIGHTCLOUD": "🌤️",
+        "PARTLYCLOUD": "⛅",
+        "CLOUD": "☁️",
+        "LIGHTRAINSUN": "🌦️",
+        "LIGHTRAINTHUNDERSUN": "🌦️",
+        "SLEETSUN": "🌨️",
+        "SNOWSUN": "❄️",
+        "LIGHTRAIN": "🌧️",
+        "RAIN": "🌧️",
+        "RAINTHUNDER": "⛈️",
+        "SLEET": "🌨️",
+        "SNOW": "❄️",
+        "SNOWTHUNDER": "❄️",
+        "FOG": "🌫️",
+        "SLEETSUNTHUNDER": "🌨️",
+        "SNOWSUNTHUNDER": "❄️",
+        "LIGHTRAINTHUNDER": "🌧️",
+        "SLEETTHUNDER": "🌨️"
     }
-    WEATHER_SYMBOL = {
-        "Unknown": "✨",
-        "Cloudy": "☁️",
-        "Fog": "🌫",
-        "HeavyRain": "🌧",
-        "HeavyShowers": "🌧",
-        "HeavySnow": "❄️",
-        "HeavySnowShowers": "❄️",
-        "LightRain": "🌦",
-        "LightShowers": "🌦",
-        "LightSleet": "🌧",
-        "LightSleetShowers": "🌧",
-        "LightSnow": "🌨",
-        "LightSnowShowers": "🌨",
-        "PartlyCloudy": "⛅️",
-        "Sunny": "☀️",
-        "ThunderyHeavyRain": "🌩",
-        "ThunderyShowers": "⛈",
-        "ThunderySnowShowers": "⛈",
-        "VeryCloudy": "☁️",
-    }
-    try:
-        json_resp = requests.get(f'http://wttr.in/{loc}?format=j1').json()
-    except:
-        return None
-    return [
-        f"{WEATHER_SYMBOL.get(WWO_CODE.get(i.get('weatherCode'), 'Unknown'))}"
-        f" 🌡️ {i.get('FeelsLikeC')}°C 🌬️↓ {i.get('WindGustKmph')}km/h"
-        for i in json_resp.get("weather")[0].get("hourly")
-    ]
+    weather_time = f"{today_date.strftime('%Y-%m-%dT%H')}:00:00Z"
+    re_weather = re.compile(
+        r'location_name=(?P<loc>[^,]+)[\s\S]+?'
+        fr'start={weather_time}\r?\nend={weather_time}'
+        r'(?:(?:\r?\n\w+=.+)+?)'
+        r'\r?\ntemperature_value=(?P<temperature_value>.+)'
+        r'\r?\ntemperature_unit=(?P<temperature_unit>.+)'
+        r'\r?\nwind_dir_deg=(?P<wind_dir_deg>.+)'
+        r'\r?\nwind_dir_name=(?P<wind_dir_name>.+)'
+        r'\r?\nwind_speed_(?P<wind_unit>[^=]+)=(?P<wind_speed>.+)'
+        r'[\s\S]+?symbol=(?P<symbol>.+)'
+    )
+    for f in Path.home().joinpath(".cache/xfce4/weather").glob("weatherdata*"):
+        with open(f, 'r', encoding='utf-8', errors='ignore') as w:
+            if weather := [w for w in re_weather.findall(w.read()) if all(w)]:
+                _, t, t_u, _, w_d, w_u, w, s = weather[0]
+                t_u = "℃" if "celsius" in t_u.lower() else "℉"
+                s = weather_symbol_dict.get(s, s)
+                return f"{t}{t_u}   {s}   {w_d} wind {w}{w_u}"
 
 
 def hyperlinks_text(url: str, hyper_txt: str) -> str:
@@ -294,7 +252,7 @@ def set_days_later(days_later: int, today_date: datetime) -> int:
     return days_later
 
 
-def main_out_agenda(event_dict, today_date, days_later, loc) -> None:
+def main_out_agenda(event_dict, today_date, days_later) -> None:
     event_date = today_date + timedelta(days=days_later)
     w_m_d = to_date(event_date)
     day_event_dict = event_dict.get(w_m_d) or {
@@ -303,9 +261,8 @@ def main_out_agenda(event_dict, today_date, days_later, loc) -> None:
         }
     }
     header_list = ["", " (tomorrow)", f" ({days_later} days later)"]
-    weather_idx = today_date.hour // 3
-    if len(weather_list := event_dict.get("today_weather")) > weather_idx:
-        header_list[0] = f" ({loc} {weather_list[weather_idx]})"
+    if weather := get_weather(today_date):
+        header_list[0] = f" ({weather})"
     header = header_list[days_later if days_later < len(header_list) else -1]
     print(to_colour(w_m_d, header, day_event_dict, days_later == 0))
 
@@ -322,9 +279,6 @@ def parse_arguments(filename: str):
     parser.add_argument(
         "--days-later", dest="days_later", type=int, default=-1,
         help="Display n days later agenda, must be within 30 days")
-    parser.add_argument(
-        "--weather-loc", dest="weather_loc", type=str, default="Manchester",
-        help="Get weather information in location")
     return parser.parse_args()
 
 
@@ -350,11 +304,6 @@ if __name__ == "__main__":
     else:
         event_dict = update_event_dict(remove_colour(
             sys.stdin.buffer.read().decode('utf-8', 'ignore')), today_date)
-        if "today_weather" in from_file_event_dict:
-            weather_list = from_file_event_dict.get("today_weather")
-        else:
-            weather_list = get_weather(args.weather_loc)
-        event_dict.update({"today_weather": weather_list})
         if from_file_today := from_file_event_dict.get(today_key):
             if file_holiday := update_from_file(from_file_today, days_later):
                 event_dict.update({today_key: file_holiday})
@@ -366,7 +315,7 @@ if __name__ == "__main__":
                 event_time = str()
             print(f"{event_time}    {k}")
     else:
-        main_out_agenda(event_dict, today_date, days_later, args.weather_loc)
+        main_out_agenda(event_dict, today_date, days_later)
         if event_dict != from_file_event_dict:  # do not update if no changes
             with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
                 json.dump(event_dict, f, indent=4)

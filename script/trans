@@ -3,55 +3,46 @@
 
 from collections import OrderedDict
 from datetime import datetime
+from pathlib import Path
 import subprocess
 import json
 import sys
-import os
 
 
-FILE_PARENT_DIR = os.path.dirname(__file__)
-JSON_FILENAME = os.path.join(os.path.dirname(FILE_PARENT_DIR),
-                             "share/trans_shell/my_dict.json")
+JSON_FILENAME = Path.home().joinpath(".local/share/trans_shell/my_dict.json")
 TMP_JSON_FILENAME = "/tmp/my_dict.json"
 DISPLAY_COUNT_KEY = "display-from-local-dict-to-tmux-count"
 DISPLAY_RUST_NEWS = "display-rust-news-to-tmux-flag"
-TRANS_DICT_NAME = "trans-local-dict"
 
 
-def update_dict(trans_string: str) -> int:
+def update_dict_to_file(trans_string: str) -> None:
+    if not (trans_list := trans_string.splitlines()):
+        return None
+
+    trans_word = trans_list[0].strip()
     try:
-        with open(JSON_FILENAME, "r", encoding="utf-8") as f:
+        with open(JSON_FILENAME, "r", encoding="utf-8", errors="ignore") as f:
             trans_dict = json.load(f, object_pairs_hook=OrderedDict)
+            if trans_word in trans_dict:
+                return None
     except FileNotFoundError:
         trans_dict = OrderedDict()
 
-    trans_word = trans_string.splitlines()[0].strip()
-    if trans_word in trans_dict.keys():
-        return 0
-
-    trans_output = ""
-    for line in trans_string.splitlines()[1:]:
-        if line in ["Synonyms", "Examples"]:
-            if trans_output.startswith("/"):
-                trans_output = f"{trans_word} {trans_output.strip()}"
-            else:
-                trans_output = f"{trans_word}\n{trans_output.rstrip()}"
-            trans_dict[trans_word] = trans_output
-            with open(JSON_FILENAME, "w", encoding="utf-8") as f:
-                json.dump(trans_dict, f, indent=4)
-            return 0
-        elif line:
-            trans_output += f"{line.rstrip().replace('  ', ' ')}\n"
-    return 0
+    if any(sub in trans_list for sub in ["Synonyms", "Examples"]):
+        if trans_list[1].startswith("/") and trans_list[1].endswith("/"):
+            trans_list = [f"{trans_word} {trans_list[1]}"] + trans_list[2:]
+        trans_dict.update({trans_word: "\n".join(trans_list)})
+        with open(JSON_FILENAME, "w", encoding="utf-8") as f:
+            json.dump(trans_dict, f, indent=4)
 
 
-def python_trans(args: list) -> str:
-    trans_bin = os.path.join(FILE_PARENT_DIR, "trans_shell")
-    args_list = ["bash", trans_bin] + args
+def python_trans(args: list, from_vim_flag: bool) -> str:
+    trans_bin = Path.home().joinpath(".local/bin/trans_shell").as_posix()
+    args_list = ["timeout", "3", "bash", trans_bin] + args
     fd = subprocess.Popen(args_list, stdout=subprocess.PIPE)
-    trans_output = fd.communicate()[0].decode("utf-8")
-    print(trans_output)
-    return trans_output
+    if (t := fd.communicate()[0].decode("utf-8")) and (not from_vim_flag):
+        update_dict_to_file(t)
+    return t
 
 
 def add_colour(normal_str: str) -> str:
@@ -74,10 +65,8 @@ def display_trans() -> str:
     except FileNotFoundError:
         tmp_trans_dict = {
             DISPLAY_COUNT_KEY: 0,
-            DISPLAY_RUST_NEWS: False,
-            TRANS_DICT_NAME: OrderedDict(),
+            DISPLAY_RUST_NEWS: False
         }
-    tmp_trans_dict[TRANS_DICT_NAME] = trans_dict
 
     if tmp_trans_dict[DISPLAY_RUST_NEWS]:
         tmp_trans_dict[DISPLAY_RUST_NEWS] = False
@@ -85,11 +74,11 @@ def display_trans() -> str:
             "rustnews", stdout=subprocess.PIPE).communicate()[0].decode()
     else:
         display_cnt = tmp_trans_dict[DISPLAY_COUNT_KEY]
-        if display_cnt >= len(tmp_trans_dict[TRANS_DICT_NAME].keys()) - 1:
+        if display_cnt >= len(trans_dict) - 1:
             tmp_trans_dict[DISPLAY_COUNT_KEY] = 0
         else:
             tmp_trans_dict[DISPLAY_COUNT_KEY] = display_cnt + 1
-        output = list(tmp_trans_dict[TRANS_DICT_NAME].values())[display_cnt]
+        output = list(trans_dict.values())[display_cnt]
 
         now_hour = datetime.now().hour
         # in working hour between 8:00 ~ 18:00
@@ -104,12 +93,9 @@ def display_trans() -> str:
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "--display-from-local-dict":
+    if "--display-from-local-dict" in sys.argv:
         print(f"\n{add_colour(display_trans())}")
-        exit(0)
-
-    if "--from-vim" in sys.argv:
-        sys.argv.remove("--from-vim")
-        python_trans(sys.argv[1:])
     else:
-        update_dict(python_trans(sys.argv[1:]))
+        if from_vim_flag := ("--from-vim" in sys.argv):
+            sys.argv.remove("--from-vim")
+        print(python_trans(sys.argv[1:], from_vim_flag))
