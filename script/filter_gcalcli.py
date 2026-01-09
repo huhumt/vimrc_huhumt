@@ -62,7 +62,7 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
     return colour_out_str
 
 
-def get_weather(today_date: datetime) -> str | None:
+def get_weather(today_date: datetime) -> str:
     weather_symbol_dict = {
         "SUN": "🔆",
         "LIGHTCLOUD": "🌤️",
@@ -102,7 +102,8 @@ def get_weather(today_date: datetime) -> str | None:
                 _, t, t_u, _, w_d, w_u, w, s = weather[0]
                 t_u = "℃" if "celsius" in t_u.lower() else "℉"
                 s = weather_symbol_dict.get(s, s)
-                return f"{t}{t_u}   {s}   {w_d} wind {w}{w_u}"
+                return f"{t}{t_u}  {w_d} wind {w}{w_u}  {s} "
+    return str()
 
 
 def hyperlinks_text(url: str, hyper_txt: str) -> str:
@@ -252,7 +253,7 @@ def set_days_later(days_later: int, today_date: datetime) -> int:
     return days_later
 
 
-def main_out_agenda(event_dict, today_date, days_later) -> None:
+def main_out_agenda(event_dict, today_date, days_later, weather) -> None:
     event_date = today_date + timedelta(days=days_later)
     w_m_d = to_date(event_date)
     day_event_dict = event_dict.get(w_m_d) or {
@@ -260,11 +261,9 @@ def main_out_agenda(event_dict, today_date, days_later) -> None:
             "time": ALL_DAY_HOLIDAY_KEY
         }
     }
-    header_list = ["", " (tomorrow)", f" ({days_later} days later)"]
-    if weather := get_weather(today_date):
-        header_list[0] = f" ({weather})"
-    header = header_list[days_later if days_later < len(header_list) else -1]
-    print(to_colour(w_m_d, header, day_event_dict, days_later == 0))
+    headers = [weather, "tomorrow", f"{days_later} days later"]
+    h = headers[days_later if days_later < len(headers) else -1]
+    print(to_colour(w_m_d, f" ({h})", day_event_dict, days_later == 0))
 
 
 def parse_arguments(filename: str):
@@ -288,6 +287,7 @@ if __name__ == "__main__":
     today_date = datetime.today()
     today_key = to_date(today_date)
     days_later = set_days_later(args.days_later, today_date)
+    weather = get_weather(today_date)
 
     try:
         with open(GCALCLI_FILENAME,
@@ -309,13 +309,11 @@ if __name__ == "__main__":
                 event_dict.update({today_key: file_holiday})
 
     if args.out_event_only:
+        print(f"weather: {weather}")
         for k, v in event_dict.get(today_key, {}).items():
-            event_time = v.get("time")
-            if event_time in [ALL_DAY_EVENT_KEY, ALL_DAY_HOLIDAY_KEY]:
-                event_time = str()
-            print(f"{event_time}    {k}")
+            print(f"{v.get('time')}: {k}")
     else:
-        main_out_agenda(event_dict, today_date, days_later)
+        main_out_agenda(event_dict, today_date, days_later, weather)
         if event_dict != from_file_event_dict:  # do not update if no changes
             with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
                 json.dump(event_dict, f, indent=4)
