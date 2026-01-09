@@ -145,7 +145,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
 
 def parse_today_event():
     today_date = datetime.today()
-    re_event = r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s+(?P<event>.*)"
+    re_event = r"(?P<hour>[^:\r\n]+):(?P<minute>\d{2})?[: ]+(?P<event>.+)"
 
     today_event = subprocess.run([
         "python",
