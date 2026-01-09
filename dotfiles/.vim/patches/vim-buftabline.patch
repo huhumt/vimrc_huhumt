@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index fccfd6d..4a47a02 100644
+index fccfd6d..8e078a0 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -33,9 +33,9 @@ index fccfd6d..4a47a02 100644
 +" https://www.ditig.com/256-colors-cheat-sheet
 +highlight BufTabLineTabPad                       ctermbg=235   ctermfg=76
 +highlight BufTabLineBufnum    cterm=bold         ctermbg=142   ctermfg=126
-+highlight BufTabLineCurrent   cterm=underline    ctermbg=11    ctermfg=242
-+highlight BufTabLineActive                       ctermbg=12    ctermfg=120
-+highlight BufTabLineHidden                       ctermbg=239   ctermfg=223
++highlight BufTabLineCurrent   cterm=underline    ctermbg=12    ctermfg=120
++highlight BufTabLineActive                       ctermbg=3     ctermfg=110
++highlight BufTabLineHidden                       ctermbg=238   ctermfg=223
 +
  hi default link BufTabLineFill            TabLineFill
  hi default link BufTabLineModifiedCurrent BufTabLineCurrent
@@ -64,7 +64,7 @@ index fccfd6d..4a47a02 100644
  let s:dirsep = fnamemodify(getcwd(),':p')[-1:]
  let s:centerbuf = winbufnr(0)
  let s:tablineat = has('tablineat')
-@@ -63,40 +84,42 @@ function! buftabline#render()
+@@ -63,40 +84,46 @@ function! buftabline#render()
  	let show_num = g:buftabline_numbers == 1
  	let show_ord = g:buftabline_numbers == 2
  	let show_mod = g:buftabline_indicators
@@ -87,12 +87,18 @@ index fccfd6d..4a47a02 100644
  	let screen_num = 0
  	for bufnum in bufnums
 -		let screen_num = show_num ? bufnum : show_ord ? screen_num + 1 : ''
-+		let screen_num = show_num ? bufnum : show_ord ? (screen_num + 1) : ''
- 		let tab = { 'num': bufnum, 'pre': '' }
+-		let tab = { 'num': bufnum, 'pre': '' }
 -		let tab.hilite = currentbuf == bufnum ? 'Current' : bufwinnr(bufnum) > 0 ? 'Active' : 'Hidden'
-+		let tab.hilite = currentbuf == bufnum ? 'Current' : lastbuf == bufnum ? 'Active' : 'Hidden'
-+		if strlen(screen_num) | let tab.pre = screen_num . '.' | endif
- 		if currentbuf == bufnum | let [centerbuf, s:centerbuf] = [bufnum, bufnum] | endif
+-		if currentbuf == bufnum | let [centerbuf, s:centerbuf] = [bufnum, bufnum] | endif
++		let screen_num = show_num ? bufnum : show_ord ? (screen_num + 1) : ''
++		let tab = { 'num': bufnum, 'pre': strlen(screen_num) ? screen_num . '.' : '' }
++		if currentbuf == bufnum
++			let [centerbuf, s:centerbuf] = [bufnum, bufnum]
++			let tab.hilite = 'Current'
++			let tab.num .= '*'
++		else
++			let tab.hilite = lastbuf == bufnum ? 'Active' : 'Hidden'
++		endif
  		let bufpath = bufname(bufnum)
  		if strlen(bufpath)
  			let tab.path = fnamemodify(bufpath, ':p:~:.')
@@ -117,7 +123,7 @@ index fccfd6d..4a47a02 100644
  		endif
  		let tabs += [tab]
  	endfor
-@@ -121,10 +144,11 @@ function! buftabline#render()
+@@ -121,10 +148,11 @@ function! buftabline#render()
  
  	" 2. sum the string lengths for the left and right halves
  	let currentside = lft
@@ -132,7 +138,7 @@ index fccfd6d..4a47a02 100644
  		if centerbuf == tab.num
  			let halfwidth = tab.width / 2
  			let lft.width += halfwidth
-@@ -160,12 +184,14 @@ function! buftabline#render()
+@@ -160,12 +188,14 @@ function! buftabline#render()
  		endfor
  	endif
  
@@ -150,7 +156,7 @@ index fccfd6d..4a47a02 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -194,11 +220,22 @@ autocmd FileType qf call buftabline#update(0)
+@@ -194,11 +224,22 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
