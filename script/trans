@@ -15,25 +15,33 @@ DISPLAY_COUNT_KEY = "display-from-local-dict-to-tmux-count"
 DISPLAY_RUST_NEWS = "display-rust-news-to-tmux-flag"
 
 
-def update_dict_to_file(trans_string: str) -> None:
-    if not (trans_list := trans_string.splitlines()):
+def compact_trans_str(trans_string: str) -> tuple[str, str] | None:
+    if not (trans_list := [l for l in trans_string.splitlines() if l]):
         return None
 
-    trans_word = trans_list[0].strip()
+    if index := [trans_list.index(s)
+                 for s in ("Synonyms", "Examples") if s in trans_list]:
+        if (min_index := min(index)) > 1:  # at least 2 lines
+            if trans_list[1].startswith("/") and trans_list[1].endswith("/"):
+                trans_list[:2] = [" ".join(trans_list[:2])]
+                min_index -= 1
+            trans_string = "\n".join(trans_list[:min_index])
+    return trans_list[0], trans_string
+
+
+def update_dict_to_file(trans_string: str) -> None:
     try:
         with open(JSON_FILENAME, "r", encoding="utf-8", errors="ignore") as f:
             trans_dict = json.load(f, object_pairs_hook=OrderedDict)
-            if trans_word in trans_dict:
-                return None
     except FileNotFoundError:
         trans_dict = OrderedDict()
 
-    if any(sub in trans_list for sub in ["Synonyms", "Examples"]):
-        if trans_list[1].startswith("/") and trans_list[1].endswith("/"):
-            trans_list = [f"{trans_word} {trans_list[1]}"] + trans_list[2:]
-        trans_dict.update({trans_word: "\n".join(trans_list)})
-        with open(JSON_FILENAME, "w", encoding="utf-8") as f:
-            json.dump(trans_dict, f, indent=4)
+    if compact_str := compact_trans_str(trans_string):
+        trans_word, trans_content = compact_str
+        if trans_word not in trans_dict:
+            trans_dict.update({trans_string: trans_content})
+            with open(JSON_FILENAME, "w", encoding="utf-8") as f:
+                json.dump(trans_dict, f, indent=4)
 
 
 def python_trans(args: list, from_vim_flag: bool) -> str:
@@ -54,12 +62,6 @@ def add_colour(normal_str: str) -> str:
 
 def display_trans() -> str:
     try:
-        with open(JSON_FILENAME, "r", encoding="utf-8") as f:
-            trans_dict = json.load(f, object_pairs_hook=OrderedDict)
-    except FileNotFoundError:
-        return f"{JSON_FILENAME} not exist"
-
-    try:
         with open(TMP_JSON_FILENAME, "r", encoding="utf-8") as f:
             tmp_trans_dict = json.load(f, object_pairs_hook=OrderedDict)
     except FileNotFoundError:
@@ -73,19 +75,28 @@ def display_trans() -> str:
         output = subprocess.Popen(
             "rustnews", stdout=subprocess.PIPE).communicate()[0].decode()
     else:
-        display_cnt = tmp_trans_dict[DISPLAY_COUNT_KEY]
-        if display_cnt >= len(trans_dict) - 1:
+        try:
+            with open(JSON_FILENAME, "r", encoding="utf-8") as f:
+                trans_dict = json.load(f, object_pairs_hook=OrderedDict)
+        except FileNotFoundError:
+            return f"{JSON_FILENAME} not exist"
+
+        if (cnt := tmp_trans_dict[DISPLAY_COUNT_KEY]) + 1 >= len(trans_dict):
             tmp_trans_dict[DISPLAY_COUNT_KEY] = 0
         else:
-            tmp_trans_dict[DISPLAY_COUNT_KEY] = display_cnt + 1
-        output = list(trans_dict.values())[display_cnt]
+            tmp_trans_dict[DISPLAY_COUNT_KEY] = cnt + 1
 
-        now_hour = datetime.now().hour
+        trans_string = list(trans_dict.values())[cnt]
+        if compact_str := compact_trans_str(trans_string):
+            output = compact_str[-1]
+        else:
+            output = f"Invalid {trans_string}"
+
+        h = datetime.now().hour
         # in working hour between 8:00 ~ 18:00
         # display news after learning 10 words
         # to avoid hitting the api request rate
-        if ((now_hour > 8 and now_hour < 18)
-                and (display_cnt > 0 and display_cnt % 10 == 0)):
+        if (h > 8 and h < 18) and (cnt > 0 and cnt % 10 == 0):
             tmp_trans_dict[DISPLAY_RUST_NEWS] = True
     with open(TMP_JSON_FILENAME, "w", encoding="utf-8") as f:
         json.dump(tmp_trans_dict, f, indent=4)
