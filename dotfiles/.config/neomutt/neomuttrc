@@ -19,10 +19,6 @@ set smtp_authenticators="plain"
 set record="+Sent"
 set postponed="+Drafts"
 set trash="+Trash"
-# activate TLS if available on the server
-set ssl_starttls=yes
-# always use SSL when connecting to a server
-set ssl_force_tls=yes
 # Don't wait to enter mailbox manually
 unset imap_passive
 # Automatically poll subscribed mailboxes for new mail (new in 1.5.11)
@@ -124,6 +120,16 @@ set display_filter = "python3 ~/.config/neomutt/cb_mutt_msg.py"
 set mark_old=no
 set edit_headers = yes
 set wait_key = no
+# set help = no
+set beep = no
+
+# Default list of header fields to weed when displaying.
+# Ignore all lines by default...
+ignore *
+# ... then allow these through.
+unignore from: subject to cc date x-mailer x-url user-agent
+# Display the fields in this order
+header-order date from to cc subject
 
 # --------------------------------------------------------------------------
 # COMMANDS – shown with an example argument
