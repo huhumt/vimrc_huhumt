@@ -62,6 +62,8 @@ class WeechatLogData:
     log: Optional[str] = None
     # short message header template, for example: <IRC: (msg)>, [Git: <msg>]
     short_header_template: Optional[str] = None
+    # enable report duplicated event
+    enable_report_duplicated_event: Optional[bool] = False
 
 
 def notify_cmd_hyperlink(message):
@@ -122,11 +124,15 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
         full_msg = log_dict.get(full_msg_key) or {}
 
         new_msg = log.log.replace('`', '').strip()
+        duplicated = (out_msg := remove_colour(new_msg)) in full_msg.values()
+
+        if (not duplicated) or log.enable_report_duplicated_event:
+            notify_event(log.source, new_msg)
+
         # ignore duplicated message if not in delete mode
-        if (out_msg := remove_colour(new_msg)) in full_msg.values():
+        if duplicated:
             return None
 
-        notify_event(log.source, new_msg)
         short_msg = (log.short_header_template or "").format(out_msg[:32])
         new_msg_dict = {datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): out_msg}
 
@@ -203,7 +209,7 @@ def notify_show(data, signal, message):
             return weechat.WEECHAT_RC_OK
 
         update_weechat_log(WeechatLogData(
-            FROM_IRC, MODE_APPEND, f"{name}: {msg}", "[IRC: {}]"))
+            FROM_IRC, MODE_APPEND, f"{name}: {msg}", "[IRC: {}]", True))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         update_weechat_log(WeechatLogData(FROM_IRC, MODE_DELETE_SHORT_MSG))
