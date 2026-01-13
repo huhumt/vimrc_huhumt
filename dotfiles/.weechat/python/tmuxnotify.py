@@ -63,7 +63,7 @@ class WeechatLogData:
     # short message header template, for example: <IRC: (msg)>, [Git: <msg>]
     short_header_template: Optional[str] = None
     # enable report duplicated event
-    enable_report_duplicated_event: Optional[bool] = False
+    enable_duplicated_event: Optional[bool] = False
 
 
 def notify_cmd_hyperlink(message):
@@ -124,29 +124,42 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
         full_msg = log_dict.get(full_msg_key) or {}
 
         new_msg = log.log.replace('`', '').strip()
-        duplicated = (out_msg := remove_colour(new_msg)) in full_msg.values()
-
-        if (not duplicated) or log.enable_report_duplicated_event:
-            notify_event(log.source, new_msg)
+        out_msg = remove_colour(new_msg)
 
         # ignore duplicated message if not in delete mode
-        if duplicated:
+        if (out_msg in full_msg.values()) and (not log.enable_duplicated_event):
             return None
 
-        short_msg = (log.short_header_template or "").format(out_msg[:32])
-        new_msg_dict = {datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): out_msg}
-
-        if log.mode == MODE_REPLACE or (not log_dict):
+        if log.log.startswith("weather: "):
             file_log_dict.update({log.source: {
-                short_msg_key: short_msg, full_msg_key: new_msg_dict}})
-        else:  # append mode, and key already in
-            if len(full_msg) > 30:  # too many logs
-                oldest_key = list(full_msg.keys())[0]
-                full_msg.pop(oldest_key)  # remove oldest log
-            full_msg.update(new_msg_dict)
-            log_dict.update({short_msg_key: short_msg, full_msg_key: full_msg})
+                "weather": log.log.split(":")[-1],
+                short_msg_key: ""
+            }})
+        else:
+            notify_event(log.source, new_msg)
+            short_msg = (log.short_header_template or "").format(out_msg[:32])
+            new_msg_dict = {
+                datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): out_msg
+            }
+
+            if log.mode == MODE_REPLACE or (not log_dict):
+                file_log_dict.update({
+                    log.source: {
+                        short_msg_key: short_msg,
+                        full_msg_key: new_msg_dict
+                    }
+                })
+            else:  # append mode, and key already in
+                if len(full_msg) > 30:  # too many logs
+                    oldest_key = list(full_msg.keys())[0]
+                    full_msg.pop(oldest_key)  # remove oldest log
+                full_msg.update(new_msg_dict)
+                log_dict.update({
+                    short_msg_key: short_msg,
+                    full_msg_key: full_msg
+                })
     with open(filename, "w", encoding="utf-8") as f:
-        json.dump(file_log_dict, f, indent=4)
+        json.dump(file_log_dict, f, indent=4, ensure_ascii=False)
 
 
 def parse_today_event():
@@ -160,13 +173,18 @@ def parse_today_event():
         "--out-event-only"
     ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
-    for cur_hour, cur_minute, cur_event in filter(
-            lambda x: all(x), re.findall(re_event, today_event)):
-        e_t = today_date.replace(hour=int(cur_hour), minute=int(cur_minute))
-        r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
-        r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
-        if today_date > r_s and today_date < r_e:
-            return f"{cur_hour}:{cur_minute} {cur_event.strip()}"
+    for cur_hour, cur_minute, cur_event in re.findall(re_event, today_event):
+        if all([cur_hour, cur_minute, cur_event]):
+            e_t = today_date.replace(
+                hour=int(cur_hour), minute=int(cur_minute))
+            r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
+            r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
+            if today_date > r_s and today_date < r_e:
+                return f"{cur_hour}:{cur_minute} {cur_event.strip()}"
+        else:  # all day event
+            if "weather" == f"{cur_hour.strip()}{cur_minute.strip()}".lower():
+                weather_list = cur_event.split()
+                return (f"weather: {weather_list[0]}  {weather_list[-1]}")
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):

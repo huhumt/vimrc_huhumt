@@ -86,7 +86,7 @@ def get_weather(today_date: datetime) -> str:
     }
     weather_time = f"{today_date.strftime('%Y-%m-%dT%H')}:00:00Z"
     re_weather = re.compile(
-        r'location_name=(?P<loc>[^,]+)[\s\S]+?'
+        r'location_name=(?P<loc>[^,\s]+)[\s\S]+?'
         fr'start={weather_time}\r?\nend={weather_time}'
         r'(?:(?:\r?\n\w+=.+)+?)'
         r'\r?\ntemperature_value=(?P<temperature_value>.+)'
@@ -97,8 +97,8 @@ def get_weather(today_date: datetime) -> str:
         r'[\s\S]+?symbol=(?P<symbol>.+)'
     )
     for f in Path.home().joinpath(".cache/xfce4/weather").glob("weatherdata*"):
-        with open(f, 'r', encoding='utf-8', errors='ignore') as w:
-            if weather := [w for w in re_weather.findall(w.read()) if all(w)]:
+        with open(f, 'r', encoding='utf-8', errors='ignore') as fp:
+            if weather := [w for w in re_weather.findall(fp.read()) if all(w)]:
                 _, t, t_u, _, w_d, w_u, w, s = weather[0]
                 t_u = "℃" if "celsius" in t_u.lower() else "℉"
                 s = weather_symbol_dict.get(s, s)
@@ -234,11 +234,13 @@ def remove_colour(input_str: str) -> str:
 
 def update_from_file(event_dict, days_later: int) -> dict | None:
     re_holiday = r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)'
+    file_holiday = dict()
     for k, v in event_dict.items():
         for name, duration in re.findall(re_holiday, k, re.IGNORECASE):
             if (left_day := int(duration) - days_later) > 0:
                 day_label = 'days' if left_day > 1 else 'day'
-                return {f"{name} ({left_day} {day_label})": v}
+                file_holiday.update({f"{name} ({left_day} {day_label})": v})
+    return file_holiday
 
 
 def set_days_later(days_later: int, today_date: datetime) -> int:
@@ -286,8 +288,9 @@ if __name__ == "__main__":
     args = parse_arguments(GCALCLI_FILENAME)
     today_date = datetime.today()
     today_key = to_date(today_date)
-    days_later = set_days_later(args.days_later, today_date)
     weather = get_weather(today_date)
+    days_later = set_days_later(args.days_later, today_date)
+    from_file_flag = args.from_file or sys.stdin.isatty()
 
     try:
         with open(GCALCLI_FILENAME,
@@ -296,7 +299,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         from_file_event_dict = {}
 
-    if args.from_file or sys.stdin.isatty():
+    if from_file_flag:
         if from_file_event_dict:
             event_dict = from_file_event_dict
         else:
@@ -304,9 +307,14 @@ if __name__ == "__main__":
     else:
         event_dict = update_event_dict(remove_colour(
             sys.stdin.buffer.read().decode('utf-8', 'ignore')), today_date)
-        if from_file_today := from_file_event_dict.get(today_key):
-            if file_holiday := update_from_file(from_file_today, days_later):
-                event_dict.update({today_key: file_holiday})
+
+    if from_file_today := from_file_event_dict.get(today_key):
+        if file_holiday := update_from_file(from_file_today, days_later):
+            event_date_key = to_date(today_date + timedelta(days=days_later))
+            if event_date_key in event_dict:
+                event_dict[event_date_key].update(file_holiday)
+            else:
+                event_dict.update({event_date_key: file_holiday})
 
     if args.out_event_only:
         print(f"weather: {weather}")
@@ -314,6 +322,6 @@ if __name__ == "__main__":
             print(f"{v.get('time')}: {k}")
     else:
         main_out_agenda(event_dict, today_date, days_later, weather)
-        if event_dict != from_file_event_dict:  # do not update if no changes
+        if (not from_file_flag) and (event_dict != from_file_event_dict):
             with open(GCALCLI_FILENAME, "w", encoding="utf-8") as f:
                 json.dump(event_dict, f, indent=4)
