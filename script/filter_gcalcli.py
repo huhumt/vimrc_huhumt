@@ -28,13 +28,21 @@ IN_EVENT_COLOUR = (COLOUR_BG_YELLOW + "[*] {event}"
                    + COLOUR_GREEN + "{url}" + COLOUR_OFF)
 
 
+def filter_sort_event(event_dict: dict) -> list:
+    return sorted(
+        filter(
+            lambda x: isinstance(x[1], dict) and "time" in x[1],
+            event_dict.items()
+        ), key=lambda v: int(
+            re.sub(r'[^\d]*(\d*):?(\d*).*', r'\1\2', v[1]['time']) + '0')
+    )
+
+
 def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
     now_h_m = datetime.now().time()
     colour_out_str = HEADER_COLOUR.format(day=day, header=header)
 
-    for k, v in sorted(event_dict.items(), key=lambda v: int(re.sub(
-        fr'{ALL_DAY_EVENT_KEY}|{ALL_DAY_HOLIDAY_KEY}|:', r'0', v[1]["time"]))
-    ):
+    for k, v in filter_sort_event(event_dict):
         event_time = v.get("time")
         event_name = k[:40]
 
@@ -125,6 +133,14 @@ def to_date(from_date: datetime, to_format: str = "%Y-%m-%d %a") -> str:
     return from_date.strftime(to_format)
 
 
+def update_dict_by_key_val(event_dict: dict, key, val: dict):
+    if key and val and list(filter(None, val.values())):
+        if key in event_dict:
+            event_dict[key].update(val)
+        else:
+            event_dict.update({key: val})
+
+
 def convert_date_format(date_str: str, from_date: datetime) -> str | None:
     # current only support these two formats
     #  "%a %b %d" is from 'gcalcli agenda'
@@ -165,8 +181,11 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
     )
 
     cur_date = None
-    cur_date_list = []
+    target_date = None
+    cur_date_list = list()
     event_dict = OrderedDict()
+    folk_holiday_key = "Folk's holiday"
+    folk_holiday_list = list()
 
     for (
         date, time, event, calendar, link, hangout_link, location, description
@@ -175,7 +194,7 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
             "United Kingdom" in calendar,
             "England" in location or "United Kingdom" in location
         ])
-        event = re.sub(r' \(?regional holiday\)?', '',
+        event = re.sub(r'[ ]*\(?(?:regional holiday|all[ ]*day)\)?.*', '',
                        event.strip(), flags=re.IGNORECASE)
         re_meetint_room = r'\(Meeting Room\)-Dale House-(.+?) \('
         if meeting_room := re.findall(re_meetint_room, location):
@@ -192,38 +211,40 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
                         "holidays ", "", calendar, flags=re.IGNORECASE)
 
         event_lower = event.lower()
-        # do not record event in "home" or "office"
-        # do not record calendar named "Holiday Calendar"
-        # do not record duplicated event
+        cur_event = dict()
         # do not record if event in empty
-        if any([
-                event_lower in ("home", "office"),
-                calendar == "Holiday Calendar",
-                event_lower in cur_date_list,
-                not event_lower
+        # do not record event in "home" or "office"
+        # do not record duplicated event
+        if all([
+                event_lower,
+                event_lower not in ("home", "office"),
+                event_lower not in cur_date_list
         ]):
-            cur_event = None
-        else:
-            cur_event = {
-                event + (f" ({event_attr})" if event_attr else ""): {
-                    "time": time or (ALL_DAY_HOLIDAY_KEY
-                                     if england_holiday else ALL_DAY_EVENT_KEY),
-                    "urls": [link] + list(filter(None, [
-                        hangout_link, search_and_short_url(description)]))
+            if calendar == "Holiday Calendar":
+                folk_holiday_list.append(event)
+            else:
+                cur_event = {
+                    event + (f" ({event_attr})" if event_attr else ""): {
+                        "time": time or (
+                            ALL_DAY_HOLIDAY_KEY
+                            if england_holiday else ALL_DAY_EVENT_KEY),
+                        "urls": [link] + list(filter(None, [
+                            hangout_link, search_and_short_url(description)]))
+                    }
                 }
-            }
         if date and (date != cur_date):
+            update_dict_by_key_val(
+                event_dict, target_date, {folk_holiday_key: folk_holiday_list})
+            folk_holiday_list = list()
+            target_date = convert_date_format(date, today_date)
             cur_date_list = [event_lower]
             cur_date = date
         else:
             cur_date_list.append(event_lower)
 
-        if cur_date and cur_event:
-            target_date = convert_date_format(cur_date, today_date)
-            if target_date in event_dict:
-                event_dict[target_date].update(cur_event)
-            else:
-                event_dict.update({target_date: cur_event})
+        update_dict_by_key_val(event_dict, target_date, cur_event)
+    update_dict_by_key_val(
+        event_dict, target_date, {folk_holiday_key: folk_holiday_list})
     return event_dict
 
 
@@ -232,7 +253,7 @@ def remove_colour(input_str: str) -> str:
     return ansi_escape.sub("", input_str).strip()
 
 
-def update_from_file(event_dict, days_later: int) -> dict | None:
+def update_from_file(event_dict, days_later: int) -> dict:
     re_holiday = r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)'
     file_holiday = dict()
     for k, v in event_dict.items():
@@ -287,9 +308,12 @@ if __name__ == "__main__":
     GCALCLI_FILENAME = "/tmp/gcalcli_agenda.json"
     args = parse_arguments(GCALCLI_FILENAME)
     today_date = datetime.today()
-    today_key = to_date(today_date)
     weather = get_weather(today_date)
-    days_later = set_days_later(args.days_later, today_date)
+    today_key = to_date(today_date)
+    if (days_later := set_days_later(args.days_later, today_date)) > 0:
+        days_later_key = to_date(today_date + timedelta(days=days_later))
+    else:
+        days_later_key = today_key
     from_file_flag = args.from_file or sys.stdin.isatty()
 
     try:
@@ -303,22 +327,21 @@ if __name__ == "__main__":
         if from_file_event_dict:
             event_dict = from_file_event_dict
         else:
+            print(f"No stdin and {GCALCLI_FILENAME} available")
             exit()
     else:
         event_dict = update_event_dict(remove_colour(
             sys.stdin.buffer.read().decode('utf-8', 'ignore')), today_date)
 
-    if from_file_today := from_file_event_dict.get(today_key):
-        if file_holiday := update_from_file(from_file_today, days_later):
-            event_date_key = to_date(today_date + timedelta(days=days_later))
-            if event_date_key in event_dict:
-                event_dict[event_date_key].update(file_holiday)
-            else:
-                event_dict.update({event_date_key: file_holiday})
+    if days_later > 0 and (file_today := from_file_event_dict.get(today_key)):
+        update_dict_by_key_val(event_dict, days_later_key, update_from_file(
+            file_today, days_later)
+        )
 
     if args.out_event_only:
-        print(f"weather: {weather}")
-        for k, v in event_dict.get(today_key, {}).items():
+        if days_later == 0:
+            print(f"weather: {weather}")
+        for k, v in filter_sort_event(event_dict.get(days_later_key, {})):
             print(f"{v.get('time')}: {k}")
     else:
         main_out_agenda(event_dict, today_date, days_later, weather)
