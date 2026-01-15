@@ -16,6 +16,10 @@ set spoolfile="~/.config/neomutt/mails/Inbox"
 # set folder=~/Public/Mail
 set smtp_url=smtp://test@mail.test.co.uk:587
 set smtp_authenticators="plain"
+# activate TLS if available on the server, build neomutt with '--ssl' option
+set ssl_starttls=yes
+# always use SSL when connecting to a server
+set ssl_force_tls=yes
 set record="+Sent"
 set postponed="+Drafts"
 set trash="+Trash"
