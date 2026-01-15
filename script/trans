@@ -19,14 +19,16 @@ def compact_trans_str(trans_string: str) -> tuple[str, str] | None:
     if not (trans_list := [l for l in trans_string.splitlines() if l]):
         return None
 
-    if index := [trans_list.index(s)
-                 for s in ("Synonyms", "Examples") if s in trans_list]:
-        if (min_index := min(index)) > 1:  # at least 2 lines
-            if trans_list[1].startswith("/") and trans_list[1].endswith("/"):
-                trans_list[:2] = [" ".join(trans_list[:2])]
-                min_index -= 1
-            trans_string = "\n".join(trans_list[:min_index])
-    return trans_list[0], trans_string
+    if (min_index := min([
+            trans_list.index(s) if s in trans_list else 0
+            for s in ("Synonyms", "Examples")
+    ])) > 1:
+        trans_word = trans_list[0]
+        if trans_list[1].startswith("/") and trans_list[1].endswith("/"):
+            trans_list[:2] = [" ".join(trans_list[:2])]
+            min_index -= 1
+        trans_string = "\n".join(trans_list[:min_index])
+        return trans_word, trans_string
 
 
 def update_dict_to_file(trans_string: str) -> None:
@@ -39,7 +41,7 @@ def update_dict_to_file(trans_string: str) -> None:
     if compact_str := compact_trans_str(trans_string):
         trans_word, trans_content = compact_str
         if trans_word not in trans_dict:
-            trans_dict.update({trans_string: trans_content})
+            trans_dict.update({trans_word: trans_content})
             with open(JSON_FILENAME, "w", encoding="utf-8") as f:
                 json.dump(trans_dict, f, indent=4)
 
@@ -90,7 +92,7 @@ def display_trans() -> str:
         if compact_str := compact_trans_str(trans_string):
             output = compact_str[-1]
         else:
-            output = f"Invalid {trans_string}"
+            output = trans_string
 
         h = datetime.now().hour
         # in working hour between 8:00 ~ 18:00
