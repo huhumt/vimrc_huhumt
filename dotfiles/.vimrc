@@ -271,11 +271,10 @@ function! StatuslineGitBranch() abort
     endif
 endfunction
 
-function! StatuslineFilename(active_win, nofile_flag) abort
+function! StatuslineFilename(active_win) abort
     if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
         let l:filename = ctrlsf#utils#PreviewSectionC()
     else
-        if a:nofile_flag | return "%#User4#" | endif
         let l:filename = empty(bufname()) ? "new file" : expand('%:~:.')
     endif
     return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename . " "
@@ -295,15 +294,16 @@ function! StatuslineRight() abort
 endfunction
 
 function! StatusLineCustom(winid) abort
-    let l:nofile_flag = index(['nofile', 'quickfix', 'prompt', 'popup'],
+    if index(['nofile', 'quickfix', 'prompt', 'popup'],
                 \ getbufvar(winbufnr(a:winid), "&buftype")) != -1
+        return "%#User2#"
+    endif
 
     if win_getid() == a:winid
         let l:mode = "%{%StatuslineCurMode()%}"
-        let l:filename = l:nofile_flag ? "%{%StatuslineFilename(1, 1)%}"
-                    \ : "%{%StatuslineFilename(1, 0)%}"
+        let l:filename = "%{%StatuslineFilename(1)%}"
         if &columns > 100
-            if winwidth(0) == &columns && !l:nofile_flag
+            if winwidth(0) == &columns
                 let l:git_branch = "%{%StatuslineGitBranch()%}"
             endif
 
@@ -314,8 +314,7 @@ function! StatusLineCustom(winid) abort
         return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
                 \ . "%#User4#" . get(l:, "right", "")
     else
-        return (l:nofile_flag ? "%{%StatuslineFilename(0, 1)%}"
-            \ : "%{%StatuslineFilename(0, 0)%}") . "%#User4#"
+        return "%{%StatuslineFilename(0)%}%#User4#"
     endif
 endfunction
 
