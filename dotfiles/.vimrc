@@ -379,6 +379,10 @@ let g:fern#drawer_width = 40
 " let g:fern_auto_preview = 1
 map <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
 let g:fern#renderer#default#root_symbol = '~ '
+let g:fern#renderer#default#leaf_symbol = '   '
+let g:fern#renderer#default#collapsed_symbol = ' + '
+let g:fern#renderer#default#expanded_symbol = ' - '
+let g:fern#disable_drawer_hover_popup = 1
 
 " function! FernPreviewGetMargins() abort
 "     return g:fern#drawer_width
@@ -582,6 +586,7 @@ let g:Lf_PreviewPosition = 'right'
 let g:Lf_Ctags=""
 let g:Lf_Gtags=""
 let g:Lf_MruEnable = 0
+let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
 
 " Support ctrlsp plugin
 let g:ctrlsf_default_view_mode = 'compact'
@@ -895,15 +900,11 @@ highlight DiffChange cterm=none ctermfg=NONE ctermbg=60
 highlight DiffText   cterm=none ctermfg=194  ctermbg=29
 
 " add crosshair style cursor
-highlight CursorLine   cterm=reverse ctermbg=NONE ctermfg=NONE guibg=darkgray guifg=NONE
-" highlight CursorColumn cterm=NONE ctermbg=lightgray ctermfg=NONE guibg=brown guifg=NONE
-highlight CursorColumn cterm=reverse ctermbg=NONE ctermfg=NONE guibg=brown guifg=NONE
-" refer to https://vim.fandom.com/wiki/Xterm256_color_names_for_console_Vim?file=Xterm-color-table.png
-highlight ColorColumn cterm=reverse ctermbg=NONE ctermfg=NONE guibg=brown guifg=NONE
+highlight CursorLine cterm=reverse ctermbg=NONE ctermfg=NONE
+highlight CursorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
+highlight LineNr cterm=bold ctermfg=Grey ctermbg=NONE
+highlight ColorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
 highlight VertSplit cterm=bold ctermfg=232 ctermbg=238
-
-" highlight line number
-highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
 
 " change coc underline highlight
 " highlight MyErrorHi cterm=None ctermbg=lightgray ctermfg=NONE
@@ -911,20 +912,20 @@ highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=D
 " highlight link CocWarningHighlight MyErrorHi
 " highlight link CocHintHighlight MyErrorHi
 " highlight link CocInfoHighlight MyErrorHi
-highlight CocMenuSel ctermbg=65 guibg=darkgray
+highlight SpecialKey ctermfg=239
+highlight CocMenuSel ctermbg=65
+highlight CocInlayHint ctermfg=10 ctermbg=242
+
 
 " https://www.ditig.com/256-colors-cheat-sheet
-highlight User1 ctermbg=2   ctermfg=0   guibg=green guifg=black
-highlight User2 ctermbg=12  ctermfg=120 guibg=black guifg=lightgreen
-highlight User3 ctermbg=195 ctermfg=168 guibg=black guifg=grey
-highlight User4 ctermbg=8   ctermfg=156 guibg=black guifg=lightgreen
+highlight User1 ctermbg=2   ctermfg=0
+highlight User2 ctermbg=12  ctermfg=120
+highlight User3 ctermbg=195 ctermfg=168
+highlight User4 ctermbg=8   ctermfg=156
 
-highlight SpecialKey ctermfg=239 guibg=black
-highlight CocInlayHint ctermfg=10 ctermbg=242 guifg=#15aabf guibg=Grey
-
-highlight MarkWord1  ctermbg=DarkCyan     ctermfg=Black  guibg=#8CCBEA    guifg=Black
-highlight MarkWord2  ctermbg=Green        ctermfg=Black  guibg=#A4E57E    guifg=Black
-highlight MarkWord3  ctermbg=DarkYellow   ctermfg=Black  guibg=#FFDB72    guifg=Black
-highlight MarkWord4  ctermbg=LightRed     ctermfg=Black  guibg=#FF7272    guifg=Black
-highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black  guibg=#FFB3FF    guifg=Black
-highlight MarkWord6  ctermbg=Blue         ctermfg=Black  guibg=#9999FF    guifg=Black
+highlight MarkWord1  ctermbg=DarkCyan     ctermfg=Black
+highlight MarkWord2  ctermbg=Green        ctermfg=Black
+highlight MarkWord3  ctermbg=DarkYellow   ctermfg=Black
+highlight MarkWord4  ctermbg=LightRed     ctermfg=Black
+highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black
+highlight MarkWord6  ctermbg=Blue         ctermfg=Black
