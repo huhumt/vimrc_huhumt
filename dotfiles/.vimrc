@@ -100,7 +100,7 @@ if has("autocmd")
 
     " Put these in an autocmd group, so that we can delete them easily.
     augroup vimStartup
-        au!
+        autocmd!
 
         " For all text files set 'textwidth' to 78 characters.
         autocmd FileType text setlocal textwidth=78
@@ -116,11 +116,22 @@ if has("autocmd")
     augroup END
 
     augroup qf
-        au!
+        autocmd!
 
         " auto open quickfix window, default height is 10
         autocmd QuickFixCmdPost * copen 20
 
+    augroup END
+
+    augroup ToggleCursorLineCol
+        autocmd!
+        autocmd BufLeave * set nonumber colorcolumn= nocursorline nocursorcolumn
+        autocmd BufEnter * set number colorcolumn=80 cursorline cursorcolumn
+    augroup END
+
+    augroup FernEvents
+        autocmd!
+        autocmd FileType fern call FernInit()
     augroup END
 endif " has("autocmd")
 
@@ -345,7 +356,6 @@ set tabstop=4
 set softtabstop=4
 set expandtab
 
-set number
 set nowrap
 set guioptions=mlrb
 
@@ -391,11 +401,6 @@ function! FernInit() abort
   nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
   " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
 endfunction
-
-augroup FernEvents
-  autocmd!
-  autocmd FileType fern call FernInit()
-augroup END
 
 " Support NerdCommenter, powerful comment tool
 " Add spaces after comment delimiters by default
@@ -893,11 +898,9 @@ highlight DiffText   cterm=none ctermfg=194  ctermbg=29
 highlight CursorLine   cterm=reverse ctermbg=NONE ctermfg=NONE guibg=darkgray guifg=NONE
 " highlight CursorColumn cterm=NONE ctermbg=lightgray ctermfg=NONE guibg=brown guifg=NONE
 highlight CursorColumn cterm=reverse ctermbg=NONE ctermfg=NONE guibg=brown guifg=NONE
-set cursorline    " enable the horizontal line
-set cursorcolumn  " enable the vertical line
 " refer to https://vim.fandom.com/wiki/Xterm256_color_names_for_console_Vim?file=Xterm-color-table.png
 highlight ColorColumn cterm=reverse ctermbg=NONE ctermfg=NONE guibg=brown guifg=NONE
-set colorcolumn=80
+highlight VertSplit cterm=bold ctermfg=232 ctermbg=238
 
 " highlight line number
 highlight LineNr term=bold cterm=NONE ctermfg=Grey ctermbg=NONE gui=NONE guifg=DarkGrey guibg=NONE
