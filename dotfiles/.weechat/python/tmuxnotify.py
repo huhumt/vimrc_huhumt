@@ -143,12 +143,18 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
             }
 
             if log.mode == MODE_REPLACE or (not log_dict):
-                file_log_dict.update({
-                    log.source: {
+                if log.source in file_log_dict:
+                    file_log_dict[log.source].update({
                         short_msg_key: short_msg,
                         full_msg_key: new_msg_dict
-                    }
-                })
+                    })
+                else:
+                    file_log_dict.update({
+                        log.source: {
+                            short_msg_key: short_msg,
+                            full_msg_key: new_msg_dict
+                        }
+                    })
             else:  # append mode, and key already in
                 if len(full_msg) > 30:  # too many logs
                     oldest_key = list(full_msg.keys())[0]
@@ -165,6 +171,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
 def parse_today_event():
     today_date = datetime.today()
     re_event = r"(?P<hour>[^:\r\n]+):(?P<minute>\d{2})?[: ]+(?P<event>.+)"
+    weather = None
 
     today_event = subprocess.run([
         "python",
@@ -184,7 +191,8 @@ def parse_today_event():
         else:  # all day event
             if "weather" == f"{cur_hour.strip()}{cur_minute.strip()}".lower():
                 weather_list = cur_event.split()
-                return (f"weather: {weather_list[0]}  {weather_list[-1]}")
+                weather = f"weather: {weather_list[0]}  {weather_list[-1]}"
+    return weather
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
