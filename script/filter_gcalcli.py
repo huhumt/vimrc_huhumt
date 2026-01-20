@@ -44,7 +44,7 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
 
     for k, v in filter_sort_event(event_dict):
         event_time = v.get("time")
-        event_name = k[:40]
+        event_name = k[:64]
 
         if event_time == ALL_DAY_HOLIDAY_KEY:
             colour_str = ALL_DAY_COLOUR.format(
@@ -127,6 +127,10 @@ def search_and_short_url(urls: str, sep=" ") -> str:
         ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()) not in url_list:
             url_list.append(url)
     return sep.join(url_list)
+
+
+def from_date(from_date: str, to_format: str = "%Y-%m-%d %a") -> datetime:
+    return datetime.strptime(from_date, to_format)
 
 
 def to_date(from_date: datetime, to_format: str = "%Y-%m-%d %a") -> str:
@@ -264,28 +268,47 @@ def update_from_file(event_dict, days_later: int) -> dict:
     return file_holiday
 
 
-def set_days_later(days_later: int, today_date: datetime) -> int:
-    if days_later < 0:
+def set_days_later(days_later: int | None, today_date: datetime) -> int:
+    if days_later:
+        return days_later
+    else:
         week_num = today_date.isoweekday()
         if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
             # display next Monday's event from Friday's afternoon
-            days_later = 8 - week_num
+            return (8 - week_num)
         else:
             # display tomorrow event after 17:00
-            days_later = 1 if today_date.hour > 16 else 0
-    return days_later
+            return (1 if today_date.hour > 16 else 0)
 
 
 def main_out_agenda(event_dict, today_date, days_later, weather) -> None:
+    abs_days_later = abs(days_later)
+    headers = [
+        weather,
+        "tomorrow" if days_later > 0 else "yesterday",
+        f"{abs_days_later} days {'later' if days_later > 0 else 'ago'}"
+    ]
+    h = headers[abs_days_later if abs_days_later < len(headers) else -1]
     event_date = today_date + timedelta(days=days_later)
     w_m_d = to_date(event_date)
-    day_event_dict = event_dict.get(w_m_d) or {
-        "Weekend" if event_date.isoweekday() > 5 else "No Event found": {
-            "time": ALL_DAY_HOLIDAY_KEY
+
+    if event_dict_keys := list(event_dict.keys()):
+        start_date = from_date(event_dict_keys[0])
+        end_date = from_date(event_dict_keys[-1])
+        if event_date < start_date or event_date > end_date:
+            date_range = f"({event_dict_keys[0]} -> {event_dict_keys[-1]})"
+            day_event_dict = {
+                f"Out of range {date_range}": {"time": ALL_DAY_HOLIDAY_KEY}
+            }
+        else:
+            l = "Weekend" if event_date.isoweekday() > 5 else "No Event found"
+            day_event_dict = event_dict.get(w_m_d) or {
+                l: {"time": ALL_DAY_HOLIDAY_KEY}
+            }
+    else:
+        day_event_dict = {
+            "Empty datasource, can't query": {"time": ALL_DAY_HOLIDAY_KEY}
         }
-    }
-    headers = [weather, "tomorrow", f"{days_later} days later"]
-    h = headers[days_later if days_later < len(headers) else -1]
     print(to_colour(w_m_d, f" ({h})", day_event_dict, days_later == 0))
 
 
@@ -299,7 +322,7 @@ def parse_arguments(filename: str):
         "--from-file", dest="from_file", action="store_true", default=False,
         help=f"Read agenda message from file {filename}")
     parser.add_argument(
-        "--days-later", dest="days_later", type=int, default=-1,
+        "--days-later", dest="days_later", type=int, default=None,
         help="Display n days later agenda, must be within 30 days")
     return parser.parse_args()
 
@@ -310,7 +333,7 @@ if __name__ == "__main__":
     today_date = datetime.today()
     weather = get_weather(today_date)
     today_key = to_date(today_date)
-    if (days_later := set_days_later(args.days_later, today_date)) > 0:
+    if (days_later := set_days_later(args.days_later, today_date)) != 0:
         days_later_key = to_date(today_date + timedelta(days=days_later))
     else:
         days_later_key = today_key

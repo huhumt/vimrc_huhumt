@@ -35,7 +35,7 @@ watch -n 200 -c -t -x bash -c '
   fi
 
   if [ "$cur_hour" -gt "7" ] && [ "$cur_hour" -lt "19" ]; then
-    agenda_start_date=$(date -dlast-monday +%Y-%m-%d)
+    agenda_start_date=$(date -d"last-sunday - 6 days" +%Y-%m-%d)
     agenda_end_date="$(date +%F -d @$(($(date +%s -d "${agenda_start_date}") + 30*86400)))"
     if cal_event=$(gcalcli --config-folder "$HOME/.config/gcalcli" \
       --nocolor --lineart ascii search --details calendar --details location --details url \
