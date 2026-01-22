@@ -889,11 +889,11 @@ silent! colorscheme one-dark
 " autocmd BufEnter *.log set spell spelllang=en_gb
 " autocmd BufEnter *.md  set spell spelllang=en_gb
 
+" https://www.ditig.com/256-colors-cheat-sheet
 highlight Comment ctermfg=lightgreen guifg=green
 highlight Visual cterm=underline,standout ctermfg=red ctermbg=lightred
 highlight Search cterm=bold ctermfg=yellow ctermbg=gray
-" refer to <http://vim.wikia.com/wiki/Xterm256_color_names_for_console_Vim?file=Finder.gif>
-" https://www.ditig.com/256-colors-cheat-sheet
+
 highlight DiffAdd    cterm=none ctermfg=143 ctermbg=232
 highlight DiffDelete cterm=none ctermfg=143 ctermbg=232
 highlight DiffChange cterm=none ctermfg=NONE ctermbg=60
@@ -904,17 +904,15 @@ highlight CursorLine cterm=reverse ctermbg=NONE ctermfg=NONE
 highlight CursorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
 highlight LineNr cterm=bold ctermfg=Grey ctermbg=NONE
 highlight ColorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
+highlight SignColumn cterm=NONE ctermbg=NONE ctermfg=NONE
 highlight VertSplit cterm=bold ctermfg=232 ctermbg=238
 
 " change coc underline highlight
-" highlight MyErrorHi cterm=None ctermbg=lightgray ctermfg=NONE
-" highlight link CocErrorHighlight MyErrorHi
-" highlight link CocWarningHighlight MyErrorHi
-" highlight link CocHintHighlight MyErrorHi
-" highlight link CocInfoHighlight MyErrorHi
 highlight SpecialKey ctermfg=239
 highlight CocMenuSel ctermbg=65
 highlight CocInlayHint ctermfg=10 ctermbg=242
+highlight CocInfoSign cterm=None ctermbg=NONE ctermfg=120
+highlight link CocHintSign CocInfoSign
 
 
 " https://www.ditig.com/256-colors-cheat-sheet

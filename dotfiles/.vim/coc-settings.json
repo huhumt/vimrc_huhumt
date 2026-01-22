@@ -1,8 +1,8 @@
 {
-    "diagnostic.errorSign": "E>",
+    "diagnostic.errorSign": "❌",
     "diagnostic.hintSign": "H>",
     "diagnostic.infoSign": "I>",
-    "diagnostic.warningSign": "W>",
+    "diagnostic.warningSign": "⚠️ ",
     "diagnostic.virtualText": true,
     "diagnostic.virtualTextAlign": "after",
     "diagnostic.virtualTextLimitInOneLine": 1,
