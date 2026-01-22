@@ -403,25 +403,25 @@ def main():
             f"pgrep -f '{ssh_cmd}'", shell=True).decode().splitlines()
     except subprocess.CalledProcessError:
         ssh_cmd_list += ['-L', '5901:localhost:5901']
-    finally:
-        if args.clean:
-            print("Clean namespace and openvpn")
-            for process_id in process_id_list:
-                os.kill(int(process_id), signal.SIGTERM)
-            subprocess.run(["pkill", "openvpn"])
-            subprocess.run(["ip", "netns", "delete", args.namespace])
-            return 0
 
+    if args.clean:
+        print("Clean namespace and openvpn")
+        for process_id in process_id_list:
+            os.kill(int(process_id), signal.SIGTERM)
+        subprocess.run(["pkill", "openvpn"])
+        subprocess.run(["ip", "netns", "delete", args.namespace])
+        return 0
+
+    ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
+    ip_cmd_list += ['-i'] if args.disable_ssh else ssh_cmd_list
     pid_filename = "/run/openvpn-client/vpn.pid"
     try:
         print(f"setup namespace {args.namespace}")
         setup_namespace(args.namespace)
-        time.sleep(2)
     except Exception as e:
         print(f"{e}\nOpen bash only\n")
     else:
-        execv_args = ['openvpn']
-        execv_args += openvpn_args
+        execv_args = ['openvpn'] + openvpn_args
         # OK, don't bother assigning an IP to the tun, or creating routes;
         # we'll just have to do it all over again in the protected namespace
         execv_args += ['--ifconfig-noexec', '--route-noexec']
@@ -441,25 +441,28 @@ def main():
         script_name = os.path.abspath(__file__)
         execv_args += [
             '--route-up',
-            '%s %s %s %s %s' % (
-                script_name, namespace, args.dns,
-                preexisting_routeup, disable_arg
-            )
+            f"{script_name} {namespace} {args.dns} {preexisting_routeup} {disable_arg}"
         ]
 
-        if not os.path.isfile(pid_filename):
-            subprocess.check_call(execv_args)
-            time.sleep(5)
-    finally:
-        if os.path.isfile(pid_filename):
-            ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
-            ip_cmd_list += ['-i'] if args.disable_ssh else ssh_cmd_list
-            print(f"Run '{" ".join(ip_cmd_list)}'")
-            os.execv(IP_CMD, ip_cmd_list)
-        else:
-            print("Failed to authentication with given username and password")
-            subprocess.run(["pkill", "openvpn"])
-            subprocess.run(["ip", "netns", "delete", args.namespace])
+        retry_cnt = 3
+        while (not os.path.isfile(pid_filename)) and retry_cnt > 0:
+            try:
+                subprocess.check_call(execv_args)
+                time.sleep(5)
+            except:
+                pass
+
+            if os.path.isfile(pid_filename):
+                print(f"Run '{" ".join(ip_cmd_list)}'")
+                time.sleep(4)
+                os.execv(IP_CMD, ip_cmd_list)
+            else:
+                if (retry_cnt := retry_cnt - 1) > 0:
+                    print("\nFailed to authentication with given credentials, try again")
+                else:
+                    print("\nBye ...")
+                    subprocess.run(["pkill", "openvpn"])
+                    subprocess.run(["ip", "netns", "delete", args.namespace])
 
 
 if __name__ == '__main__':
