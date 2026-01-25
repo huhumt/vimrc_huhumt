@@ -307,7 +307,7 @@ endfunction
 function! StatusLineCustom(winid) abort
     if index(['nofile', 'quickfix', 'prompt', 'popup'],
                 \ getbufvar(winbufnr(a:winid), "&buftype")) != -1
-        return "%#User2#"
+        return "%#SignColumn#"
     endif
 
     if win_getid() == a:winid
@@ -529,12 +529,14 @@ vnoremap <Leader>f :Autoformat<CR>
 " let g:formatdef_my_custom_cs = '"clang-format -style=file"'
 let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
 let g:formatters_cs = ['my_custom_cs']
-let g:formatdef_autopep8 = "'autopep8 - --range '.a:firstline.' '.a:lastline"
-let g:formatters_python = ['autopep8']
+let g:formatdef_ruff_format = '"ruff --config line-length=80 format - --no-cache --range " . a:firstline . ":" . a:lastline'
+let g:formatdef_ruff_check = '"ruff check - --no-cache --silent --select I --fix"'
+let g:formatters_python = ['ruff_check', 'ruff_format']
+let g:run_all_formatters_python = 1
 let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
 " let g:autoformat_remove_trailing_spaces = 0
-autocmd BufWrite *.rs :Autoformat
+" autocmd BufWrite *.rs :Autoformat
 
 " Support Ctrl-P plugin
 " let g:ctrlp_map = '<c-p>'
