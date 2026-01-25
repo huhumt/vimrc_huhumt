@@ -269,9 +269,7 @@ def update_from_file(event_dict, days_later: int) -> dict:
 
 
 def set_days_later(days_later: int | None, today_date: datetime) -> int:
-    if days_later:
-        return days_later
-    else:
+    if days_later is None:
         week_num = today_date.isoweekday()
         if (week_num > 5) or (week_num == 5 and today_date.hour > 16):
             # display next Monday's event from Friday's afternoon
@@ -279,6 +277,8 @@ def set_days_later(days_later: int | None, today_date: datetime) -> int:
         else:
             # display tomorrow event after 17:00
             return (1 if today_date.hour > 16 else 0)
+    else:
+        return days_later
 
 
 def main_out_agenda(event_dict, today_date, days_later, weather) -> None:
