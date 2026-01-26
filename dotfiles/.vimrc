@@ -282,13 +282,17 @@ function! StatuslineGitBranch() abort
     endif
 endfunction
 
-function! StatuslineFilename(active_win) abort
-    if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
-        let l:filename = ctrlsf#utils#PreviewSectionC()
+function! StatuslineFilename(active_win, nofile_flag) abort
+    if a:nofile_flag
+        if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
+            let l:filename = ctrlsf#utils#PreviewSectionC()
+        else
+            return "%#SignColumn#"
+        endif
     else
         let l:filename = empty(bufname()) ? "new file" : expand('%:~:.')
     endif
-    return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename . " "
+    return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename
 endfunction
 
 function! StatuslineRight() abort
@@ -305,14 +309,11 @@ function! StatuslineRight() abort
 endfunction
 
 function! StatusLineCustom(winid) abort
-    if index(['nofile', 'quickfix', 'prompt', 'popup'],
-                \ getbufvar(winbufnr(a:winid), "&buftype")) != -1
-        return "%#SignColumn#"
-    endif
-
-    if win_getid() == a:winid
+    let l:nofile_idx = index(['nofile', 'quickfix', 'prompt', 'popup'],
+                \ getbufvar(winbufnr(a:winid), "&buftype"))
+    if win_getid() == a:winid && l:nofile_idx == -1
         let l:mode = "%{%StatuslineCurMode()%}"
-        let l:filename = "%{%StatuslineFilename(1)%}"
+        let l:filename = "%{%StatuslineFilename(1, 0)%}"
         if &columns > 100
             if winwidth(0) == &columns
                 let l:git_branch = "%{%StatuslineGitBranch()%}"
@@ -323,9 +324,13 @@ function! StatusLineCustom(winid) abort
             endif
         endif
         return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
-                \ . "%#User4#" . get(l:, "right", "")
+                \ . " %#User4#" . get(l:, "right", "")
     else
-        return "%{%StatuslineFilename(0)%}%#User4#"
+        if l:nofile_idx == -1
+            return "%{%StatuslineFilename(0, 0)%}"
+        else
+            return "%{%StatuslineFilename(0, 1)%}"
+        endif
     endif
 endfunction
 
