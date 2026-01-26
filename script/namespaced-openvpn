@@ -453,7 +453,7 @@ def main():
                 pass
 
             if os.path.isfile(pid_filename):
-                print(f"Run '{" ".join(ip_cmd_list)}'")
+                print(f"""Run '{" ".join(ip_cmd_list)}'""")
                 time.sleep(4)
                 os.execv(IP_CMD, ip_cmd_list)
             else:
