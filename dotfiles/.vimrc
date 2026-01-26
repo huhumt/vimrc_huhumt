@@ -125,8 +125,8 @@ if has("autocmd")
 
     augroup ToggleCursorLineCol
         autocmd!
-        autocmd BufLeave * set nonumber colorcolumn= nocursorline nocursorcolumn
-        autocmd BufEnter * set number colorcolumn=80 cursorline cursorcolumn
+        autocmd WinLeave,BufLeave * set nonumber colorcolumn= nocursorline nocursorcolumn
+        autocmd BufEnter * setlocal number colorcolumn=80 cursorline cursorcolumn
     augroup END
 
     augroup FernEvents
