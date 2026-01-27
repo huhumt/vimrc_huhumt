@@ -27,10 +27,11 @@ set ruler           " show the cursor position all the time
 set showcmd         " display incomplete commands
 set incsearch       " do incremental searching
 set autoread
+set spell spelllang=en_gb
 " Turn on the Wild menu
 set wildmenu
 set wildcharm=<Tab>
-set completeopt=menu
+set completeopt=menuone,noinsert,noselect,popup
 set viminfo='50,/1,:0,<50,@0,s10,h,n~/.vim/viminfo  " :help 'viminfo'
 
 " from vim version 9.1.1243, it starts to support diff by char
@@ -297,9 +298,14 @@ endfunction
 
 function! StatuslineRight() abort
     let l:lines_cnt = -(strlen(line('$')) * 2 + 1)
-    let l:se = searchcount(#{maxcount:0})
-    if l:se.exact_match
-        let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
+    let l:select_lines = abs(line(".") - line("v")) + 1
+    if l:select_lines > 1
+        let l:se_show = "selected " . l:select_lines . " lines, "
+    else
+        let l:se = searchcount(#{maxcount:0})
+        if l:se.exact_match
+            let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
+        endif
     endif
     return "%=%#User4#["
         \ . get(l:, "se_show", "")
@@ -384,7 +390,8 @@ let g:fern#drawer_width = 40
 " let g:fern_auto_preview = 1
 map <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
 let g:fern#renderer#default#root_symbol = '~ '
-let g:fern#renderer#default#leaf_symbol = '   '
+let g:fern#renderer#default#leading = '   '
+let g:fern#renderer#default#leaf_symbol = ' '
 let g:fern#renderer#default#collapsed_symbol = ' + '
 let g:fern#renderer#default#expanded_symbol = ' - '
 let g:fern#disable_drawer_hover_popup = 1
@@ -643,7 +650,7 @@ vnoremap <Leader><Leader>e <Plug>CtrlSFVwordExec
 " let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
 " nnoremap s <Plug>(easymotion-sn)
 let g:sneak#label = 1
-let g:sneak#s_next = 1
+" let g:sneak#s_next = 1
 let g:sneak#prompt = 'SneakMotion: '
 " set searchlength to 99 is big enough to wait for Enter key pressing
 nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<cr>
@@ -715,7 +722,7 @@ nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<C-o>"
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
             \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)" <Bar> execute "normal! el"<CR>'
-            \ : pumvisible() ? "\<C-n>" : "\<Tab>"
+            \ : pumvisible() ? "\<C-n>" : len(pum_getpos()) ? "\<C-n>" : "\<C-x><C-k>"
 function! CocJumpErrorOrHover() abort
     if get(b:, 'table_mode_active', 0) > 0
         execute "normal \<Plug>(table-mode-motion-right)"
@@ -928,7 +935,6 @@ highlight CocInlayHint ctermfg=10 ctermbg=242
 highlight CocInfoSign cterm=None ctermbg=NONE ctermfg=120
 highlight link CocHintSign CocInfoSign
 
-
 " https://www.ditig.com/256-colors-cheat-sheet
 highlight User1 ctermbg=2   ctermfg=0
 highlight User2 ctermbg=12  ctermfg=120
@@ -941,3 +947,7 @@ highlight MarkWord3  ctermbg=DarkYellow   ctermfg=Black
 highlight MarkWord4  ctermbg=LightRed     ctermfg=Black
 highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black
 highlight MarkWord6  ctermbg=Blue         ctermfg=Black
+
+highlight clear SpellBad
+highlight clear SpellCap
+highlight clear SpellLocal
