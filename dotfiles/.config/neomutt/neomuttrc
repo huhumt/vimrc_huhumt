@@ -145,4 +145,4 @@ header-order date from to cc subject
 # When NeoMutt quits, run this NeoMutt command
 # shutdown-hook 'exec sync-mailbox'
 timeout-hook 'setenv imap_pass=$imap_pass;echo `timeout 5 mbsync --config ~/.config/neomutt/mbsyncrc --all --quiet`'
-macro index S "<shell-escape>imap_pass=$imap_pass timeout 5 mbsync --config ~/.config/neomutt/mbsyncrc --all --quiet<enter>" "sync email"
+macro index S "<shell-escape>imap_pass=$imap_pass stty -echo && timeout 5 mbsync --config ~/.config/neomutt/mbsyncrc --all --quiet<enter>" "sync email"
