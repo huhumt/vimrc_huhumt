@@ -639,9 +639,15 @@ nnoremap <Leader><Leader>e <Plug>CtrlSFCCwordExec
 vnoremap <Leader><Leader>e <Plug>CtrlSFVwordExec
 
 " Support for easy motion
-let g:EasyMotion_do_mapping = 0 " Disable default mappings
-let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
-nnoremap s <Plug>(easymotion-sn)
+" let g:EasyMotion_do_mapping = 0 " Disable default mappings
+" let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
+" nnoremap s <Plug>(easymotion-sn)
+let g:sneak#label = 1
+let g:sneak#s_next = 1
+let g:sneak#prompt = 'SneakMotion: '
+" set searchlength to 99 is big enough to wait for Enter key pressing
+nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<cr>
+nnoremap <silent> S :<c-u>call sneak#wrap('', 99, 1, 2, 1)<cr>
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -821,7 +827,8 @@ Plug 'fidian/hexmode'
 Plug 'echuraev/translate-shell.vim'
 
 " use easy motion for fast jump
-Plug 'easymotion/vim-easymotion'
+" Plug 'easymotion/vim-easymotion'
+Plug 'justinmk/vim-sneak'
 
 " use reversion manage tool
 " Plug 'vim-scripts/vcscommand.vim'
