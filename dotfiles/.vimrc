@@ -268,16 +268,10 @@ function! StatuslineCurMode() abort
 endfunction
 
 function! StatuslineGitBranch() abort
-    let l:root_dir = finddir('.git', expand('%:p:h') . ';')
-
-    if empty(l:root_dir)
-        return ""
-    endif
-
-    silent let l:git_branch =system("git --git-dir=" . l:root_dir . " rev-parse --abbrev-ref HEAD")
-
-    if l:git_branch !~ "fatal: not a git repository"
-        return "%#User2# [Git](" . substitute(l:git_branch, '\n', '', 'g') . ") "
+    let l:git_head_file = finddir('.git', expand('%:p:h') . ';') .. "/HEAD"
+    if filereadable(l:git_head_file)
+        let l:git_branch = get(split(get(readfile(l:git_head_file), 0, ""), "/"), -1, "")
+        return "%#User2# [Git](" . l:git_branch . ") "
     else
         return ""
     endif
