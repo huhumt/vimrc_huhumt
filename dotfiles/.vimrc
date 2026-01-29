@@ -938,7 +938,7 @@ highlight SpecialKey ctermfg=239
 highlight CocMenuSel ctermbg=65
 highlight CocInlayHint ctermfg=10 ctermbg=242
 highlight CocInfoSign cterm=None ctermbg=NONE ctermfg=120
-highlight link CocHintSign CocInfoSign
+highlight! link CocHintSign CocInfoSign
 
 " https://www.ditig.com/256-colors-cheat-sheet
 highlight User1 ctermbg=2   ctermfg=0
@@ -953,6 +953,8 @@ highlight MarkWord4  ctermbg=LightRed     ctermfg=Black
 highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black
 highlight MarkWord6  ctermbg=Blue         ctermfg=Black
 
-highlight clear SpellBad
-highlight clear SpellCap
-highlight clear SpellLocal
+highlight SpellUserDefinedError ctermbg=161 ctermfg=236
+highlight! link SpellCheckError None
+highlight! link SpellBad SpellCheckError
+highlight! link SpellCap SpellCheckError
+highlight! link SpellLocal SpellCheckError
