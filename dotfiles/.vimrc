@@ -703,6 +703,21 @@ let g:matchup_matchparen_offscreen = {'method': 'popup', 'highlight': 'User1'}
 " configuration for vim-table-mode
 " autocmd BufEnter *.md let g:table_mode_corner='|'
 let g:table_mode_corner='|'
+function! UserInsertTable(...) abort
+    let l:args = filter(copy(a:000), 'v:val =~ ''\d\+''')
+    let l:table_line = max([3, str2nr(get(l:args, 0))])
+    let l:table_col  = max([3, str2nr(get(l:args, 1))])
+    let l:out_string_list = repeat(
+        \ [repeat(g:table_mode_corner .. "   ", l:table_col) .. g:table_mode_corner],
+        \ l:table_line)
+    silent! call insert(
+        \ l:out_string_list,
+        \ repeat(g:table_mode_corner .. "---", l:table_col) .. g:table_mode_corner,
+        \ 1)
+    silent! call appendbufline(bufnr(), line("."), l:out_string_list)
+    silent! execute "TableModeEnable"
+endfunction
+command! -nargs=* TableAddNew call UserInsertTable(<f-args>)
 
 " configuration for rust.vim
 " let g:rustfmt_autosave = 1
@@ -721,7 +736,7 @@ nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<C-o>"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
-            \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)" <Bar> execute "normal! el"<CR>'
+            \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)"<CR>'
             \ : pumvisible() ? "\<C-n>" : len(pum_getpos()) ? "\<C-n>" : "\<C-x><C-k>"
 function! CocJumpErrorOrHover() abort
     if get(b:, 'table_mode_active', 0) > 0
