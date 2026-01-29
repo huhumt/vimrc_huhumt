@@ -64,48 +64,27 @@ index e5095c1..b88005b 100644
          \ ? g:gutentags_ctags_executable_{l:type} : g:gutentags_ctags_executable
      return expand(exepath, 1)
 diff --git a/plat/unix/update_scopedb.sh b/plat/unix/update_scopedb.sh
-index b66d586..46d579e 100755
+index b66d586..47fd577 100755
 --- a/plat/unix/update_scopedb.sh
 +++ b/plat/unix/update_scopedb.sh
-@@ -72,39 +72,9 @@ if [ -d "$PROJECT_ROOT" ]; then
-     cd "$PROJECT_ROOT"
- fi
- 
--if [ -n "${FILE_LIST_CMD}" ]; then
--    if [ "${PROJECT_ROOT}" = "." ]; then
--        eval "$FILE_LIST_CMD" | while read -r l; do
--            echo "\"${l}\""
--        done > "${DB_FILE}.files"
--    else
--        # If using a tags cache directory, use absolute paths
--        eval "$FILE_LIST_CMD" | while read -r l; do
--            echo "\"${PROJECT_ROOT%/}/${l}\""
--        done > "${DB_FILE}.files"
--    fi
--else
+@@ -33,7 +33,8 @@ while getopts "h?e:f:p:L:I" opt; do
+             CSCOPE_EXE=$OPTARG
+             ;;
+         f)
+-            DB_FILE=$OPTARG
++            # DB_FILE=$OPTARG
++            DB_FILE=cscope.out
+             ;;
+         p)
+             PROJECT_ROOT=$OPTARG
+@@ -84,9 +85,7 @@ if [ -n "${FILE_LIST_CMD}" ]; then
+         done > "${DB_FILE}.files"
+     fi
+ else
 -    find . -type f ! -name ${DB_FILE} \
 -        \( ! -iname "cscope*"  ! -iname "ncscope*" ! -iname "*.patch" \) \
 -        | while read -r l; do
--        echo "\"${l}\""
--    done > "${DB_FILE}.files"
--fi
--
--if [ ! -s "${DB_FILE}.files" ]; then
--    echo "There is no files to generate cscope DB"
--    exit
--fi
--
--CSCOPE_ARGS="${CSCOPE_ARGS} -i ${DB_FILE}.files"
--
--if [ "$BUILD_INVERTED_INDEX" -eq 1 ]; then
--    CSCOPE_ARGS="$CSCOPE_ARGS -q"
--fi
--
- echo "Running cscope"
--echo "$CSCOPE_EXE $CSCOPE_ARGS -b -k -f \"$DB_FILE.temp\""
--"$CSCOPE_EXE" $CSCOPE_ARGS -v -b -k -f "$DB_FILE.temp"
-+echo "$CSCOPE_EXE -R -b -k -q -f \"$DB_FILE.temp\""
-+"$CSCOPE_EXE" -R -b -k -q -f "$DB_FILE.temp"
- 
- if [ -d "$PROJECT_ROOT" ]; then
-     cd "$PREVIOUS_DIR"
++    find -regex ".*\.\(hpp\|cpp\|c\|h\)$" | while read -r l; do
+         echo "\"${l}\""
+     done > "${DB_FILE}.files"
+ fi

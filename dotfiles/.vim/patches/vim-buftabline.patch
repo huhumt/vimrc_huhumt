@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index fccfd6d..8e078a0 100644
+index 81ef326..7e89be0 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -23,13 +23,14 @@ index fccfd6d..8e078a0 100644
  " THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  " IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  " FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-@@ -29,9 +29,13 @@ endif
+@@ -29,10 +29,14 @@ endif
  
  scriptencoding utf-8
  
 -hi default link BufTabLineCurrent         TabLineSel
 -hi default link BufTabLineActive          PmenuSel
 -hi default link BufTabLineHidden          TabLine
+-hi default link BufTabLineFill            TabLineFill
 +" https://www.ditig.com/256-colors-cheat-sheet
 +highlight BufTabLineTabPad                       ctermbg=235   ctermfg=76
 +highlight BufTabLineBufnum    cterm=bold         ctermbg=142   ctermfg=126
@@ -37,9 +38,10 @@ index fccfd6d..8e078a0 100644
 +highlight BufTabLineActive                       ctermbg=3     ctermfg=110
 +highlight BufTabLineHidden                       ctermbg=238   ctermfg=223
 +
- hi default link BufTabLineFill            TabLineFill
++hi default link BufTabLineFill            BufTabLineHidden
  hi default link BufTabLineModifiedCurrent BufTabLineCurrent
  hi default link BufTabLineModifiedActive  BufTabLineActive
+ hi default link BufTabLineModifiedHidden  BufTabLineHidden
 @@ -55,6 +59,23 @@ function s:SID()
  	return matchstr(expand('<sfile>'), '<SNR>\d\+_')
  endfunction
@@ -156,7 +158,7 @@ index fccfd6d..8e078a0 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -194,11 +224,22 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +227,22 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  

@@ -1,23 +1,32 @@
 diff --git a/autoload/fern_preview.vim b/autoload/fern_preview.vim
-index 4d1aed1..2e6623c 100644
+index 4d1aed1..18f4f03 100644
 --- a/autoload/fern_preview.vim
 +++ b/autoload/fern_preview.vim
-@@ -116,7 +116,7 @@ function! fern_preview#half_up() abort
+@@ -116,22 +116,22 @@ function! fern_preview#half_up() abort
  endfunction
  
  function! fern_preview#width_default_func() abort
 -  let width = float2nr(&columns * 0.8)
-+  let width = float2nr((&columns - g:fern#drawer_width) * 0.8)
++  let width = float2nr((&columns - g:fern#drawer_width) * 0.95)
    return width
  endfunction
  
-@@ -126,7 +126,7 @@ function! fern_preview#height_default_func() abort
+ function! fern_preview#height_default_func() abort
+-  let height = float2nr(&lines * 0.8)
++  let height = float2nr(&lines * 0.9)
+   return height
  endfunction
  
  function! fern_preview#left_default_func() abort
 -  let left = (&columns - call(g:fern_preview_window_calculator.width, [])) / 2
 +  let left = g:fern#drawer_width
    return left
+ endfunction
+ 
+ function! fern_preview#top_default_func() abort
+-  let top = ((&lines - call(g:fern_preview_window_calculator.height, [])) / 2) - 1
++  let top = (&lines - call(g:fern_preview_window_calculator.height, [])) / 2
+   return top
  endfunction
  
 diff --git a/autoload/vital/_fern_preview/VS/Vim/Window.vim b/autoload/vital/_fern_preview/VS/Vim/Window.vim
