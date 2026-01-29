@@ -14,6 +14,7 @@ ALL_DAY_EVENT_KEY = "All day event"
 ALL_DAY_HOLIDAY_KEY = "All day holiday"
 # https://stackoverflow.com/a/28938235
 COLOUR_OFF = '\033[0m'
+STRIKETHROUGH = '\033[9m'
 COLOUR_BG_BLUE = '\033[44m'
 COLOUR_BG_YELLOW = '\033[43m'
 COLOUR_GREEN = '\033[0;32m'
@@ -54,18 +55,22 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
                 colour=COLOUR_LIGHT_GRAY, name=f"{event_name} (Not holiday)")
         else:
             event = f"{event_time}  {event_name}"
-            reminder_c = datetime.strptime(event_time, "%H:%M")
-            reminder_s = (reminder_c - timedelta(minutes=15)).time()
-            reminder_e = (reminder_c + timedelta(minutes=5)).time()
-            # colour disabled or event not start yet
-            if (not colour_en) or (now_h_m < reminder_s):
-                colour_str = NORMAL_EVENT_COLOUR.format(event=event)
-            elif now_h_m > reminder_e:  # colour enabled and event finished
-                colour_str = DONE_EVENT_COLOUR.format(event=event)
-            else:  # colour enabled and now in the event
-                if url := (v["urls"][1:] or ""):
-                    url = "\n    ".join([""] + url)
-                colour_str = IN_EVENT_COLOUR.format(event=event, url=url)
+            if "cancelled" in v:
+                colour_str = ALL_DAY_COLOUR.format(
+                    colour=COLOUR_LIGHT_GRAY+STRIKETHROUGH, name=f"{event} (cancelled)")
+            else:
+                reminder_c = datetime.strptime(event_time, "%H:%M")
+                reminder_s = (reminder_c - timedelta(minutes=15)).time()
+                reminder_e = (reminder_c + timedelta(minutes=5)).time()
+                # colour disabled or event not start yet
+                if (not colour_en) or (now_h_m < reminder_s):
+                    colour_str = NORMAL_EVENT_COLOUR.format(event=event)
+                elif now_h_m > reminder_e:  # colour enabled and event finished
+                    colour_str = DONE_EVENT_COLOUR.format(event=event)
+                else:  # colour enabled and now in the event
+                    if url := (v["urls"][1:] or ""):
+                        url = "\n    ".join([""] + url)
+                    colour_str = IN_EVENT_COLOUR.format(event=event, url=url)
         colour_out_str += f"\n{colour_str}"
     return colour_out_str
 
@@ -165,8 +170,6 @@ def convert_date_format(date_str: str, from_date: datetime) -> str | None:
                 event_datetime = from_date.replace(
                     month=event_month, day=event_day)
             return to_date(event_datetime)
-    print(f"{date_str} is not support, can not continue")
-    return None
 
 
 def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
@@ -261,10 +264,13 @@ def update_from_file(event_dict, days_later: int) -> dict:
     re_holiday = r'(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)'
     file_holiday = dict()
     for k, v in event_dict.items():
-        for name, duration in re.findall(re_holiday, k, re.IGNORECASE):
-            if (left_day := int(duration) - days_later) > 0:
-                day_label = 'days' if left_day > 1 else 'day'
-                file_holiday.update({f"{name} ({left_day} {day_label})": v})
+        if "cancelled" in v:
+            file_holiday[k] = {"cancelled": True} | v
+        if days_later > 0:
+            for name, duration in re.findall(re_holiday, k, re.IGNORECASE):
+                if (left_day := int(duration) - days_later) > 0:
+                    day_label = 'days' if left_day > 1 else 'day'
+                    file_holiday.update({f"{name} ({left_day} {day_label})": v})
     return file_holiday
 
 
@@ -356,15 +362,16 @@ if __name__ == "__main__":
         event_dict = update_event_dict(remove_colour(
             sys.stdin.buffer.read().decode('utf-8', 'ignore')), today_date)
 
-    if days_later > 0 and (file_today := from_file_event_dict.get(today_key)):
-        update_dict_by_key_val(event_dict, days_later_key, update_from_file(
-            file_today, days_later)
-        )
+    if ((file_today := from_file_event_dict.get(today_key))
+            and (file_event := update_from_file(file_today, days_later))):
+        update_dict_by_key_val(event_dict, days_later_key, file_event)
 
     if args.out_event_only:
         if days_later == 0:
             print(f"weather: {weather}")
         for k, v in filter_sort_event(event_dict.get(days_later_key, {})):
+            if "cancelled" in v:
+                k += " (cancelled)"
             print(f"{v.get('time')}: {k}")
     else:
         main_out_agenda(event_dict, today_date, days_later, weather)
