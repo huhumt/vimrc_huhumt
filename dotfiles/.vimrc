@@ -736,13 +736,9 @@ function! CocJumpErrorOrHover() abort
     if get(b:, 'table_mode_active', 0) > 0
         execute "normal \<Plug>(table-mode-motion-right)"
     else
-        " let l:jump_error = execute("normal \<Plug>(coc-diagnostic-next-error)")
-        " if len(l:jump_error) == 0
-        try
-            call CocAction('definitionHover', ['float'])
-        catch
-        endtry
-        " endif
+        if !(CocAction('hasProvider', 'hover') && call("CocAction", ['definitionHover', ['float']]))
+            execute "normal \<Plug>(coc-codeaction-cursor)"
+        endif
     endif
 endfunction
 nnoremap <silent> <Tab> :call CocJumpErrorOrHover()<CR>
