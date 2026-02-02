@@ -27,7 +27,6 @@ set ruler           " show the cursor position all the time
 set showcmd         " display incomplete commands
 set incsearch       " do incremental searching
 set autoread
-set spell spelllang=en_gb
 " Turn on the Wild menu
 set wildmenu
 set wildcharm=<Tab>
@@ -355,6 +354,8 @@ scriptencoding utf-8
 set fileencodings=ucs-bom,utf-8,gb2312,gb18030
 set termencoding=utf-8
 set fileformats=unix
+" set spell after encoding to avoid loading twice, refer to ':help spell'
+set spell spelllang=en_gb,cjk
 
 set shiftwidth=4
 set tabstop=4
@@ -404,7 +405,7 @@ function! FernInit() abort
         \ )
   nnoremap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
   nnoremap <buffer> <nowait> < <Plug>(fern-action-collapse)
-  nnoremap <buffer> <nowait> > <Plug>(fern-action-expand)
+  nnoremap <buffer> <nowait> > <Plug>(fern-action-open-or-expand)
   nnoremap <buffer> p <Plug>(fern-action-preview:auto:toggle)
   nnoremap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
   nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
@@ -735,7 +736,7 @@ inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
 function! CocJumpErrorOrHover() abort
     if get(b:, 'table_mode_active', 0) > 0
         execute "normal \<Plug>(table-mode-motion-right)"
-    else
+    elseif get(g:, 'did_coc_loaded', 0) > 0
         if !(CocAction('hasProvider', 'hover') && call("CocAction", ['definitionHover', ['float']]))
             execute "normal \<Plug>(coc-codeaction-cursor)"
         endif
@@ -754,13 +755,17 @@ let g:coc_global_extensions = [
 " Remove plugins not explicitly defined in g:coc_global_extensions
 " Ignore special case: friendly-snippets, coc-vim-source-requirements
 function! CocClean() abort
-  let g:extensions_to_clean = CocAction("loadedExtensions")
-      \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
-      \ ->filter({idx, extension -> extension !~ 'coc-vim-source-requirements'})
-      \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
-  if len(g:extensions_to_clean)
-    exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
-  endif
+    if get(g:, 'did_coc_loaded', 0) == 0
+        return
+    endif
+
+    let g:extensions_to_clean = CocAction("loadedExtensions")
+        \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
+        \ ->filter({idx, extension -> extension !~ 'coc-vim-source-requirements'})
+        \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
+    if len(g:extensions_to_clean)
+        exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
+    endif
 endfunction
 command! -nargs=0 CocClean :call CocClean()
 
@@ -953,7 +958,7 @@ highlight MarkWord4  ctermbg=LightRed     ctermfg=Black
 highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black
 highlight MarkWord6  ctermbg=Blue         ctermfg=Black
 
-highlight SpellUserDefinedError ctermbg=161 ctermfg=236
+highlight SpellUserDefinedError ctermbg=170 ctermfg=236
 highlight! link SpellCheckError None
 highlight! link SpellBad SpellCheckError
 highlight! link SpellCap SpellCheckError
