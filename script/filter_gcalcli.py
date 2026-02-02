@@ -163,13 +163,16 @@ def convert_date_format(date_str: str, from_date: datetime) -> str | None:
         else:
             event_month = event_date.month
             event_day = event_date.day
-            if event_month < from_date.month:
-                event_datetime = from_date.replace(
-                    year=from_date.year+1, month=event_month, day=event_day)
+            if abs(event_month - from_date.month) < 6:
+                return to_date(
+                    from_date.replace(month=event_month, day=event_day))
             else:
-                event_datetime = from_date.replace(
-                    month=event_month, day=event_day)
-            return to_date(event_datetime)
+                delta_year = 1 if event_month < from_date.month else -1
+                return to_date(
+                    from_date.replace(
+                        year=from_date.year+delta_year,
+                        month=event_month,
+                        day=event_day))
 
 
 def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
