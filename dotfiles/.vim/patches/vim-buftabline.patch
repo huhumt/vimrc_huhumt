@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index 81ef326..7e89be0 100644
+index 81ef326..9887932 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -42,7 +42,16 @@ index 81ef326..7e89be0 100644
  hi default link BufTabLineModifiedCurrent BufTabLineCurrent
  hi default link BufTabLineModifiedActive  BufTabLineActive
  hi default link BufTabLineModifiedHidden  BufTabLineHidden
-@@ -55,6 +59,23 @@ function s:SID()
+@@ -44,7 +48,7 @@ let g:buftabline_show       = get(g:, 'buftabline_show',       2)
+ let g:buftabline_plug_max   = get(g:, 'buftabline_plug_max',  10)
+ 
+ function! buftabline#user_buffers() " help buffers are always unlisted, but quickfix buffers are not
+-	return filter(range(1,bufnr('$')),'buflisted(v:val) && "quickfix" !=? getbufvar(v:val, "&buftype")')
++	return filter(range(1,bufnr('$')),'&ft!=# "netrw" && buflisted(v:val) && "quickfix" !=? getbufvar(v:val, "&buftype")')
+ endfunction
+ 
+ function! s:switch_buffer(bufnum, clicks, button, mod)
+@@ -55,48 +59,74 @@ function s:SID()
  	return matchstr(expand('<sfile>'), '<SNR>\d\+_')
  endfunction
  
@@ -64,9 +73,10 @@ index 81ef326..7e89be0 100644
 +endfunction
 +
  let s:dirsep = fnamemodify(getcwd(),':p')[-1:]
- let s:centerbuf = winbufnr(0)
+-let s:centerbuf = winbufnr(0)
  let s:tablineat = has('tablineat')
-@@ -63,40 +84,46 @@ function! buftabline#render()
+ let s:sid = s:SID() | delfunction s:SID
+ function! buftabline#render()
  	let show_num = g:buftabline_numbers == 1
  	let show_ord = g:buftabline_numbers == 2
  	let show_mod = g:buftabline_indicators
@@ -74,10 +84,14 @@ index 81ef326..7e89be0 100644
 +	" let lpad     = g:buftabline_separators ? nr2char(0x23B8) : ' '
 +	" https://en.wikibooks.org/wiki/Unicode/List_of_useful_symbols
 +	let lpad     = g:buftabline_separators ? ' ' . nr2char(0x00A7) : ' '
++	let bufnums  = buftabline#updatebuf()
  
 -	let bufnums = buftabline#user_buffers()
-+	let bufnums = buftabline#updatebuf()
- 	let centerbuf = s:centerbuf " prevent tabline jumping around when non-user buffer current (e.g. help)
+-	let centerbuf = s:centerbuf " prevent tabline jumping around when non-user buffer current (e.g. help)
++	if len(bufnums) == 0
++		set showtabline=1
++		return
++	endif
  
  	" pick up data on all the buffers
  	let tabs = []
@@ -85,6 +99,7 @@ index 81ef326..7e89be0 100644
  	let tabs_per_tail = {}
 -	let currentbuf = winbufnr(0)
 +	let currentbuf = len(s:mru_list) > 0 ? s:mru_list[-1] : winbufnr(0)
++	let current_tab_index = 0
 +	let lastbuf = len(s:mru_list) > 1 ? s:mru_list[-2] : -1
  	let screen_num = 0
  	for bufnum in bufnums
@@ -95,8 +110,8 @@ index 81ef326..7e89be0 100644
 +		let screen_num = show_num ? bufnum : show_ord ? (screen_num + 1) : ''
 +		let tab = { 'num': bufnum, 'pre': strlen(screen_num) ? screen_num . '.' : '' }
 +		if currentbuf == bufnum
-+			let [centerbuf, s:centerbuf] = [bufnum, bufnum]
 +			let tab.hilite = 'Current'
++			let current_tab_index = index(bufnums, bufnum)
 +			let tab.num .= '*'
 +		else
 +			let tab.hilite = lastbuf == bufnum ? 'Active' : 'Hidden'
@@ -105,9 +120,8 @@ index 81ef326..7e89be0 100644
  		if strlen(bufpath)
  			let tab.path = fnamemodify(bufpath, ':p:~:.')
  			let tab.sep = strridx(tab.path, s:dirsep, strlen(tab.path) - 2) " keep trailing dirsep
--			let tab.label = tab.path[tab.sep + 1:]
+ 			let tab.label = tab.path[tab.sep + 1:]
 -			let pre = screen_num
-+			let tab.label = currentbuf == bufnum ? tab.path : tab.path[tab.sep + 1:]
  			if getbufvar(bufnum, '&mod')
  				let tab.hilite = 'Modified' . tab.hilite
 -				if show_mod | let pre = '+' . pre | endif
@@ -125,27 +139,73 @@ index 81ef326..7e89be0 100644
  		endif
  		let tabs += [tab]
  	endfor
-@@ -121,10 +148,11 @@ function! buftabline#render()
+@@ -113,59 +143,32 @@ function! buftabline#render()
+ 		endfor
+ 	endwhile
  
+-	" now keep the current buffer center-screen as much as possible:
+-
+-	" 1. setup
+-	let lft = { 'lasttab':  0, 'cut':  '.', 'indicator': '<', 'width': 0, 'half': &columns / 2 }
+-	let rgt = { 'lasttab': -1, 'cut': '.$', 'indicator': '>', 'width': 0, 'half': &columns - lft.half }
+-
  	" 2. sum the string lengths for the left and right halves
- 	let currentside = lft
+-	let currentside = lft
 -	let lpad_width = strwidth(lpad)
++	let total_width = 0
  	for tab in tabs
 -		let tab.width = lpad_width + strwidth(tab.pre) + strwidth(tab.label) + 1
 -		let tab.label = lpad . tab.pre . substitute(strtrans(tab.label), '%', '%%', 'g') . ' '
+-		if centerbuf == tab.num
+-			let halfwidth = tab.width / 2
+-			let lft.width += halfwidth
+-			let rgt.width += tab.width - halfwidth
+-			let currentside = rgt
+-			continue
+-		endif
+-		let currentside.width += tab.width
 +		let bufnum =  (strlen(tab.pre) && show_ord) ? ('[b' . tab.num . ']') : ''
 +		let tab.width = strwidth(lpad) + strwidth(tab.pre) + strwidth(bufnum) + strwidth(tab.label) + 1
++		let total_width += tab.width
 +		let tab.label = "%#BufTabLineTabPad#" . lpad . tab.pre . '%#BufTabLineBufnum#' . bufnum
 +					\ . "%#BufTabLine" . tab.hilite . "#" . substitute(strtrans(tab.label), '%', '%%', 'g') . ' '
- 		if centerbuf == tab.num
- 			let halfwidth = tab.width / 2
- 			let lft.width += halfwidth
-@@ -160,12 +188,14 @@ function! buftabline#render()
- 		endfor
- 	endif
+ 	endfor
+-	if currentside is lft " centered buffer not seen?
+-		" then blame any overflow on the right side, to protect the left
+-		let [lft.width, rgt.width] = [0, lft.width]
+-	endif
+-
+-	" 3. toss away tabs and pieces until all fits:
+-	if ( lft.width + rgt.width ) > &columns
+-		let oversized
+-		\ = lft.width < lft.half ? [ [ rgt, &columns - lft.width ] ]
+-		\ : rgt.width < rgt.half ? [ [ lft, &columns - rgt.width ] ]
+-		\ :                        [ [ lft, lft.half ], [ rgt, rgt.half ] ]
+-		for [side, budget] in oversized
+-			let delta = side.width - budget
+-			" toss entire tabs to close the distance
+-			while delta >= tabs[side.lasttab].width
+-				let delta -= remove(tabs, side.lasttab).width
+-			endwhile
+-			" then snip at the last one to make it fit
+-			let endtab = tabs[side.lasttab]
+-			while delta > ( endtab.width - strwidth(strtrans(endtab.label)) )
+-				let endtab.label = substitute(endtab.label, side.cut, '', '')
+-			endwhile
+-			let endtab.label = substitute(endtab.label, side.cut, side.indicator, '')
+-		endfor
+-	endif
  
 -	if len(tabs) | let tabs[0].label = substitute(tabs[0].label, lpad, ' ', '') | endif
-+	" if len(tabs) | let tabs[0].label = substitute(tabs[0].label, lpad, ' ', '') | endif
++	let right_iters = range(len(tabs) - 1, current_tab_index + 1, -1)
++	let left_iters = range(0, current_tab_index - 1)
++	let remove_order_iters = filter(right_iters + left_iters, 'tabs[v:val].hilite =~# "Hidden"')
++	let delta = total_width - &columns
++	let remove_idx = 0
++	while delta > 0
++		let delta -= remove(tabs, remove_order_iters[remove_idx]).width
++		let remove_idx += 1
++	endwhile
  
  	let swallowclicks = '%'.(1 + tabpagenr('$')).'X'
  	return s:tablineat
@@ -158,7 +218,7 @@ index 81ef326..7e89be0 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -197,11 +227,22 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +200,22 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
