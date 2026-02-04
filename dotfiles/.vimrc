@@ -356,6 +356,7 @@ set termencoding=utf-8
 set fileformats=unix
 " set spell after encoding to avoid loading twice, refer to ':help spell'
 set spell spelllang=en_gb,cjk
+let g:netrw_liststyle = 3
 
 set shiftwidth=4
 set tabstop=4

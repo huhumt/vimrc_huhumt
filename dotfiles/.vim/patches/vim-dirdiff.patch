@@ -1,5 +1,5 @@
 diff --git a/plugin/dirdiff.vim b/plugin/dirdiff.vim
-index 2389f7a..deb0f2b 100644
+index 2389f7a..2d05c95 100644
 --- a/plugin/dirdiff.vim
 +++ b/plugin/dirdiff.vim
 @@ -197,7 +197,8 @@ function! <SID>DirDiff(srcA, srcB)
@@ -94,7 +94,16 @@ index 2389f7a..deb0f2b 100644
  function! <SID>GotoDiffWindow()
      call <SID>Drop(s:FilenameDiffWindow)
  endfunction
-@@ -511,7 +543,11 @@ function! <SID>DirDiffOpen()
+@@ -503,7 +535,7 @@ function! <SID>DirDiffOpen()
+ 
+         if exists("s:LastMode")
+             if s:LastMode == 2
+-                silent exec "bd ".bufnr(previousFileA)
++                silent! exec "bd ".bufnr(previousFileA)
+ 
+                 call <SID>Drop(previousFileB)
+                 silent exec "edit ".fileToOpen
+@@ -511,7 +543,13 @@ function! <SID>DirDiffOpen()
                  let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
                  call <SID>Drop(previousFile)
                  silent exec "edit ".fileToOpen
@@ -103,11 +112,29 @@ index 2389f7a..deb0f2b 100644
 +                " Running 'bd {buffer}' on an unlisted buffer produces the following error:
 +                " E516: No buffers were deleted.
 +                " Suppress the error with 'silent!'.
-+                silent! exec "bd ".bufnr(previousFile)
++                if fileToOpen != previousFile && filereadable(previousFile)
++                    silent! exec "bd ".bufnr(previousFile)
++                endif
              endif
          else
              silent exec "split ".fileToOpen
-@@ -541,7 +577,11 @@ function! <SID>DirDiffOpen()
+@@ -531,17 +569,27 @@ function! <SID>DirDiffOpen()
+                 call <SID>Drop(previousFileA)
+                 silent exec "edit ".s:FilenameA
+                 diffthis
+-                silent exec "bd ".bufnr(previousFileA)
++                if previousFileA != s:FilenameA && filereadable(previousFile)
++                    silent exec "bd ".bufnr(previousFileA)
++                endif
+ 
+                 call <SID>Drop(previousFileB)
+                 silent exec "edit ".s:FilenameB
+                 diffthis
+-                silent exec "bd ".bufnr(previousFileB)
++                if previousFileB != s:FilenameB && filereadable(previousFile)
++                    silent exec "bd ".bufnr(previousFileB)
++                endif
+             else
                  let previousFile = (s:LastMode == "A") ? previousFileA : previousFileB
                  call <SID>Drop(previousFile)
                  silent exec "edit ".s:FilenameB
@@ -116,11 +143,13 @@ index 2389f7a..deb0f2b 100644
 +                " Running 'bd {buffer}' on an unlisted buffer produces the following error:
 +                " E516: No buffers were deleted.
 +                " Suppress the error with 'silent!'.
-+                silent! exec "bd ".bufnr(previousFile)
++                if previousFile != s:FilenameB && filereadable(previousFile)
++                    silent! exec "bd ".bufnr(previousFile)
++                endif
                  diffthis
  
                  " To ensure that A is on the left and B on the right, splitright must be off
-@@ -603,7 +643,7 @@ function! <SID>HighlightLine()
+@@ -603,7 +651,7 @@ function! <SID>HighlightLine()
      " This is necessary since the modified file would make the syntax
      " disappear.
      call <SID>SetupSyntax()
@@ -129,7 +158,7 @@ index 2389f7a..deb0f2b 100644
  endfunction
  
  " Removes the highlight from the selected line in the diff window
-@@ -620,7 +660,7 @@ function! <SID>DeHighlightLine()
+@@ -620,7 +668,7 @@ function! <SID>DeHighlightLine()
      setlocal nomodifiable
      setlocal nomodified
      exe (savedLine)
