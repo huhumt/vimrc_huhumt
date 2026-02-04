@@ -118,7 +118,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
         if log.mode == MODE_DELETE_SHORT_MSG:
             log_dict.update({short_msg_key: ""})  # delete short msg only
         else:
-            file_log_dict.update({log.source: ""})  # delete all
+            file_log_dict.update({log.source: {}})  # delete all
     else:
         full_msg_key = "messages"
         full_msg = log_dict.get(full_msg_key) or {}
@@ -171,13 +171,13 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
 def parse_today_event():
     today_date = datetime.today()
     re_event = r"(?P<hour>[^:\r\n]+):(?P<minute>\d{2})?[: ]+(?P<event>.+)"
-    weather = None
 
     today_event = subprocess.run([
         "python",
         os.path.join(os.path.expanduser('~'), ".local/bin/filter_gcalcli.py"),
         "--from-file",
-        "--out-event-only"
+        "--out-event-only",
+        "--days-later", "0"
     ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
     for cur_hour, cur_minute, cur_event in re.findall(re_event, today_event):
@@ -191,8 +191,7 @@ def parse_today_event():
         else:  # all day event
             if "weather" == f"{cur_hour.strip()}{cur_minute.strip()}".lower():
                 weather_list = cur_event.split()
-                weather = f"weather: {weather_list[0]}  {weather_list[-1]}"
-    return weather
+                return f"weather: {weather_list[0]}  {weather_list[-1]}"
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
