@@ -14,7 +14,9 @@ DISPLAY_COUNT_KEY = "display-from-local-dict-to-tmux-count"
 DISPLAY_RUST_NEWS = "display-rust-news-to-tmux-flag"
 
 
-def compact_trans_str(trans_string: str) -> tuple[str, str] | None:
+def compact_trans_str(
+    trans_string: str, new_word: bool = True
+) -> tuple[str, str] | None:
     if not (
         trans_list := [
             line.replace("  ", " ")
@@ -37,7 +39,7 @@ def compact_trans_str(trans_string: str) -> tuple[str, str] | None:
     if min_index > 1:
         return trans_word, "\n".join(trans_list[:min_index])
     else:
-        return trans_word, "\n".join(trans_list)
+        return None if new_word else (trans_word, "\n".join(trans_list))
 
 
 def update_dict_to_file(trans_string: str) -> None:
@@ -45,7 +47,7 @@ def update_dict_to_file(trans_string: str) -> None:
         with open(JSON_FILENAME, "r", encoding="utf-8", errors="ignore") as f:
             trans_dict = json.load(f, object_pairs_hook=OrderedDict)
     except FileNotFoundError:
-        trans_dict = OrderedDict()
+        return None
 
     if compact_str := compact_trans_str(trans_string):
         trans_word, trans_content = compact_str
@@ -73,6 +75,12 @@ def add_colour(normal_str: str) -> str:
 
 def display_trans() -> str:
     try:
+        with open(JSON_FILENAME, "r", encoding="utf-8") as f:
+            trans_dict = json.load(f, object_pairs_hook=OrderedDict)
+    except FileNotFoundError:
+        return f"{JSON_FILENAME} not exist"
+
+    try:
         with open(TMP_JSON_FILENAME, "r", encoding="utf-8") as f:
             tmp_trans_dict = json.load(f, object_pairs_hook=OrderedDict)
     except FileNotFoundError:
@@ -86,19 +94,12 @@ def display_trans() -> str:
             .decode()
         )
     else:
-        try:
-            with open(JSON_FILENAME, "r", encoding="utf-8") as f:
-                trans_dict = json.load(f, object_pairs_hook=OrderedDict)
-        except FileNotFoundError:
-            return f"{JSON_FILENAME} not exist"
-
-        if (cnt := tmp_trans_dict[DISPLAY_COUNT_KEY]) + 1 >= len(trans_dict):
-            tmp_trans_dict[DISPLAY_COUNT_KEY] = 0
-        else:
-            tmp_trans_dict[DISPLAY_COUNT_KEY] = cnt + 1
+        if (cnt := (tmp_trans_dict[DISPLAY_COUNT_KEY] + 1)) >= len(trans_dict):
+            cnt = 0
+        tmp_trans_dict[DISPLAY_COUNT_KEY] = cnt
 
         trans_string = list(trans_dict.values())[cnt]
-        if compact_str := compact_trans_str(trans_string):
+        if compact_str := compact_trans_str(trans_string, False):
             output = compact_str[-1]
         else:
             output = trans_string
@@ -115,7 +116,7 @@ def display_trans() -> str:
 
 
 if __name__ == "__main__":
-    if "--display-from-local-dict" in sys.argv:
+    if "--display-from-local-dict" in sys.argv or len(sys.argv) == 1:
         print(f"\n{add_colour(display_trans())}")
     else:
         if from_vim_flag := ("--from-vim" in sys.argv):
