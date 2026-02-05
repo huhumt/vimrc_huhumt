@@ -171,6 +171,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
 def parse_today_event():
     today_date = datetime.today()
     re_event = r"(?P<hour>[^:\r\n]+):(?P<minute>\d{2})?[: ]+(?P<event>.+)"
+    weather = None
 
     today_event = subprocess.run([
         "python",
@@ -191,7 +192,8 @@ def parse_today_event():
         else:  # all day event
             if "weather" == f"{cur_hour.strip()}{cur_minute.strip()}".lower():
                 weather_list = cur_event.split()
-                return f"weather: {weather_list[0]}  {weather_list[-1]}"
+                weather = f"weather: {weather_list[0]}  {weather_list[-1]}"
+    return weather  # if no event, return weather
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
