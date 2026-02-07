@@ -20,13 +20,14 @@
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.updates.prompt": false,
     "cSpell.language": "en-GB",
-    "cSpell.numSuggestions": 4,
+    "cSpell.numSuggestions": 20,
     "cSpell.allowCompoundWords": true,
+    "cSpell.maxNumberOfProblems": 2000,
     "biome.bin": "/usr/local/bin/biome",
     "biome.requireConfiguration": false,
     "languageserver": {
         "terraform": {
-            "command": "terraform-ls",
+            "command": "tofu-ls",
             "args": ["serve"],
             "filetypes": ["terraform", "tf"],
             "initializationOptions": {},

@@ -289,22 +289,24 @@ function! StatuslineFilename(active_win, nofile_flag) abort
     return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename
 endfunction
 
-function! StatuslineRight() abort
+function! StatuslineRight(longfmt) abort
     let l:lines_cnt = -(strlen(line('$')) * 2 + 1)
-    let l:select_lines = abs(line(".") - line("v")) + 1
-    if l:select_lines > 1
-        let l:se_show = "selected " . l:select_lines . " lines, "
-    else
-        let l:se = searchcount(#{maxcount:0})
-        if l:se.exact_match
-            let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
+    let l:right = "%#User2# Ln %" . l:lines_cnt . "(%l/%L%)%9(| Col %v%) "
+    if a:longfmt
+        let l:select_lines = abs(line(".") - line("v")) + 1
+        if l:select_lines > 1
+            let l:se_show = "selected " . l:select_lines . " lines, "
+        else
+            let l:se = searchcount(#{maxcount:0})
+            if l:se.exact_match
+                let l:se_show = "matches " . l:se.current . "/" . l:se.total . ", "
+            endif
         endif
+        let l:right = "%#User4#[" . get(l:, "se_show", "")
+                \ . "%{&fenc?&fenc:&enc},%{&ff}%(,%Y%)%(,%M%)%(,%R%)] "
+                \ . l:right . "%#User4# ::%4(%p%%%)"
     endif
-    return "%=%#User4#["
-        \ . get(l:, "se_show", "")
-        \ . "%{&fenc?&fenc:&enc},%{&ff}%(,%Y%)%(,%M%)%(,%R%)] "
-        \ . "%#User2# Ln %" . l:lines_cnt . "(%l/%L%)%9(| Col %v%) "
-        \ . "%#User4# ::%4(%p%%%)"
+    return "%=" . l:right
 endfunction
 
 function! StatusLineCustom(winid) abort
@@ -313,17 +315,14 @@ function! StatusLineCustom(winid) abort
     if win_getid() == a:winid && l:nofile_idx == -1
         let l:mode = "%{%StatuslineCurMode()%}"
         let l:filename = "%{%StatuslineFilename(1, 0)%}"
-        if &columns > 100
-            if winwidth(0) == &columns
-                let l:git_branch = "%{%StatuslineGitBranch()%}"
-            endif
-
-            if winwidth(0) * 2 + 5 > &columns
-                let l:right = "%{%StatuslineRight()%}"
-            endif
+        if &columns > 100 && winwidth(0) == &columns
+            let l:git_branch = "%{%StatuslineGitBranch()%}"
+            let l:right = "%{%StatuslineRight(1)%}"
+        else
+            let l:right = "%{%StatuslineRight(0)%}"
         endif
         return l:mode . "%<" . get(l:, "git_branch", "") . l:filename
-                \ . " %#User4#" . get(l:, "right", "")
+                \ . " %#User4#" . l:right
     else
         if l:nofile_idx == -1
             return "%{%StatuslineFilename(0, 0)%}"
