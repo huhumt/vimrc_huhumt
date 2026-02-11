@@ -865,7 +865,7 @@ Plug 'luochen1990/rainbow'
 
 " easy align code
 " Plug 'junegunn/vim-easy-align'
-" gl for right-align and gL for ledt-align operator
+" gl for right-align and gL for left-align operator
 Plug 'tommcdo/vim-lion'
 
 " color for c/c++ code
