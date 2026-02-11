@@ -1,5 +1,5 @@
 diff --git a/autoload/ctrlsf.vim b/autoload/ctrlsf.vim
-index 59aa399..9da6a39 100644
+index 59aa399..f57e357 100644
 --- a/autoload/ctrlsf.vim
 +++ b/autoload/ctrlsf.vim
 @@ -366,11 +366,10 @@ func! ctrlsf#NextMatch(forward, ...) abort
@@ -16,7 +16,7 @@ index 59aa399..9da6a39 100644
          if g:ctrlsf_auto_preview
              call ctrlsf#JumpTo('preview')
          endif
-@@ -418,30 +417,25 @@ endf
+@@ -418,37 +417,32 @@ endf
  "
  func! s:OpenFileInWindow(file, lnum, col, mode, split) abort
      if a:mode == 1
@@ -59,6 +59,63 @@ index 59aa399..9da6a39 100644
          endif
      endif
  
+     call ctrlsf#win#MoveCursorCentral(a:lnum, a:col)
+ 
+     if g:ctrlsf_selected_line_hl =~ 'o'
+-        call ctrlsf#hl#HighlightSelectedLine()
++        call ctrlsf#hl#HighlightSelectedLine('ctrlsfSelectedLine', '')
+     endif
+ endf
+ 
+@@ -471,7 +465,7 @@ func! s:OpenFileInTab(file, lnum, col, mode) abort
+     call ctrlsf#win#MoveCursorCentral(a:lnum, a:col)
+ 
+     if g:ctrlsf_selected_line_hl =~ 'o'
+-        call ctrlsf#hl#HighlightSelectedLine()
++        call ctrlsf#hl#HighlightSelectedLine('ctrlsfSelectedLine', '')
+     endif
+ 
+     if a:mode == 2
+@@ -482,6 +476,9 @@ endf
+ " s:PreviewFile()
+ "
+ func! s:PreviewFile(file, lnum, col, follow) abort
++    " refer to function s:CompactViewIncr(base_vlnum) to fill column length
++    let l:hl_pattern = '\%.l\%<70c'
++    call ctrlsf#hl#HighlightSelectedLine('ctrlsfSelectedLine', l:hl_pattern)
+     call ctrlsf#preview#OpenPreviewWindow()
+ 
+     if !exists('b:ctrlsf_file') || empty(b:ctrlsf_file) || b:ctrlsf_file !=# a:file
+@@ -496,7 +493,7 @@ func! s:PreviewFile(file, lnum, col, follow) abort
+     call ctrlsf#win#MoveCursorCentral(a:lnum, a:col)
+ 
+     if g:ctrlsf_selected_line_hl =~ 'p'
+-        call ctrlsf#hl#HighlightSelectedLine()
++        call ctrlsf#hl#HighlightSelectedLine('ctrlsfSelectedLine', '')
+     endif
+ 
+     if !a:follow
+diff --git a/autoload/ctrlsf/hl.vim b/autoload/ctrlsf/hl.vim
+index 6ae3083..582bc9f 100644
+--- a/autoload/ctrlsf/hl.vim
++++ b/autoload/ctrlsf/hl.vim
+@@ -26,12 +26,13 @@ endf
+ 
+ " HighlightSelectedLine()
+ "
+-func! ctrlsf#hl#HighlightSelectedLine() abort
++func! ctrlsf#hl#HighlightSelectedLine(scheme, pattern) abort
+     " Clear previous highlight
+     silent! call matchdelete(w:ctrlsf_line_hlid)
+ 
+-    let pattern = '\%' . line('.') . 'l.*'
+-    let w:ctrlsf_line_hlid = matchadd('ctrlsfSelectedLine', pattern, -1)
++    " let pattern = '\%' . line('.') . 'l.*'
++    let l:hl_pattern = empty(a:pattern) ? '\%.l' : a:pattern
++    let w:ctrlsf_line_hlid = matchadd(a:scheme, l:hl_pattern, -1)
+ endf
+ 
+ " ClearSelectedLine()
 diff --git a/autoload/ctrlsf/pat.vim b/autoload/ctrlsf/pat.vim
 index 7554a94..cc0616a 100644
 --- a/autoload/ctrlsf/pat.vim
@@ -232,7 +289,7 @@ index 503576f..ac88be3 100644
  "
  func! ctrlsf#preview#FocusPreviewWindow() abort
 diff --git a/autoload/ctrlsf/view.vim b/autoload/ctrlsf/view.vim
-index 22271e6..e912534 100644
+index 22271e6..7f3ed13 100644
 --- a/autoload/ctrlsf/view.vim
 +++ b/autoload/ctrlsf/view.vim
 @@ -36,16 +36,7 @@ endf
@@ -253,7 +310,7 @@ index 22271e6..e912534 100644
      return [out]
  endf
  
-@@ -154,23 +145,23 @@ endf
+@@ -154,23 +145,22 @@ endf
  func! s:CompactViewIncr(base_vlnum) abort
      let matchlist = ctrlsf#db#MatchList()
      let to_render = matchlist[s:rendered_match:-1]
@@ -265,10 +322,9 @@ index 22271e6..e912534 100644
      for mat in to_render
 -        call extend(view, s:LineCompact(mat))
 +        let mat_cnt += 1
-+        let indent = printf("%*s %s |%*s| ",
-+                    \ 8,  "No." . mat_cnt,
-+                    \ mat.filename,
-+                    \ 10, mat.lnum . " col " . mat.col)
++        let indent = printf("No.%*s %*s ",
++                    \ -5,   mat_cnt,
++                    \ -60, (mat.filename . ' |' . mat.lnum . " col " . mat.col . '|')[-60:])
 +        call extend(view, [indent . trim(mat.text)])
  
          let vlnum = a:base_vlnum + len(view)
@@ -285,11 +341,11 @@ index 22271e6..e912534 100644
      return view
  endf
  
-@@ -278,16 +269,28 @@ endf
+@@ -278,16 +268,28 @@ endf
  "
  func! ctrlsf#view#FindNextMatch(forward, wrapscan, ...) abort
      let file_based = get(a:, 1, 0)
-+    let l:fixed_vcol = 8
++    let l:fixed_vcol = 4
 +    let l:manual_cursor_moved = v:false
  
      if file_based
@@ -297,7 +353,7 @@ index 22271e6..e912534 100644
          call cursor(vlnum, 1)
 +    else
 +        let l:cur_col = col('.')
-+        if a:forward && l:cur_col >= l:fixed_vcol && l:cur_col < l:fixed_vcol * 6
++        if a:forward && l:cur_col >= l:fixed_vcol
 +            call cursor(0, col('$'))
 +            let l:manual_cursor_moved = v:true
 +        endif
