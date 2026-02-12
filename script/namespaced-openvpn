@@ -412,14 +412,12 @@ def main():
         subprocess.run(["ip", "netns", "delete", args.namespace])
         return 0
 
-    ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
-    ip_cmd_list += ['-i'] if args.disable_ssh else ssh_cmd_list
     pid_filename = "/run/openvpn-client/vpn.pid"
     try:
         print(f"setup namespace {args.namespace}")
         setup_namespace(args.namespace)
     except Exception as e:
-        print(f"{e}\nOpen bash only\n")
+        print(f"{e}\n{args.namespace} has already been set\n")
     else:
         execv_args = ['openvpn'] + openvpn_args
         # OK, don't bother assigning an IP to the tun, or creating routes;
@@ -449,20 +447,22 @@ def main():
             try:
                 subprocess.check_call(execv_args)
                 time.sleep(5)
-            except:
-                pass
+            except Exception as e:
+                print(e)
+            if not os.path.isfile(pid_filename):
+                retry_cnt -= 1
+                print("\nFailed to authentication with given credentials, try again")
 
-            if os.path.isfile(pid_filename):
-                print(f"""Run '{" ".join(ip_cmd_list)}'""")
-                time.sleep(4)
-                os.execv(IP_CMD, ip_cmd_list)
-            else:
-                if (retry_cnt := retry_cnt - 1) > 0:
-                    print("\nFailed to authentication with given credentials, try again")
-                else:
-                    print("\nBye ...")
-                    subprocess.run(["pkill", "openvpn"])
-                    subprocess.run(["ip", "netns", "delete", args.namespace])
+    ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
+    ip_cmd_list += ['-i'] if args.disable_ssh else ssh_cmd_list
+    if os.path.isfile(pid_filename):
+        print(f"""Run '{" ".join(ip_cmd_list)}'""")
+        time.sleep(4)
+        os.execv(IP_CMD, ip_cmd_list)
+    else:
+        print("\nBye ...")
+        subprocess.run(["pkill", "openvpn"])
+        subprocess.run(["ip", "netns", "delete", args.namespace])
 
 
 if __name__ == '__main__':
