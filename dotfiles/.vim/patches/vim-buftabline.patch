@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index 81ef326..9887932 100644
+index 81ef326..cd2975d 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -218,7 +218,7 @@ index 81ef326..9887932 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -197,11 +200,22 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +200,28 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
@@ -238,9 +238,15 @@ index 81ef326..9887932 100644
 +		endif
 +	else
 +		let l:bufnums = map(copy(a:000),'v:val =~ ''\d\+'' ? v:val + 0 : v:val')
-+		for l:bufnum in filter(l:bufnums, 'v:val > 0 && v:val <= len(l:valid_bufnums)')
-+			exec 'silent! ' . (a:action > 0 ? 'bd' : 'b') . (a:bang ? '! ' : ' ') . l:valid_bufnums[l:bufnum-1]
-+		endfor
++		if a:action > 0
++		    let l:bd_bufs = uniq(sort(filter(l:bufnums, 'v:val > 0 && v:val <= len(l:valid_bufnums)')))
++			if len(l:valid_bufnums) > 1 && !empty(l:bd_bufs)
++				exec 'silent! bd' (a:bang ? '! ' : ' ') . join(map(l:bd_bufs, 'l:valid_bufnums[v:val-1]'), " ")
++			endif
++		else
++			let l:idx = l:bufnums[-1] > len(l:valid_bufnums) ? -1 : (l:bufnums[-1] > 0 ? l:bufnums[-1] - 1 : 0)
++			exec 'silent! b' (a:bang ? '! ' : ' ') . l:valid_bufnums[l:idx]
++		endif
 +	endif
 +endfunction
  

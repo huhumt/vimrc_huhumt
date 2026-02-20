@@ -342,8 +342,8 @@ set statusline=%!StatusLineCustom(g:statusline_winid)
 "set nofen
 "set fdl=0
 
-command -nargs=1 C :',. w! $HOME/.vimbuf
-command -nargs=0 P :r $HOME/.vimbuf
+" command -nargs=1 C :',. w! $HOME/.vimbuf
+" command -nargs=0 P :r $HOME/.vimbuf
 
 
 " modified by TinyFish on 2016.3.18 to enable show line number
@@ -458,7 +458,6 @@ endfunction
 let g:buftabline_numbers = 2
 let g:buftabline_indicators = 1
 let g:buftabline_separators = 1
-let g:buftabline_plug_max = 6
 
 " Support tagbar plugin
 nnoremap <Leader>t :TagbarToggle<CR>
