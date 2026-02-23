@@ -932,7 +932,8 @@ highlight DiffText   cterm=none ctermfg=194  ctermbg=29
 " add crosshair style cursor
 highlight CursorLine cterm=reverse ctermbg=NONE ctermfg=NONE
 highlight CursorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
-highlight LineNr cterm=bold ctermfg=Grey ctermbg=NONE
+highlight LineNr cterm=NONE ctermfg=240 ctermbg=NONE
+highlight CursorLineNr cterm=bold,underline ctermfg=153 ctermbg=NONE
 highlight ColorColumn cterm=reverse ctermbg=NONE ctermfg=NONE
 highlight SignColumn cterm=NONE ctermbg=NONE ctermfg=NONE
 highlight VertSplit cterm=bold ctermfg=232 ctermbg=238
