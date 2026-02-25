@@ -533,6 +533,7 @@ let g:gutentags_cscope_build_inverted_index = 1
 nnoremap <Leader>f :Autoformat<CR>
 vnoremap <Leader>f :Autoformat<CR>
 " let g:formatdef_my_custom_cs = '"clang-format -style=file"'
+let g:formatdef_terraform_format = '"tofu fmt -"'
 let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
 let g:formatters_cs = ['my_custom_cs']
 let g:formatdef_ruff_format = '"ruff --config line-length=80 format - --no-cache --range " . a:firstline . ":" . a:lastline'
