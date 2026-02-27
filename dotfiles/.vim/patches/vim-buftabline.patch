@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index 81ef326..cd2975d 100644
+index 81ef326..00f1819 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -51,7 +51,7 @@ index 81ef326..cd2975d 100644
  endfunction
  
  function! s:switch_buffer(bufnum, clicks, button, mod)
-@@ -55,48 +59,74 @@ function s:SID()
+@@ -55,48 +59,71 @@ function s:SID()
  	return matchstr(expand('<sfile>'), '<SNR>\d\+_')
  endfunction
  
@@ -99,7 +99,6 @@ index 81ef326..cd2975d 100644
  	let tabs_per_tail = {}
 -	let currentbuf = winbufnr(0)
 +	let currentbuf = len(s:mru_list) > 0 ? s:mru_list[-1] : winbufnr(0)
-+	let current_tab_index = 0
 +	let lastbuf = len(s:mru_list) > 1 ? s:mru_list[-2] : -1
  	let screen_num = 0
  	for bufnum in bufnums
@@ -111,8 +110,6 @@ index 81ef326..cd2975d 100644
 +		let tab = { 'num': bufnum, 'pre': strlen(screen_num) ? screen_num . '.' : '' }
 +		if currentbuf == bufnum
 +			let tab.hilite = 'Current'
-+			let current_tab_index = index(bufnums, bufnum)
-+			let tab.num .= '*'
 +		else
 +			let tab.hilite = lastbuf == bufnum ? 'Active' : 'Hidden'
 +		endif
@@ -139,7 +136,7 @@ index 81ef326..cd2975d 100644
  		endif
  		let tabs += [tab]
  	endfor
-@@ -113,59 +143,32 @@ function! buftabline#render()
+@@ -113,59 +140,33 @@ function! buftabline#render()
  		endfor
  	endwhile
  
@@ -164,7 +161,8 @@ index 81ef326..cd2975d 100644
 -			continue
 -		endif
 -		let currentside.width += tab.width
-+		let bufnum =  (strlen(tab.pre) && show_ord) ? ('[b' . tab.num . ']') : ''
++		let bufnum = (strlen(tab.pre) && show_ord) ? ('[b' . tab.num
++					\. (tab.hilite == 'Current' ? '*' : '') . ']') : ''
 +		let tab.width = strwidth(lpad) + strwidth(tab.pre) + strwidth(bufnum) + strwidth(tab.label) + 1
 +		let total_width += tab.width
 +		let tab.label = "%#BufTabLineTabPad#" . lpad . tab.pre . '%#BufTabLineBufnum#' . bufnum
@@ -197,13 +195,13 @@ index 81ef326..cd2975d 100644
 -	endif
  
 -	if len(tabs) | let tabs[0].label = substitute(tabs[0].label, lpad, ' ', '') | endif
-+	let right_iters = range(len(tabs) - 1, current_tab_index + 1, -1)
-+	let left_iters = range(0, current_tab_index - 1)
-+	let remove_order_iters = filter(right_iters + left_iters, 'tabs[v:val].hilite =~# "Hidden"')
-+	let delta = total_width - &columns
 +	let remove_idx = 0
-+	while delta > 0
-+		let delta -= remove(tabs, remove_order_iters[remove_idx]).width
++	let delta = total_width - &columns
++	while (delta > 0 && remove_idx < len(s:mru_list))
++		let remove_tab = filter(copy(tabs), 'v:val.num == s:mru_list[remove_idx]')
++		if len(remove_tab) == 1
++			let delta -= remove(tabs, index(tabs, remove_tab[0])).width
++		endif
 +		let remove_idx += 1
 +	endwhile
  
@@ -218,7 +216,7 @@ index 81ef326..cd2975d 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -197,11 +200,28 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +198,28 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
