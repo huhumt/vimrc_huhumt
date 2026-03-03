@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index 81ef326..00f1819 100644
+index 81ef326..0c989e5 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -162,7 +162,7 @@ index 81ef326..00f1819 100644
 -		endif
 -		let currentside.width += tab.width
 +		let bufnum = (strlen(tab.pre) && show_ord) ? ('[b' . tab.num
-+					\. (tab.hilite == 'Current' ? '*' : '') . ']') : ''
++					\. (tab.hilite =~# 'Current' ? '*' : '') . ']') : ''
 +		let tab.width = strwidth(lpad) + strwidth(tab.pre) + strwidth(bufnum) + strwidth(tab.label) + 1
 +		let total_width += tab.width
 +		let tab.label = "%#BufTabLineTabPad#" . lpad . tab.pre . '%#BufTabLineBufnum#' . bufnum
@@ -216,7 +216,7 @@ index 81ef326..00f1819 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -197,11 +198,28 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +198,31 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
@@ -225,25 +225,28 @@ index 81ef326..00f1819 100644
 -	execute printf("noremap <silent> <Plug>BufTabLine.Go(%d) :<C-U>exe 'b'.get(buftabline#user_buffers(),%d,'')<cr>", s:n, s:b)
 -endfor
 -unlet! s:n s:b
-+command! -bang -nargs=* BufTablineGoto   call buftabline#action(0, '<bang>'=='!', <f-args>)
-+command! -bang -nargs=* BufTablineRemove call buftabline#action(1, '<bang>'=='!', <f-args>)
++command! -bang -nargs=* BufTablineRemove call buftabline#action(0, '<bang>'=='!', <f-args>)
++command! -bang -nargs=* BufTablineGoto   call buftabline#action(1, '<bang>'=='!', <f-args>)
++command! -bang -nargs=* BufTablineSplit  call buftabline#action(2, '<bang>'=='!', <f-args>)
++command! -bang -nargs=* BufTablineVSplit call buftabline#action(3, '<bang>'=='!', <f-args>)
 +" action: 0 jump, >0 bd delete buffer
 +function! buftabline#action(action, bang, ...)
 +	let l:valid_bufnums = filter(buftabline#user_buffers(), 'index(s:mru_list, v:val) != -1')
 +	if a:0 == 0
-+		if len(l:valid_bufnums) > 1 && a:action > 0
++		if len(l:valid_bufnums) > 1 && a:action == 0
 +			exec 'silent! bd' . (a:bang ? '! ' : '')
 +		endif
 +	else
 +		let l:bufnums = map(copy(a:000),'v:val =~ ''\d\+'' ? v:val + 0 : v:val')
-+		if a:action > 0
++		if a:action == 0
 +		    let l:bd_bufs = uniq(sort(filter(l:bufnums, 'v:val > 0 && v:val <= len(l:valid_bufnums)')))
 +			if len(l:valid_bufnums) > 1 && !empty(l:bd_bufs)
 +				exec 'silent! bd' (a:bang ? '! ' : ' ') . join(map(l:bd_bufs, 'l:valid_bufnums[v:val-1]'), " ")
 +			endif
 +		else
 +			let l:idx = l:bufnums[-1] > len(l:valid_bufnums) ? -1 : (l:bufnums[-1] > 0 ? l:bufnums[-1] - 1 : 0)
-+			exec 'silent! b' (a:bang ? '! ' : ' ') . l:valid_bufnums[l:idx]
++			let l:opener = a:action == 3 ? 'vertical sb' : (a:action == 2 ? 'horizontal sb' : 'b')
++			exec 'silent! '. l:opener . (a:bang ? '! ' : ' ') . l:valid_bufnums[l:idx]
 +		endif
 +	endif
 +endfunction
