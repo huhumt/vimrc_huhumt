@@ -212,7 +212,7 @@ def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
 
 def cron_timer_cb(data, remaining_calls):
     update_weechat_log(WeechatLogData(
-        FROM_GCALCLI, MODE_REPLACE, parse_today_event(), "<{}>"))
+        FROM_GCALCLI, MODE_REPLACE, parse_today_event(), "<{}>", True))
     for gitlab_comment in gitlab_comment_from_email():
         update_weechat_log(WeechatLogData(
             FROM_GITLAB, MODE_APPEND, gitlab_comment, "[Gitlab: {}]"))
