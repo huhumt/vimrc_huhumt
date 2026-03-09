@@ -156,7 +156,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
                         }
                     })
             else:  # append mode, and key already in
-                if len(full_msg) > 30:  # too many logs
+                if len(full_msg) > 50:  # too many logs
                     oldest_key = list(full_msg.keys())[0]
                     full_msg.pop(oldest_key)  # remove oldest log
                 full_msg.update(new_msg_dict)
@@ -197,7 +197,7 @@ def parse_today_event():
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
-    email_date = datetime.today().strftime("%a, %d %b %Y")
+    email_date = datetime.today().strftime("%a, %d %b %Y %H")
     re_comment = (fr'Date: {email_date}[\s\S]+?'
                   r'\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--')
     email_list = [m for m in Path(email_dir).rglob("*") if m.is_file()]
