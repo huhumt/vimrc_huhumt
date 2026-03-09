@@ -269,7 +269,7 @@ endfunction
 function! StatuslineGitBranch() abort
     let l:git_head_file = finddir('.git', expand('%:p:h') . ';') .. "/HEAD"
     if filereadable(l:git_head_file)
-        let l:git_branch = get(split(get(readfile(l:git_head_file), 0, ""), "/"), -1, "")
+        let l:git_branch = substitute(get(readfile(l:git_head_file), 0, ""), "^ref: refs/heads/", "", "")
         return "%#User2# [Git](" . l:git_branch . ") "
     else
         return ""
