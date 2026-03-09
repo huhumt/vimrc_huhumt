@@ -286,7 +286,12 @@ function! StatuslineFilename(active_win, nofile_flag) abort
     else
         let l:filename = empty(bufname()) ? "new file" : expand('%:~:.')
     endif
-    return (a:active_win ? "%#User3# " : "%#User4#filename: ") . l:filename
+
+    if a:active_win
+        return "%#User3# " . l:filename
+    else
+        return "%#User4# filename: " . l:filename . " %#SignColumn#"
+    endif
 endfunction
 
 function! StatuslineRight(longfmt) abort
