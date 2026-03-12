@@ -875,7 +875,7 @@ Plug 'tommcdo/vim-lion'
 
 " color for c/c++ code
 " Plug 'octol/vim-cpp-enhanced-highlight'
-Plug 'bfrg/vim-cpp-modern'
+" Plug 'bfrg/vim-cpp-modern'
 Plug 'sheerun/vim-polyglot'
 
 " use % to match keywords
