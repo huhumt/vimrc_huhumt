@@ -5,7 +5,7 @@ watch -n 200 -c -t -x bash -c '
   cur_hour=$(date +%k)
 
   if [ "$cur_hour" -eq "7" ]; then
-    holiday_month_year=$(date "+%m/%y")
+    holiday_month_year=$(date "+(%m|$(date -d "next month" "+%m"))/%y")
     holiday_title="Happy holiday"
     ag --nofilename --nobreak \
       "Request: Holiday \d{2}/${holiday_month_year}" \
