@@ -20,7 +20,7 @@ set nocompatible
 
 " allow backspacing over everything in insert mode
 set backspace=indent,eol,start
-set nobackup " do not keep a backup file, use versions instead
+set nobackup nowritebackup " do not keep a backup file, use versions instead
 
 set history=50      " keep 50 lines of command line history
 set ruler           " show the cursor position all the time
@@ -539,6 +539,8 @@ nnoremap <Leader>f :Autoformat<CR>
 vnoremap <Leader>f :Autoformat<CR>
 " let g:formatdef_my_custom_cs = '"clang-format -style=file"'
 let g:formatdef_terraform_format = '"tofu fmt -"'
+let g:formatdef_jsonnet_format = '"jsonnetfmt -"'
+let g:formatters_jsonnet = ['jsonnet_format']
 let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
 let g:formatters_cs = ['my_custom_cs']
 let g:formatdef_ruff_format = '"ruff --config line-length=80 format - --no-cache --range " . a:firstline . ":" . a:lastline'
