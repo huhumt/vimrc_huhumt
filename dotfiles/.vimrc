@@ -595,14 +595,23 @@ endfunction
 
 let g:Lf_ExternalCommand = 'ag %s --files-with-matches
     \ --filename-pattern "" ' . UserSilverSearcherArgs()
-let g:Lf_CommandMap = {'<C-K>': ['<Up>'], '<C-J>': ['<Down>']}
-let g:Lf_ShowDevIcons = 0
+let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
+let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
 " let g:Lf_PreviewInPopup = 0
 let g:Lf_PreviewPosition = 'right'
+let g:Lf_PreviewScrollStepSize = 5
 let g:Lf_Ctags=""
 let g:Lf_Gtags=""
 let g:Lf_MruEnable = 0
 let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
+let g:Lf_ShowDevIcons = 0
+let g:Lf_GitFolderIcons = { 'open': '+', 'closed': '-' }
+let g:Lf_GitAddIcon = 'A'
+let g:Lf_GitDelIcon = 'D'
+let g:Lf_GitModifyIcon = 'M'
+let g:Lf_GitRenameIcon = 'R'
+let g:Lf_GitCopyIcon = 'Y'
+let g:Lf_GitUntrackIcon = 'U'
 
 " Support ctrlsp plugin
 let g:ctrlsf_default_view_mode = 'compact'
@@ -964,7 +973,7 @@ highlight MarkWord2  ctermbg=Green        ctermfg=Black
 highlight MarkWord3  ctermbg=DarkYellow   ctermfg=Black
 highlight MarkWord4  ctermbg=LightRed     ctermfg=Black
 highlight MarkWord5  ctermbg=DarkRed      ctermfg=Black
-highlight MarkWord6  ctermbg=Blue         ctermfg=Black
+highlight MarkWord6  ctermbg=LightBlue    ctermfg=Black
 
 highlight SpellUserDefinedError ctermbg=170 ctermfg=236
 highlight! link SpellCheckError None
