@@ -200,7 +200,7 @@ def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
     email_date = datetime.today().strftime("%a, %d %b %Y %H")
     re_comment = (fr'Date: {email_date}[\s\S]+?'
                   r'\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--')
-    email_list = [m for m in Path(email_dir).rglob("*") if m.is_file()]
+    email_list = [m for m in Path(email_dir).rglob("[a-zA-Z0-9]*") if m.is_file()]
     comment_list = list()
     for email in email_list:
         with open(email, 'r', encoding='utf-8', errors='ignore') as f:
