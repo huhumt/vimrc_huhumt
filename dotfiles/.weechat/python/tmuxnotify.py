@@ -116,7 +116,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
     # if not in delete mode but log.log is invalid, switch to delete mode
     if log.mode >= MODE_DELETE or (not log.log):
         if log.mode == MODE_DELETE_SHORT_MSG:
-            log_dict.update({short_msg_key: ""})  # delete short msg only
+            log_dict.pop(short_msg_key, None)  # delete short msg only
         else:
             file_log_dict.update({log.source: {}})  # delete all
     else:
@@ -133,7 +133,6 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
         if log.log.startswith("weather: "):
             file_log_dict.update({log.source: {
                 "weather": log.log.split(":")[-1],
-                short_msg_key: ""
             }})
         else:
             notify_event(log.source, new_msg)
@@ -156,10 +155,10 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
                         }
                     })
             else:  # append mode, and key already in
-                if len(full_msg) > 50:  # too many logs
-                    oldest_key = list(full_msg.keys())[0]
-                    full_msg.pop(oldest_key)  # remove oldest log
                 full_msg.update(new_msg_dict)
+                if (to_remove := len(full_msg) - 30) > 0:  # too many logs
+                    for to_remove_key in list(full_msg.keys())[:to_remove]:
+                        full_msg.pop(to_remove_key)  # remove oldest log
                 log_dict.update({
                     short_msg_key: short_msg,
                     full_msg_key: full_msg
@@ -197,16 +196,22 @@ def parse_today_event():
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
-    email_date = datetime.today().strftime("%a, %d %b %Y %H")
-    re_comment = (fr'Date: {email_date}[\s\S]+?'
-                  r'\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--')
-    email_list = [m for m in Path(email_dir).rglob("[a-zA-Z0-9]*") if m.is_file()]
+    minutes_ago = datetime.today() - timedelta(minutes=WEECHAT_CRON_INTERVAL*5)
+    email_date = minutes_ago.strftime("%a, %d %b %Y")
+    re_comment = (
+        rf"Date: (?P<date>{email_date} \d+:\d+)[\s\S]+?"
+        r"\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--"
+    )
+    email_list = [
+        m for m in Path.home().joinpath(email_dir).rglob("[a-z0-9A-Z]*") if m.is_file()
+    ]
     comment_list = list()
     for email in email_list:
-        with open(email, 'r', encoding='utf-8', errors='ignore') as f:
-            for name, comment in re.findall(re_comment, f.read()):
-                comment = re.sub(r'(=\r?\n)', '', comment.strip())
-                comment_list += [f"{name.strip()} {comment.splitlines()[0]}"]
+        with open(email, "r", encoding="utf-8", errors="ignore") as f:
+            for date, name, comment in re.findall(re_comment, f.read()):
+                if datetime.strptime(date, "%a, %d %b %Y %H:%M") > minutes_ago:
+                    comment = re.sub(r"(=\r?\n)", "", comment.strip())
+                    comment_list += [f"{name.strip()} {comment.splitlines()[0]}"]
     return comment_list
 
 
@@ -215,7 +220,7 @@ def cron_timer_cb(data, remaining_calls):
         FROM_GCALCLI, MODE_REPLACE, parse_today_event(), "<{}>", True))
     for gitlab_comment in gitlab_comment_from_email():
         update_weechat_log(WeechatLogData(
-            FROM_GITLAB, MODE_APPEND, gitlab_comment, "[Gitlab: {}]"))
+            FROM_GITLAB, MODE_APPEND, gitlab_comment, "[Gitlab: {}]", False))
     return weechat.WEECHAT_RC_OK
 
 
