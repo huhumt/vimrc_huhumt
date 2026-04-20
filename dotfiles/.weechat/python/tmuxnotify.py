@@ -197,9 +197,8 @@ def parse_today_event():
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
     minutes_ago = datetime.today() - timedelta(minutes=WEECHAT_CRON_INTERVAL*5)
-    email_date = minutes_ago.strftime("%a, %d %b %Y")
     re_comment = (
-        rf"Date: (?P<date>{email_date} \d+:\d+)[\s\S]+?"
+        r"Date: (?P<date>.+ \d+:\d+)[\s\S]+?"
         r"\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--"
     )
     email_list = [
