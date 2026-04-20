@@ -1,8 +1,27 @@
 diff --git a/autoload/fern_preview.vim b/autoload/fern_preview.vim
-index 4d1aed1..8b63713 100644
+index 4d1aed1..787fc1f 100644
 --- a/autoload/fern_preview.vim
 +++ b/autoload/fern_preview.vim
-@@ -116,22 +116,22 @@ function! fern_preview#half_up() abort
+@@ -105,33 +105,37 @@ endfunction
+ 
+ function! fern_preview#half_down() abort
+   let winid = s:win.get_winid()
+-  let info = s:Window.info(winid)
+-  call s:Window.scroll(winid, info.topline + info.height / 2)
++  if winid != v:null
++    let info = s:Window.info(winid)
++    call s:Window.scroll(winid, info.topline + info.height / 2)
++  endif
+ endfunction
+ 
+ function! fern_preview#half_up() abort
+   let winid = s:win.get_winid()
+-  let info = s:Window.info(winid)
+-  call s:Window.scroll(winid, info.topline - info.height / 2)
++  if winid != v:null
++    let info = s:Window.info(winid)
++    call s:Window.scroll(winid, info.topline - info.height / 2)
++  endif
  endfunction
  
  function! fern_preview#width_default_func() abort
@@ -29,7 +48,7 @@ index 4d1aed1..8b63713 100644
    return top
  endfunction
  
-@@ -157,6 +157,7 @@ function! s:open_preview(path) abort
+@@ -157,6 +161,7 @@ function! s:open_preview(path) abort
    \   'height': height,
    \   'topline': 1,
    \   'border': v:true,
@@ -38,14 +57,14 @@ index 4d1aed1..8b63713 100644
  endfunction
  
 diff --git a/autoload/vital/_fern_preview/VS/Vim/Window.vim b/autoload/vital/_fern_preview/VS/Vim/Window.vim
-index 5526634..d99ad59 100644
+index 5526634..e70b891 100644
 --- a/autoload/vital/_fern_preview/VS/Vim/Window.vim
 +++ b/autoload/vital/_fern_preview/VS/Vim/Window.vim
 @@ -55,9 +55,10 @@ else
    function! s:info(winid) abort
      if s:is_floating(a:winid)
        let l:info = popup_getpos(a:winid)
-+      let l:top_padding = get(popup_getoptions(a:winid).padding, 0, 0)
++      let l:top_padding = get(get(popup_getoptions(a:winid), 'padding', []), 0, 0)
        return {
        \   'width': l:info.width,
 -      \   'height': l:info.height,
