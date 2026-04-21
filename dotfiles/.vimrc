@@ -565,41 +565,44 @@ let g:autoformat_retab = 0
 "   \ }
 " let g:ctrlp_user_command = 'ag %s -l --nocolor --hidden -g ""'
 " let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:10,results:10'
-let g:Lf_ShortcutF = '<C-p>'
+
+function! UserIgnorePattern(regex_cmd) abort
+    let l:ignore_arg = get({
+        \ 'ag': ' --ignore ',
+        \ 'rg': ' --glob !',
+        \ }, a:regex_cmd, "")
+    let l:ignore_patterns = [
+        \ ".git", ".svn", ".hg",
+        \ ".npm", "*.sw?", "~$*", "*.py[co]", "*.cache",
+        \ "*.o", "*.d", "*.su", "*.obj", "*.so", "*.dll", "*.a", "*.bin", "*.hex", "*.exe",
+        \ "*.tmp", "tags", "*.out*", "*.bak", "*.log",
+        \ ]
+    return empty(l:ignore_arg) ? '' : l:ignore_arg .. join(l:ignore_patterns, l:ignore_arg)
+endfunction
+
+function! LeaderfSearchMode(cur_mode, cur_word) abort
+    let l:option = '--bottom --stayOpen --auto-preview --preview-position=right rg'
+    if a:cur_mode < 2 && len(a:cur_word) < 5
+        return ('Leaderf --regexMode ' .. l:option)
+    else
+        return ('Leaderf! ' .. l:option .. (a:cur_mode < 2 ? ' -w' : '')
+                \ .. ' -F -M=80 -e ' .. a:cur_word)
+    endif
+endfunction
+
 let g:Lf_HideHelp = 1
 let g:Lf_RootMarkers = [
         \ 'tags', 'cscope.out',
         \ '.git', '.svn', '.hg'
         \]
-" https://github.com/ggreer/the_silver_searcher/blob/850e2b3887f0daa873fe2098f3f215b2c36000e1/tests/list_file_types.t
-" let g:Lf_ExternalCommand = 'ag %s -l --cc --cpp --silent --nocolor -g ""'
-" let g:Lf_ExternalCommand = 'ag %s -l --silent --ignore={
-"             \"*.sw?","~$*",
-"             \"*.o","*.d","*.su","*.so","*.dll","*.a","*.obj",
-"             \"*.tmp","tags","*.out*","*.bak","*.log",
-"             \"*.bin","*.hex","*.exe","*.py[co]","*.cache"
-"         \} -g ""'
-
-function! UserSilverSearcherArgs() abort
-    return ' --silent --hidden
-        \ --ignore ".git" --ignore ".svn" --ignore ".hg"
-        \ --ignore ".cache" --ignore ".npm"
-        \ --ignore "*.sw?" --ignore "~$*"
-        \ --ignore "*.o" --ignore "*.d" --ignore "*.su" --ignore "*.obj"
-        \ --ignore "*.so" --ignore "*.dll" --ignore "*.a"
-        \ --ignore "*.tmp" --ignore "tags" --ignore "*.out*"
-        \ --ignore "*.bak" --ignore "*.log"
-        \ --ignore "*.bin" --ignore "*.hex" --ignore "*.exe"
-        \ --ignore "*.py[co]" --ignore "*.cache"'
-endfunction
-
-let g:Lf_ExternalCommand = 'ag %s --files-with-matches
-    \ --filename-pattern "" ' . UserSilverSearcherArgs()
+let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
+    \ --no-require-git --sort=path' .. UserIgnorePattern("rg")
 let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
 let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
 " let g:Lf_PreviewInPopup = 0
-let g:Lf_PreviewPosition = 'right'
 let g:Lf_PreviewScrollStepSize = 5
+let g:Lf_Rg = 'rg --trim --sort=path --hidden --column
+    \ --max-columns-preview' .. UserIgnorePattern("rg")
 let g:Lf_Ctags=""
 let g:Lf_Gtags=""
 let g:Lf_MruEnable = 0
@@ -613,48 +616,10 @@ let g:Lf_GitRenameIcon = 'R'
 let g:Lf_GitCopyIcon = 'Y'
 let g:Lf_GitUntrackIcon = 'U'
 
-" Support ctrlsp plugin
-let g:ctrlsf_default_view_mode = 'compact'
-let g:ctrlsf_compact_winsize = 10
-let g:ctrlsf_context = '-C 0'
-let g:ctrlsf_case_sensitive = 'yes'
-let g:ctrlsf_default_root = 'cwd'
-let g:ctrlsf_auto_preview = 1
-let g:ctrlsf_indent = 2
-let g:ctrlsf_auto_focus = {
-    \ "at": "start"
-    \ }
-let g:ctrlsf_backend = 'ag'
-let g:ctrlsf_extra_backend_args = {
-    \ 'ag': UserSilverSearcherArgs() . ' --workers=1'
-    \ }
-" \ 'ag': '--silent --word-regexp'
-" \ 'ag': '--silent --literal'
-" let g:ctrlsf_extra_backend_args = {
-"     \ 'ag': '--silent --word-regexp'
-"     \ }
-let g:ctrlsf_mapping = {
-    \ "open"    : "",
-    \ "openb"   : "e",
-    \ "split"   : "",
-    \ "vsplit"  : ["<CR>", "o", "<2-LeftMouse>"],
-    \ "tab"     : "",
-    \ "tabb"    : "",
-    \ "popen"   : "",
-    \ "popenf"  : "",
-    \ "quit"    : "q",
-    \ "stop"    : "",
-    \ "next"    : ["<C-N>", "j"],
-    \ "prev"    : ["<C-P>", "k"],
-    \ "nfile"   : "",
-    \ "pfile"   : "",
-    \ "chgmode" : "",
-    \ "pquit"   : "q",
-    \ "loclist" : "",
-    \ "fzf"     : "",
-    \ }
-nnoremap <Leader><Leader>e <Plug>CtrlSFCCwordExec
-vnoremap <Leader><Leader>e <Plug>CtrlSFVwordExec
+nnoremap <silent> <C-p> :<C-u>Leaderf --bottom
+    \ --auto-preview --preview-position=right file<CR>
+nnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(0, leaderf#Rg#getPattern(0))<CR><CR>
+vnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(2, leaderf#Rg#getPattern(2))<CR><CR>
 
 " Support for easy motion
 " let g:EasyMotion_do_mapping = 0 " Disable default mappings
@@ -664,8 +629,8 @@ let g:sneak#label = 1
 " let g:sneak#s_next = 1
 let g:sneak#prompt = 'SneakMotion: '
 " set searchlength to 99 is big enough to wait for Enter key pressing
-nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<cr>
-nnoremap <silent> S :<c-u>call sneak#wrap('', 99, 1, 2, 1)<cr>
+nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<CR>
+nnoremap <silent> S :<c-u>call sneak#wrap('', 99, 1, 2, 1)<CR>
 
 " Support Hexmode plugin
 let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
@@ -851,7 +816,6 @@ Plug 'vim-autoformat/vim-autoformat'
 " fuzzy search using Ctrl-P
 " Plug 'ctrlpvim/ctrlp.vim'
 Plug 'Yggdroot/LeaderF'
-Plug 'dyng/ctrlsf.vim'
 
 " Support open and edit hex file
 Plug 'fidian/hexmode'
