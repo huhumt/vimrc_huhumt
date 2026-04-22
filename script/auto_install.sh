@@ -45,7 +45,6 @@ config_vim() {
        fern-preview.vim.patch
        LeaderF.patch
        vim-buftabline.patch
-       vim-gutentags.patch
        vim-table-mode.patch
        vim-dirdiff.patch
        vim-matchup.patch

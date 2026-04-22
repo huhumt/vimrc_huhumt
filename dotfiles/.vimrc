@@ -170,16 +170,14 @@ if has("cscope")
     " if you want the reverse search order.
     set csto=0
 
+    set nocscopeverbose
     " add any cscope database in current directory
-    if filereadable("./cscope.out")
-        if getfsize("./cscope.out") > 1
-            cs add ./cscope.out
-        endif
-    " else add the database pointed to by environment variable
-    elseif $CSCOPE_DB != ""
-        cs add $CSCOPE_DB
+    if executable('cscope') && getfsize("./cscope.out") > 1
+        cs add ./cscope.out
+    elseif executable('gtags-cscope') && getfsize("./GTAGS") > 1
+        set csprg=gtags-cscope
+        cs add ./GTAGS
     endif
-
     " show msg when any other cscope db added
     set cscopeverbose
 
@@ -466,73 +464,9 @@ let g:buftabline_separators = 1
 
 " Support tagbar plugin
 nnoremap <Leader>t :TagbarToggle<CR>
-let g:tagbar_ctags_bin = '/usr/bin/ctags'
+let g:tagbar_ctags_bin = 'ctags'
 let g:tagbar_width = 35 " default is 40
 let g:tagbar_iconchars = ['▸', '▾']
-" if has("autocmd")
-"     autocmd VimEnter * nested :TagbarOpen
-" endif " if has("autocmd")
-
-" nnoremap <Leader>t :Vista!!<CR>
-" let g:vista_default_executive = 'ctags'
-" let g:vista_executive_for = {
-"   \ 'cpp': 'vim_lsp',
-"   \ 'php': 'vim_lsp',
-"   \ }
-
-" for better performance in AutoComplPop
-" set omnifunc=syntaxcomplete#Complete
-" let g:acp_behaviorKeywordCommand = "\<C-x>\<C-o>"
-" let g:OmniCpp_SelectFirstItem = 2
-" SuperTab has occupied <C-p> and <C-n> key in insert mode
-" release <tab> key binding from SuperTab and use it for code_complete
-" let g:SuperTabMappingForward = '<nul>'
-" let g:SuperTabMappingBackward = '<nul>'
-" let g:SuperTabMappingTabLiteral = '<nul>'
-
-" let g:ycm_global_ycm_extra_conf='~/.vim/plugged/YouCompleteMe/.ycm_extra_conf.py'
-" let g:ycm_confirm_extra_conf=0
-
-let g:gutentags_modules = ['ctags', 'cscope']
-" config project root markers.
-let g:gutentags_project_root = ['.root', '.project', 'tags']
-" uncomment this line to debug gutentags
-" let g:gutentags_define_advanced_commands = 1
-" https://www.zachpfeffer.com/single-post/2018/02/20/generate-ctags-files-for-cc-source-files
-let g:gutentags_ctags_extra_args_dict = {
-            \ 'c': [
-                \ '--recurse',
-                \ '--fields=+ailmnS',
-                \ '--languages=C,C++',
-                \ '--c++-kinds=+p',
-                \ '--extras=+q'
-                \ ],
-            \ 'cpp': [
-                \ '--recurse',
-                \ '--fields=+ailmnS',
-                \ '--languages=C,C++',
-                \ '--c++-kinds=+p',
-                \ '--extras=+q'
-                \ ],
-            \ 'python': [
-                \ '--recurse',
-                \ '--fields=+ln',
-                \ '--languages=python',
-                \ '--python-kinds=-iv',
-                \ ],
-            \ }
-" let g:gutentags_cscope_executable = 'cscope -Rbkq'
-let g:gutentags_cscope_build_inverted_index = 1
-" generate datebases in my cache directory, prevent gtags files polluting my project
-" let g:gutentags_cache_dir = expand('~/.cache/tags')
-" change focus to quickfix window after search (optional).
-" let g:gutentags_plus_switch = 1
-" let g:gutentags_plus_nomap = 1
-" command! -nargs=1 Gfsymbol GscopeFind s <args>
-" command! -nargs=1 Gfdef    GscopeFind g <args>
-" command! -nargs=1 Gfcall   GscopeFind c <args>
-" command! -nargs=1 Gfinc    GscopeFind i <args>
-" command! -nargs=1 Gfvalue  GscopeFind a <args>
 
 " Support Auto-Format plugin
 nnoremap <Leader>f :Autoformat<CR>
@@ -575,7 +509,7 @@ function! UserIgnorePattern(regex_cmd) abort
         \ ".git", ".svn", ".hg",
         \ ".npm", "*.sw?", "~$*", "*.py[co]", "*.cache",
         \ "*.o", "*.d", "*.su", "*.obj", "*.so", "*.dll", "*.a", "*.bin", "*.hex", "*.exe",
-        \ "*.tmp", "tags", "*.out*", "*.bak", "*.log",
+        \ "*.tmp", "tags", "*.out*", "*.bak", "*.log", "GPATH", "GRTAGS", "GTAGS"
         \ ]
     return empty(l:ignore_arg) ? '' : l:ignore_arg .. join(l:ignore_patterns, l:ignore_arg)
 endfunction
@@ -591,20 +525,16 @@ function! LeaderfSearchMode(cur_mode, cur_word) abort
 endfunction
 
 let g:Lf_HideHelp = 1
-let g:Lf_RootMarkers = [
-        \ 'tags', 'cscope.out',
-        \ '.git', '.svn', '.hg'
-        \]
+let g:Lf_RootMarkers = ['tags', 'cscope.out', 'GTAGS', '.git', '.svn', '.hg']
 let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
-    \ --no-require-git --sort=path' .. UserIgnorePattern("rg")
+    \ --no-ignore --no-require-git --sort=path' .. UserIgnorePattern("rg")
 let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
 let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
 " let g:Lf_PreviewInPopup = 0
 let g:Lf_PreviewScrollStepSize = 5
-let g:Lf_Rg = 'rg --trim --sort=path --hidden --column
+let g:Lf_Rg = 'rg --trim --sort=path --hidden --no-ignore --column
     \ --max-columns-preview' .. UserIgnorePattern("rg")
 let g:Lf_Ctags=""
-let g:Lf_Gtags=""
 let g:Lf_MruEnable = 0
 let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
 let g:Lf_ShowDevIcons = 0
@@ -615,6 +545,17 @@ let g:Lf_GitModifyIcon = 'M'
 let g:Lf_GitRenameIcon = 'R'
 let g:Lf_GitCopyIcon = 'Y'
 let g:Lf_GitUntrackIcon = 'U'
+let g:Lf_GtagsSource = 2
+let g:Lf_GtagsStoreInProject = 1
+let g:Lf_GtagsfilesCmd = {
+        \ '.git': 'git ls-files --recurse-submodules',
+        \ '.hg': 'hg files',
+        \ 'default': 'rg --no-messages --hidden --no-ignore --files' .. UserIgnorePattern("rg")
+        \}
+" adjust these two configuration accordingly based on your linux distribution
+" find more information in `man gtags` or 'gtags.conf', here is for Debian
+let g:Lf_Gtagsconf = '/etc/gtags/gtags.conf' " can be /usr/share/gtags/gtags.conf in Archlinux
+let g:Lf_Gtagslabel = 'universal-ctags'
 
 nnoremap <silent> <C-p> :<C-u>Leaderf --bottom
     \ --auto-preview --preview-position=right file<CR>
@@ -706,9 +647,9 @@ inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float
 inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
-nnoremap <silent><nowait><expr> <C-]> filereadable("tags") ? "\<C-]>" : "\<Plug>(coc-definition)"
-" nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<Plug>(coc-references)"
-nnoremap <silent><nowait><expr> <C-t> filereadable("tags") ? "\<C-t>" : "\<C-o>"
+nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
+" nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
+nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
@@ -803,7 +744,7 @@ Plug 'preservim/tagbar'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 " Plug 'jackguo380/vim-lsp-cxx-highlight'
 " Plug 'ackyshake/VimCompletesMe'
-Plug 'ludovicchabant/vim-gutentags'
+" Plug 'ludovicchabant/vim-gutentags'
 " Plug 'skywind3000/gutentags_plus'
 " Plug 'vim-syntastic/syntastic'
 " Plug 'dense-analysis/ale'
