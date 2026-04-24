@@ -276,7 +276,7 @@ endfunction
 
 function! StatuslineFilename(active_win, nofile_flag) abort
     if a:nofile_flag
-        if exists('g:ctrlsf_loaded') && bufname('%') == '__CtrlSFPreview__'
+        if bufname('%') == '__CtrlSFPreview__'
             let l:filename = ctrlsf#utils#PreviewSectionC()
         else
             return "%#SignColumn#"
@@ -515,7 +515,7 @@ function! UserIgnorePattern(regex_cmd) abort
 endfunction
 
 function! LeaderfSearchMode(cur_mode, cur_word) abort
-    let l:option = '--bottom --stayOpen --auto-preview --preview-position=right rg'
+    let l:option = '--stayOpen --auto-preview rg'
     if a:cur_mode < 2 && len(a:cur_word) < 5
         return ('Leaderf --regexMode ' .. l:option)
     else
@@ -525,12 +525,13 @@ function! LeaderfSearchMode(cur_mode, cur_word) abort
 endfunction
 
 let g:Lf_HideHelp = 1
-let g:Lf_RootMarkers = ['tags', 'cscope.out', 'GTAGS', '.git', '.svn', '.hg']
+let g:Lf_RootMarkers = ['GTAGS', 'tags', 'cscope.out', '.git', '.svn', '.hg']
 let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
     \ --no-ignore --no-require-git --sort=path' .. UserIgnorePattern("rg")
 let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
 let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
 " let g:Lf_PreviewInPopup = 0
+let g:Lf_PreviewPosition = 'right'
 let g:Lf_PreviewScrollStepSize = 5
 let g:Lf_Rg = 'rg --trim --sort=path --hidden --no-ignore --column
     \ --max-columns-preview' .. UserIgnorePattern("rg")
@@ -547,6 +548,7 @@ let g:Lf_GitCopyIcon = 'Y'
 let g:Lf_GitUntrackIcon = 'U'
 let g:Lf_GtagsSource = 2
 let g:Lf_GtagsStoreInProject = 1
+let g:Lf_GtagsStoreInRootMarker = 1
 let g:Lf_GtagsfilesCmd = {
         \ '.git': 'git ls-files --recurse-submodules',
         \ '.hg': 'hg files',
@@ -557,8 +559,7 @@ let g:Lf_GtagsfilesCmd = {
 let g:Lf_Gtagsconf = '/etc/gtags/gtags.conf' " can be /usr/share/gtags/gtags.conf in Archlinux
 let g:Lf_Gtagslabel = 'universal-ctags'
 
-nnoremap <silent> <C-p> :<C-u>Leaderf --bottom
-    \ --auto-preview --preview-position=right file<CR>
+nnoremap <silent> <C-p> :<C-u>Leaderf --auto-preview file<CR>
 nnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(0, leaderf#Rg#getPattern(0))<CR><CR>
 vnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(2, leaderf#Rg#getPattern(2))<CR><CR>
 
@@ -647,9 +648,10 @@ inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float
 inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
 vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
 vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
-nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
+" nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
 " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
-nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
+" nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
+set tagfunc=CocTagFunc
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
