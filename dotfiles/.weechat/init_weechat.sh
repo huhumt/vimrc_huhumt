@@ -7,6 +7,7 @@ WEECHAT_CMD_ARRAY=(
     "/script install pv_info.pl colorize_nicks.py go.py"
     "/set weechat.color.nicklist_away .gray"
     "/set weechat.look.paste_auto_add_newline off"
+    "/set weechat.look.paste_max_lines 0"
     "/set weechat.bar.status.items [time],buffer_number+: +buffer_name,[lag],completion,scroll,[spell_suggest]"
     "/key bind ctrl-J /bar scroll nicklist * +50%"
     "/key bind ctrl-K /bar scroll nicklist * -50%"
