@@ -25,7 +25,7 @@ index 0a4b26c..2c34f72 100644
      def _updateLibGtags(self, root, dbpath):
          if not self._gtagslibpath:
 diff --git a/autoload/leaderf/python/leaderf/manager.py b/autoload/leaderf/python/leaderf/manager.py
-index 54b19e3..a2750ec 100644
+index 54b19e3..697e0d0 100644
 --- a/autoload/leaderf/python/leaderf/manager.py
 +++ b/autoload/leaderf/python/leaderf/manager.py
 @@ -136,6 +136,7 @@ class Manager(object):
@@ -54,23 +54,20 @@ index 54b19e3..a2750ec 100644
                      "maxwidth":        maxwidth,
                      "minwidth":        maxwidth,
                      "maxheight":       maxheight,
-@@ -1031,8 +1032,15 @@ class Manager(object):
+@@ -1031,8 +1032,12 @@ class Manager(object):
          """
          self._is_previewed = True
          line_num = int(line_num)
-+        if title:
-+            if isinstance(title, int):
-+                title = lfEval('bufname(%d)' % title)
-+            title = lfEval('fnamemodify("%s", ":~:.")' % title)
-+        else:
-+            title = 'Preview'
++        if isinstance(title, int):
++            title = lfEval('bufname(%d)' % title)
++        title = lfEval('fnamemodify("%s", ":~:.")' % (title or 'Preview'))
  
          if self.isPreviewWindowOpen():
 +            lfCmd("call popup_setoptions(%d, %s)" % (self._preview_winid, str({'title': f' {title} '})))
              self._useExistingWindow(title, source, line_num, jump_cmd)
              return False
  
-@@ -1131,6 +1139,8 @@ class Manager(object):
+@@ -1131,6 +1136,8 @@ class Manager(object):
                      "noautocmd": 1
                      }
  
@@ -79,7 +76,7 @@ index 54b19e3..a2750ec 100644
              self._updateOptions(preview_pos, show_borders, config)
              self._createPreviewWindow(config, source, line_num, jump_cmd)
          else:
-@@ -1198,7 +1208,7 @@ class Manager(object):
+@@ -1198,7 +1205,7 @@ class Manager(object):
                  col = self._getInstance().window.col + self._getInstance().window.width - maxwidth + 1
  
              options = {
@@ -88,7 +85,7 @@ index 54b19e3..a2750ec 100644
                      "maxwidth":        maxwidth,
                      "minwidth":        maxwidth,
                      "maxheight":       maxheight,
-@@ -1249,9 +1259,6 @@ class Manager(object):
+@@ -1249,9 +1256,6 @@ class Manager(object):
                  options["border"] = borderchars
                  options["height"] -= 2
                  options["width"] -= 2
@@ -98,7 +95,7 @@ index 54b19e3..a2750ec 100644
          else:
              if preview_pos.lower() == 'cursor':
                  options["maxwidth"] = self._getInstance().window.width
-@@ -2333,6 +2340,7 @@ class Manager(object):
+@@ -2333,6 +2337,7 @@ class Manager(object):
              self._clearHighlightsPos()
              self._help_length = 0
              self._show_help = False
@@ -106,7 +103,7 @@ index 54b19e3..a2750ec 100644
  
      @modifiableController
      def toggleHelp(self):
-@@ -2356,11 +2364,17 @@ class Manager(object):
+@@ -2356,11 +2361,17 @@ class Manager(object):
  
              if self._getExplorer().getStlCategory() != "Help":
                  if mode == '':
@@ -129,7 +126,7 @@ index 54b19e3..a2750ec 100644
  
              kwargs["mode"] = mode
              tabpage_count = len(vim.tabpages)
-@@ -2409,7 +2423,7 @@ class Manager(object):
+@@ -2409,7 +2420,7 @@ class Manager(object):
              files = []
              for i in sorted(self._selections.keys()):
                  files.append(self._getInstance().buffer[i-1])
@@ -138,7 +135,7 @@ index 54b19e3..a2750ec 100644
                  if self._getInstance().window.valid:
                      self._getInstance().cursorRow = self._getInstance().window.cursor[0]
                  self._getInstance().helpLength = self._help_length
-@@ -2448,7 +2462,7 @@ class Manager(object):
+@@ -2448,7 +2459,7 @@ class Manager(object):
              line_num = self._getInstance().window.cursor[0]
              need_exit = self._needExit(file, self._arguments)
              if need_exit:
