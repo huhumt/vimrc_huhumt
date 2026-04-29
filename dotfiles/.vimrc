@@ -318,7 +318,7 @@ function! StatusLineCustom(winid) abort
     if win_getid() == a:winid && l:nofile_idx == -1
         let l:mode = "%{%StatuslineCurMode()%}"
         let l:filename = "%{%StatuslineFilename(1, 0)%}"
-        if &columns > 100 && winwidth(0) == &columns
+        if &columns > 100 && (winwidth(0) + 50) > &columns
             let l:git_branch = "%{%StatuslineGitBranch()%}"
             let l:right = "%{%StatuslineRight(1)%}"
         else
@@ -517,7 +517,7 @@ endfunction
 function! LeaderfSearchMode(cur_mode, cur_word) abort
     let l:option = '--stayOpen --auto-preview rg'
     if a:cur_mode < 2 && len(a:cur_word) < 5
-        return ('Leaderf --regexMode ' .. l:option)
+        return ('Leaderf ' .. l:option .. ' -F -M=80 --live')
     else
         return ('Leaderf! ' .. l:option .. (a:cur_mode < 2 ? ' -w' : '')
                 \ .. ' -F -M=80 -e ' .. a:cur_word)
@@ -535,7 +535,6 @@ let g:Lf_PreviewPosition = 'right'
 let g:Lf_PreviewScrollStepSize = 5
 let g:Lf_Rg = 'rg --trim --sort=path --hidden --no-ignore --column
     \ --max-columns-preview' .. UserIgnorePattern("rg")
-let g:Lf_Ctags=""
 let g:Lf_MruEnable = 0
 let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
 let g:Lf_ShowDevIcons = 0
@@ -548,7 +547,6 @@ let g:Lf_GitCopyIcon = 'Y'
 let g:Lf_GitUntrackIcon = 'U'
 let g:Lf_GtagsSource = 2
 let g:Lf_GtagsStoreInProject = 1
-let g:Lf_GtagsStoreInRootMarker = 1
 let g:Lf_GtagsfilesCmd = {
         \ '.git': 'git ls-files --recurse-submodules',
         \ '.hg': 'hg files',
@@ -651,7 +649,9 @@ vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(
 " nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
 " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
 " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
-set tagfunc=CocTagFunc
+if exists('&tagfunc') && get(g:, 'did_coc_loaded', 0) > 0
+    set tagfunc=CocTagFunc
+endif
 
 nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
 inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
