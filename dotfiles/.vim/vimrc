@@ -374,327 +374,258 @@ set listchars=tab:\┆\ " do not remove end whitespace
 
 set tag=tags
 
-" Support Plug NerdTree
-" let NERDTreeIgnore=['\.vim$', '\~$', '\.pyc$', 'tags', '\.txt$', '\.out$']
-" let g:NERDTreeDirArrowExpandable = "▸"
-" let g:NERDTreeDirArrowCollapsible = "▾"
-" let g:NERDTreeQuitOnOpen = 1
-" map <Leader><Leader>n :NERDTreeTabsToggle<CR>
-" let g:nerdtree_tabs_open_on_console_startup = 1
-" let g:nerdtree_tabs_smart_startup_focus = 2
-let g:fern#disable_default_mappings = 1
-let g:fern#default_hidden = 1
-let g:fern#drawer_width = 40
-" let g:fern_auto_preview = 1
-map <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
-let g:fern#renderer#default#root_symbol = '~ '
-let g:fern#renderer#default#leading = '   '
-let g:fern#renderer#default#leaf_symbol = ' '
-let g:fern#renderer#default#collapsed_symbol = ' + '
-let g:fern#renderer#default#expanded_symbol = ' - '
-let g:fern#disable_drawer_hover_popup = 1
+if &loadplugins
+  " vim-fern and fern-preview options #######################################
+  let g:fern#disable_default_mappings = 1
+  let g:fern#default_hidden = 1
+  let g:fern#drawer_width = 40
+  " let g:fern_auto_preview = 1
+  let g:fern#renderer#default#root_symbol = '~ '
+  let g:fern#renderer#default#leading = '   '
+  let g:fern#renderer#default#leaf_symbol = ' '
+  let g:fern#renderer#default#collapsed_symbol = ' + '
+  let g:fern#renderer#default#expanded_symbol = ' - '
+  let g:fern#disable_drawer_hover_popup = 1
 
-" function! FernPreviewGetMargins() abort
-"     return g:fern#drawer_width
-" endfunction
+  " function! FernPreviewGetMargins() abort
+  "     return g:fern#drawer_width
+  " endfunction
 
-function! FernInit() abort
-  nnoremap <buffer><expr>
-        \ <Plug>(fern-my-open-expand-collapse)
-        \ fern#smart#leaf(
-        \   "\<Plug>(fern-action-preview:close) \| \<Plug>(fern-action-open:select)",
-        \   "\<Plug>(fern-action-expand)",
-        \   "\<Plug>(fern-action-collapse)",
-        \ )
-  nnoremap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
-  nnoremap <buffer> <nowait> < <Plug>(fern-action-collapse)
-  nnoremap <buffer> <nowait> > <Plug>(fern-action-open-or-expand)
-  nnoremap <buffer> p <Plug>(fern-action-preview:auto:toggle)
-  nnoremap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
-  nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
-  nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
-  " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
-endfunction
+  function! FernInit() abort
+    nnoremap <buffer><expr>
+          \ <Plug>(fern-my-open-expand-collapse)
+          \ fern#smart#leaf(
+          \   "\<Plug>(fern-action-preview:close) \| \<Plug>(fern-action-open:select)",
+          \   "\<Plug>(fern-action-expand)",
+          \   "\<Plug>(fern-action-collapse)",
+          \ )
+    nnoremap <buffer> <CR> <Plug>(fern-my-open-expand-collapse)
+    nnoremap <buffer> <nowait> < <Plug>(fern-action-collapse)
+    nnoremap <buffer> <nowait> > <Plug>(fern-action-open-or-expand)
+    nnoremap <buffer> p <Plug>(fern-action-preview:auto:toggle)
+    nnoremap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
+    nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
+    nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
+    " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
+  endfunction
+  nnoremap <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
 
-" Support NerdCommenter, powerful comment tool
-" Add spaces after comment delimiters by default
-"let g:NERDSpaceDelims = 1
-" Use compact syntax for prettified multi-line comments
-"let g:NERDCompactSexyComs = 1
-" Align line-wise comment delimiters flush left instead of following code indentation
-"let g:NERDDefaultAlign = 'left'
-" Set a language to use its alternate delimiters by default
-"let g:NERDAltDelims_java = 1
-" Add your own custom formats or override the defaults
-" let g:NERDCustomDelimiters = { 'h': { 'left': '/**','right': '**/' } }
-"let g:NERDCustomDelimiters = { 'cpp': { 'left': '/**','right': '**/' } }
-" Allow commenting and inverting empty lines (useful when commenting a region)
-"let g:NERDCommentEmptyLines = 1
-" Enable trimming of trailing whitespace when uncommenting
-"let g:NERDTrimTrailingWhitespace = 1
+  " vim-buftabline options ##################################################
+  let g:buftabline_numbers = 2
+  let g:buftabline_indicators = 1
+  let g:buftabline_separators = 1
 
-" Support airline plugin
-" let g:airline#extensions#tabline#enabled = 1
-" let g:airline#extensions#tabline#left_sep = ' '
-" let g:airline#extensions#tabline#left_alt_sep = '|'
-" let g:airline_theme='wombat'
-" let g:airline_section_c = '%-0.64{getcwd()}/%t'
-" let g:airline#extensions#ale#enabled = 1
+  " tagbar options ##########################################################
+  nnoremap <Leader>t :TagbarToggle<CR>
+  let g:tagbar_ctags_bin = 'ctags'
+  let g:tagbar_width = 35 " default is 40
+  let g:tagbar_iconchars = ['▸', '▾']
 
-" Support syntastic plugin
-" set statusline+=%#warningmsg#
-" set statusline+=%{SyntasticStatuslineFlag()}
-" set statusline+=%*
+  " Auto-Format options #####################################################
+  nnoremap <Leader>f :Autoformat<CR>
+  vnoremap <Leader>f :Autoformat<CR>
+  " let g:formatdef_my_custom_cs = '"clang-format -style=file"'
+  let g:formatdef_terraform_format = '"tofu fmt -"'
+  let g:formatdef_jsonnet_format = '"jsonnetfmt -"'
+  let g:formatters_jsonnet = ['jsonnet_format']
+  let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
+  let g:formatters_cs = ['my_custom_cs']
+  let g:formatdef_ruff_format = '"ruff --config line-length=80 format -
+              \ --no-cache --range " . a:firstline . ":" . a:lastline'
+  let g:formatdef_ruff_check = '"ruff check - --no-cache --silent --select I --fix"'
+  let g:formatters_python = ['ruff_check', 'ruff_format']
+  let g:run_all_formatters_python = 1
+  let g:autoformat_autoindent = 0
+  let g:autoformat_retab = 0
+  " let g:autoformat_remove_trailing_spaces = 0
+  " autocmd BufWrite *.rs :Autoformat
 
-" let g:syntastic_always_populate_loc_list = 1
-" let g:syntastic_auto_loc_list = 2
-" let g:syntastic_check_on_open = 1
-" let g:syntastic_check_on_wq = 0
+  " Leaderf options #########################################################
+  function! UserIgnorePattern(regex_cmd) abort
+      let l:ignore_arg = get({
+          \ 'ag': ' --ignore ',
+          \ 'rg': ' --glob !',
+          \ }, a:regex_cmd, "")
+      let l:ignore_patterns = [
+          \ ".git", ".svn", ".hg",
+          \ ".npm", "*.sw?", "~$*", "*.py[co]", "*.cache",
+          \ "*.o", "*.d", "*.su", "*.obj", "*.so", "*.dll", "*.a", "*.bin", "*.hex", "*.exe",
+          \ "*.tmp", "tags", "*.out*", "*.bak", "*.log", "GPATH", "GRTAGS", "GTAGS"
+          \ ]
+      return empty(l:ignore_arg) ? '' : l:ignore_arg .. join(l:ignore_patterns, l:ignore_arg)
+  endfunction
 
-" support minibufexpl plugin
-" let g:miniBufExplMapWindowNavVim = 1
-" let g:miniBufExplMapWindowNavArrows = 1
-" let g:miniBufExplMapCTabSwitchBufs = 1
-" let g:miniBufExplModSelTarget = 1
-" let g:miniBufExplMaxSize = 1
-" let g:miniBufExplBuffersNeeded = 1
-let g:buftabline_numbers = 2
-let g:buftabline_indicators = 1
-let g:buftabline_separators = 1
+  function! LeaderfSearchMode(cur_mode, cur_word) abort
+      let l:option = '--stayOpen --auto-preview rg'
+      if a:cur_mode < 2 && len(a:cur_word) < 5
+          return ('Leaderf ' .. l:option .. ' -F -M=80 --live')
+      else
+          return ('Leaderf! ' .. l:option .. (a:cur_mode < 2 ? ' -w' : '')
+                  \ .. ' -F -M=80 -e ' .. a:cur_word)
+      endif
+  endfunction
 
-" Support tagbar plugin
-nnoremap <Leader>t :TagbarToggle<CR>
-let g:tagbar_ctags_bin = 'ctags'
-let g:tagbar_width = 35 " default is 40
-let g:tagbar_iconchars = ['▸', '▾']
+  let g:Lf_HideHelp = 1
+  let g:Lf_RootMarkers = ['GTAGS', 'tags', 'cscope.out', '.git', '.svn', '.hg']
+  let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
+      \ --no-ignore --no-require-git --sort=path' .. UserIgnorePattern("rg")
+  let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
+  let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
+  " let g:Lf_PreviewInPopup = 0
+  let g:Lf_PreviewPosition = 'right'
+  let g:Lf_PreviewScrollStepSize = 5
+  let g:Lf_Rg = 'rg --trim --sort=path --hidden --no-ignore --column
+      \ --max-columns-preview' .. UserIgnorePattern("rg")
+  let g:Lf_MruEnable = 0
+  let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
+  let g:Lf_ShowDevIcons = 0
+  let g:Lf_GitFolderIcons = { 'open': '+', 'closed': '-' }
+  let g:Lf_GitAddIcon = 'A'
+  let g:Lf_GitDelIcon = 'D'
+  let g:Lf_GitModifyIcon = 'M'
+  let g:Lf_GitRenameIcon = 'R'
+  let g:Lf_GitCopyIcon = 'Y'
+  let g:Lf_GitUntrackIcon = 'U'
+  let g:Lf_GtagsSource = 2
+  let g:Lf_GtagsStoreInProject = 1
+  let g:Lf_GtagsfilesCmd = {
+          \ '.git': 'git ls-files --recurse-submodules',
+          \ '.hg': 'hg files',
+          \ 'default': 'rg --no-messages --hidden --no-ignore --files' .. UserIgnorePattern("rg")
+          \}
+  " adjust these two configuration accordingly based on your linux distribution
+  " find more information in `man gtags` or 'gtags.conf', here is for Debian
+  let g:Lf_Gtagsconf = '/etc/gtags/gtags.conf' " can be /usr/share/gtags/gtags.conf in Archlinux
+  let g:Lf_Gtagslabel = 'universal-ctags'
 
-" Support Auto-Format plugin
-nnoremap <Leader>f :Autoformat<CR>
-vnoremap <Leader>f :Autoformat<CR>
-" let g:formatdef_my_custom_cs = '"clang-format -style=file"'
-let g:formatdef_terraform_format = '"tofu fmt -"'
-let g:formatdef_jsonnet_format = '"jsonnetfmt -"'
-let g:formatters_jsonnet = ['jsonnet_format']
-let g:formatdef_my_custom_cs = '"astyle --options=~/.astylerc"'
-let g:formatters_cs = ['my_custom_cs']
-let g:formatdef_ruff_format = '"ruff --config line-length=80 format - --no-cache --range " . a:firstline . ":" . a:lastline'
-let g:formatdef_ruff_check = '"ruff check - --no-cache --silent --select I --fix"'
-let g:formatters_python = ['ruff_check', 'ruff_format']
-let g:run_all_formatters_python = 1
-let g:autoformat_autoindent = 0
-let g:autoformat_retab = 0
-" let g:autoformat_remove_trailing_spaces = 0
-" autocmd BufWrite *.rs :Autoformat
+  nnoremap <silent> <C-p> :<C-u>Leaderf --auto-preview file<CR>
+  nnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(0, leaderf#Rg#getPattern(0))<CR><CR>
+  vnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(2, leaderf#Rg#getPattern(2))<CR><CR>
 
-" Support Ctrl-P plugin
-" let g:ctrlp_map = '<c-p>'
-" let g:ctrlp_cmd = 'CtrlP'
+  " Vim-sneak options #######################################################
+  let g:sneak#label = 1
+  " let g:sneak#s_next = 1
+  let g:sneak#prompt = 'SneakMotion: '
+  " set searchlength to 99 is big enough to wait for Enter key pressing
+  nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<CR>
+  nnoremap <silent> S :<c-u>call sneak#wrap('', 99, 1, 2, 1)<CR>
 
-" let g:ctrlp_working_path_mode = 'ra'
-" let g:ctrlp_root_markers = ['pom.xml', '.p4ignore', 'README.md', 'tags', 'cscope.out']
-" let g:ctrlp_custom_ignore = {
-"   \ 'dir':  '\v[\/]\.(git|hg|svn)$',
-"   \ 'file': '\v\.(exe|so|dll|swp|tmp|out|log|bin|hex)$',
-"   \ 'link': 'some_bad_symbolic_links',
-"   \ }
-" let g:ctrlp_user_command = 'ag %s -l --nocolor --hidden -g ""'
-" let g:ctrlp_match_window = 'bottom,order:ttb,min:1,max:10,results:10'
+  " Vim-hexmode options #####################################################
+  let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
+  let g:hexmode_xxd_options = '-g 1'
 
-function! UserIgnorePattern(regex_cmd) abort
-    let l:ignore_arg = get({
-        \ 'ag': ' --ignore ',
-        \ 'rg': ' --glob !',
-        \ }, a:regex_cmd, "")
-    let l:ignore_patterns = [
-        \ ".git", ".svn", ".hg",
-        \ ".npm", "*.sw?", "~$*", "*.py[co]", "*.cache",
-        \ "*.o", "*.d", "*.su", "*.obj", "*.so", "*.dll", "*.a", "*.bin", "*.hex", "*.exe",
-        \ "*.tmp", "tags", "*.out*", "*.bak", "*.log", "GPATH", "GRTAGS", "GTAGS"
-        \ ]
-    return empty(l:ignore_arg) ? '' : l:ignore_arg .. join(l:ignore_patterns, l:ignore_arg)
-endfunction
+  " Vim-Trans options #######################################################
+  nnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
+  vnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
 
-function! LeaderfSearchMode(cur_mode, cur_word) abort
-    let l:option = '--stayOpen --auto-preview rg'
-    if a:cur_mode < 2 && len(a:cur_word) < 5
-        return ('Leaderf ' .. l:option .. ' -F -M=80 --live')
-    else
-        return ('Leaderf! ' .. l:option .. (a:cur_mode < 2 ? ' -w' : '')
-                \ .. ' -F -M=80 -e ' .. a:cur_word)
-    endif
-endfunction
+  " Vim-Dirdiff options #####################################################
+  let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
+  let g:DirDiffIgnore = "Id:,Revision:,Date:"
+  let g:DirDiffWindowSize = 5
+  nnoremap <Leader><Leader>g :diffget<CR>
+  nnoremap <Leader><Leader>p :diffput<CR>
 
-let g:Lf_HideHelp = 1
-let g:Lf_RootMarkers = ['GTAGS', 'tags', 'cscope.out', '.git', '.svn', '.hg']
-let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
-    \ --no-ignore --no-require-git --sort=path' .. UserIgnorePattern("rg")
-let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
-let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
-" let g:Lf_PreviewInPopup = 0
-let g:Lf_PreviewPosition = 'right'
-let g:Lf_PreviewScrollStepSize = 5
-let g:Lf_Rg = 'rg --trim --sort=path --hidden --no-ignore --column
-    \ --max-columns-preview' .. UserIgnorePattern("rg")
-let g:Lf_MruEnable = 0
-let g:Lf_PopupPalette = {'dark': {'Lf_hl_popupBorder': {'ctermfg': 'NONE'}}}
-let g:Lf_ShowDevIcons = 0
-let g:Lf_GitFolderIcons = { 'open': '+', 'closed': '-' }
-let g:Lf_GitAddIcon = 'A'
-let g:Lf_GitDelIcon = 'D'
-let g:Lf_GitModifyIcon = 'M'
-let g:Lf_GitRenameIcon = 'R'
-let g:Lf_GitCopyIcon = 'Y'
-let g:Lf_GitUntrackIcon = 'U'
-let g:Lf_GtagsSource = 2
-let g:Lf_GtagsStoreInProject = 1
-let g:Lf_GtagsfilesCmd = {
-        \ '.git': 'git ls-files --recurse-submodules',
-        \ '.hg': 'hg files',
-        \ 'default': 'rg --no-messages --hidden --no-ignore --files' .. UserIgnorePattern("rg")
-        \}
-" adjust these two configuration accordingly based on your linux distribution
-" find more information in `man gtags` or 'gtags.conf', here is for Debian
-let g:Lf_Gtagsconf = '/etc/gtags/gtags.conf' " can be /usr/share/gtags/gtags.conf in Archlinux
-let g:Lf_Gtagslabel = 'universal-ctags'
+  " Vim-lion options ########################################################
+  let g:lion_squeeze_spaces = 1
 
-nnoremap <silent> <C-p> :<C-u>Leaderf --auto-preview file<CR>
-nnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(0, leaderf#Rg#getPattern(0))<CR><CR>
-vnoremap <silent> <Leader><Leader>e :<C-u><C-r>=LeaderfSearchMode(2, leaderf#Rg#getPattern(2))<CR><CR>
+  " Vim-polyglot options ####################################################
+  let g:polyglot_disabled = ['markdown']
+  " bug fix for code color plugin
+  " let c_no_curly_error = 1
+  " Enable highlighting of C++11 attributes
+  let g:cpp_attributes_highlight = 1
+  " Highlight struct/class member variables (affects both C and C++ files)
+  let g:cpp_member_highlight = 1
+  " Put all standard C and C++ keywords under Vim's highlight group 'Statement', (affects both C and C++ files)
+  let g:cpp_simple_highlight = 1
 
-" Support for easy motion
-" let g:EasyMotion_do_mapping = 0 " Disable default mappings
-" let g:EasyMotion_smartcase = 1 " Turn on case insensitive feature
-" nnoremap s <Plug>(easymotion-sn)
-let g:sneak#label = 1
-" let g:sneak#s_next = 1
-let g:sneak#prompt = 'SneakMotion: '
-" set searchlength to 99 is big enough to wait for Enter key pressing
-nnoremap <silent> s :<c-u>call sneak#wrap('', 99, 0, 2, 1)<CR>
-nnoremap <silent> S :<c-u>call sneak#wrap('', 99, 1, 2, 1)<CR>
+  " Vim-indentline options ##################################################
+  let g:vim_json_conceal = 0
+  let g:markdown_syntax_conceal = 0
+  let g:indentLine_color_term = 239
+  let g:indentLine_char_list = ['|', '¦', '┆', '┊']
 
-" Support Hexmode plugin
-let g:hexmode_patterns = '*.bin,*.exe,*.dat,*.o'
-let g:hexmode_xxd_options = '-g 1'
+  " Vim-rainbow optoins #####################################################
+  let g:rainbow_active = 1
 
-" Support for Vim-Dict plugin
-" let g:trans_bin = "/usr/bin"
-nnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
-vnoremap <silent> <Leader><Leader>t :Trans --from-vim<CR>
+  " Vim-matchup optoins #####################################################
+  " let g:matchup_matchparen_enabled = 0
+  let g:matchup_matchparen_offscreen = {'method': 'popup', 'highlight': 'User1'}
 
-" exclude some filetype when do diff
-let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
-let g:DirDiffIgnore = "Id:,Revision:,Date:"
-let g:DirDiffWindowSize = 5
-nnoremap <Leader><Leader>g :diffget<CR>
-nnoremap <Leader><Leader>p :diffput<CR>
+  " Vim-table-mode options ##################################################
+  " autocmd BufEnter *.md let g:table_mode_corner='|'
+  let g:table_mode_corner='|'
+  function! UserInsertTable(...) abort
+      let l:args = filter(copy(a:000), 'v:val =~ ''\d\+''')
+      let l:table_line = max([3, str2nr(get(l:args, 0))])
+      let l:table_col  = max([3, str2nr(get(l:args, 1))])
+      let l:out_string_list = repeat(
+          \ [repeat(g:table_mode_corner .. "   ", l:table_col) .. g:table_mode_corner],
+          \ l:table_line)
+      silent! call insert(
+          \ l:out_string_list,
+          \ repeat(g:table_mode_corner .. "---", l:table_col) .. g:table_mode_corner,
+          \ 1)
+      silent! call appendbufline(bufnr(), line("."), l:out_string_list)
+      silent! execute "TableModeEnable"
+  endfunction
+  command! -nargs=* TableAddNew call UserInsertTable(<f-args>)
 
-" vim-lion squeeze extra whitespace
-let g:lion_squeeze_spaces = 1
+  " coc.nvim options ########################################################
+  nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+  nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+  inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(1)\<CR>" : "\<Right>"
+  inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
+  vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+  vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+  " nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
+  " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
+  " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
+  set tagfunc=CocTagFunc
 
-" disable markdown on polyglot
-let g:polyglot_disabled = ['markdown']
+  nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
+  inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
+              \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)"<CR>'
+              \ : pumvisible() ? "\<C-n>" : len(pum_getpos()) ? "\<C-n>" : "\<C-x><C-k>"
+  function! CocJumpErrorOrHover() abort
+      if get(b:, 'table_mode_active', 0) > 0
+          execute "normal \<Plug>(table-mode-motion-right)"
+      elseif get(g:, 'did_coc_loaded', 0) > 0
+          if !(CocAction('hasProvider', 'hover') && call("CocAction", ['definitionHover', ['float']]))
+              execute "normal \<Plug>(coc-codeaction-cursor)"
+          endif
+      endif
+  endfunction
+  nnoremap <silent> <Tab> :call CocJumpErrorOrHover()<CR>
 
-" change indent display color
-let g:vim_json_conceal = 0
-let g:markdown_syntax_conceal = 0
-let g:indentLine_color_term = 239
-let g:indentLine_char_list = ['|', '¦', '┆', '┊']
+  " vnoremap <leader>a <Plug>(coc-codeaction-selected)
+  " nnoremap <leader>a <Plug>(coc-codeaction-selected)
+  let g:coc_global_extensions = [
+          \ "coc-biome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
+          \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
+          \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go",
+          \ "coc-vimlsp"
+          \]
+  " Remove plugins not explicitly defined in g:coc_global_extensions
+  " Ignore special case: friendly-snippets, coc-vim-source-requirements
+  function! CocClean() abort
+      if get(g:, 'did_coc_loaded', 0) == 0
+          return
+      endif
 
-" enable rainbow plugin default
-let g:rainbow_active = 1
+      let g:extensions_to_clean = CocAction("loadedExtensions")
+          \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
+          \ ->filter({idx, extension -> extension !~ 'coc-vim-source-requirements'})
+          \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
+      if len(g:extensions_to_clean)
+          exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
+      endif
+  endfunction
+  command! -nargs=0 CocClean :call CocClean()
 
-" bug fix for code color plugin
-" let c_no_curly_error = 1
-" Enable highlighting of C++11 attributes
-let g:cpp_attributes_highlight = 1
-" Highlight struct/class member variables (affects both C and C++ files)
-let g:cpp_member_highlight = 1
-" Put all standard C and C++ keywords under Vim's highlight group 'Statement', (affects both C and C++ files)
-let g:cpp_simple_highlight = 1
-
-" vim-matchup corrupts with statusline
-" let g:matchup_matchparen_enabled = 0
-let g:matchup_matchparen_offscreen = {'method': 'popup', 'highlight': 'User1'}
-
-" configuration for vim-table-mode
-" autocmd BufEnter *.md let g:table_mode_corner='|'
-let g:table_mode_corner='|'
-function! UserInsertTable(...) abort
-    let l:args = filter(copy(a:000), 'v:val =~ ''\d\+''')
-    let l:table_line = max([3, str2nr(get(l:args, 0))])
-    let l:table_col  = max([3, str2nr(get(l:args, 1))])
-    let l:out_string_list = repeat(
-        \ [repeat(g:table_mode_corner .. "   ", l:table_col) .. g:table_mode_corner],
-        \ l:table_line)
-    silent! call insert(
-        \ l:out_string_list,
-        \ repeat(g:table_mode_corner .. "---", l:table_col) .. g:table_mode_corner,
-        \ 1)
-    silent! call appendbufline(bufnr(), line("."), l:out_string_list)
-    silent! execute "TableModeEnable"
-endfunction
-command! -nargs=* TableAddNew call UserInsertTable(<f-args>)
-
-" configuration for rust.vim
-" let g:rustfmt_autosave = 1
-
-" configuration for coc.nvim
-" let g:lsp_cxx_hl_use_text_props = 1
-nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
-inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(1)\<CR>" : "\<Right>"
-inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
-vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
-" nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
-" nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
-" nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
-if exists('&tagfunc') && get(g:, 'did_coc_loaded', 0) > 0
-    set tagfunc=CocTagFunc
+  " vim asyncrun options ####################################################
+  let g:asyncrun_open = 8
 endif
-
-nnoremap <Leader><Leader>k :CocCommand document.toggleInlayHint<CR>
-inoremap <silent><expr> <Tab> get(b:, 'table_mode_active', 0) > 0 ?
-            \ '<C-O>:execute "normal \<Plug>(table-mode-motion-right)"<CR>'
-            \ : pumvisible() ? "\<C-n>" : len(pum_getpos()) ? "\<C-n>" : "\<C-x><C-k>"
-function! CocJumpErrorOrHover() abort
-    if get(b:, 'table_mode_active', 0) > 0
-        execute "normal \<Plug>(table-mode-motion-right)"
-    elseif get(g:, 'did_coc_loaded', 0) > 0
-        if !(CocAction('hasProvider', 'hover') && call("CocAction", ['definitionHover', ['float']]))
-            execute "normal \<Plug>(coc-codeaction-cursor)"
-        endif
-    endif
-endfunction
-nnoremap <silent> <Tab> :call CocJumpErrorOrHover()<CR>
-
-" vnoremap <leader>a <Plug>(coc-codeaction-selected)
-" nnoremap <leader>a <Plug>(coc-codeaction-selected)
-let g:coc_global_extensions = [
-        \ "coc-biome", "coc-markdownlint", "coc-rust-analyzer", "coc-xml",
-        \ "coc-yaml", "coc-sh", "coc-spell-checker", "coc-highlight",
-        \ "coc-pyright", "coc-clangd", "coc-pairs", "coc-json", "coc-go",
-        \ "coc-vimlsp"
-        \]
-" Remove plugins not explicitly defined in g:coc_global_extensions
-" Ignore special case: friendly-snippets, coc-vim-source-requirements
-function! CocClean() abort
-    if get(g:, 'did_coc_loaded', 0) == 0
-        return
-    endif
-
-    let g:extensions_to_clean = CocAction("loadedExtensions")
-        \ ->filter({idx, extension -> extension !~ 'friendly-snippets'})
-        \ ->filter({idx, extension -> extension !~ 'coc-vim-source-requirements'})
-        \ ->filter({idx, extension -> index(g:coc_global_extensions, extension) == -1})
-    if len(g:extensions_to_clean)
-        exe 'CocUninstall' join(map(g:extensions_to_clean, {_, line -> split(line)[0]}))
-    endif
-endfunction
-command! -nargs=0 CocClean :call CocClean()
-
-" display 8 lines in prefix window to display command output
-let g:asyncrun_open = 8
 
 
 

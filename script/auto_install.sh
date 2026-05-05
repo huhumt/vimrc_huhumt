@@ -25,7 +25,7 @@ config_vim() {
         https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
     # use self-configuration for vim
-    curl -fLo "$home_directory/.vimrc" "$raw_repo_url/dotfiles/.vimrc"
+    curl -fLo "$home_directory/.vim/vimrc" "$raw_repo_url/dotfiles/.vim/vimrc"
 
     # configuration for vim-coc
     curl -fLo "$home_directory/.vim/coc-settings.json" \
