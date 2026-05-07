@@ -1,7 +1,7 @@
 #!/bin/bash
 
 check_dependencies() {
-    local deps_app_list=(vim curl git ag ctags cscope astyle python3)
+    local deps_app_list=(vim curl git rg ctags astyle python3)
     for deps_app in "${deps_app_list[@]}"
     do
         if ! type -p "$deps_app" > /dev/null
