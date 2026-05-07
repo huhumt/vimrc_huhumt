@@ -522,8 +522,6 @@ if &loadplugins
   let g:DirDiffExcludes = "CVS,*.class,*.exe,*.bin,*.hex,.*,.*.swp,*.o,tags,*.log,*.out,*.git,*.svn"
   let g:DirDiffIgnore = "Id:,Revision:,Date:"
   let g:DirDiffWindowSize = 5
-  nnoremap <Leader><Leader>g :diffget<CR>
-  nnoremap <Leader><Leader>p :diffput<CR>
 
   " Vim-lion options ########################################################
   let g:lion_squeeze_spaces = 1
