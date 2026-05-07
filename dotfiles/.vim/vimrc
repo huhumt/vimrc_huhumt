@@ -405,7 +405,7 @@ if &loadplugins
     nnoremap <buffer> p <Plug>(fern-action-preview:auto:toggle)
     nnoremap <buffer> q <Plug>(fern-action-preview:auto:disable) \| <Plug>(fern-action-preview:close)
     nnoremap <buffer> <C-f> <Plug>(fern-action-preview:scroll:down:half)
-    nnoremap <buffer> <C-d> <Plug>(fern-action-preview:scroll:up:half)
+    nnoremap <buffer> <C-b> <Plug>(fern-action-preview:scroll:up:half)
     " let g:fern_preview_window_calculator.left = function('FernPreviewGetMargins')
   endfunction
   nnoremap <Leader><Leader>n :Fern . -drawer -toggle -reveal=%<CR>
@@ -469,8 +469,8 @@ if &loadplugins
   let g:Lf_RootMarkers = ['GTAGS', 'tags', 'cscope.out', '.git', '.svn', '.hg']
   let g:Lf_ExternalCommand = 'rg %s --files-with-matches --hidden --no-messages
       \ --no-ignore --no-require-git --sort=path' .. UserIgnorePattern("rg")
-  let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-d>']}
-  let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-d>"}}
+  let g:Lf_CommandMap = {'<C-Down>': ['<C-f>'], '<C-Up>': ['<C-b>']}
+  let g:Lf_NormalCommandMap = {"*": {"<C-Down>": "<C-f>", "<C-Up>":   "<C-b>"}}
   " let g:Lf_PreviewInPopup = 0
   let g:Lf_PreviewPosition = 'right'
   let g:Lf_PreviewScrollStepSize = 5
@@ -570,12 +570,13 @@ if &loadplugins
   command! -nargs=* TableAddNew call UserInsertTable(<f-args>)
 
   " coc.nvim options ########################################################
+  " normal map: <C-f> down page, <C-d> down half-page, <C-b> up page, <C-u> up half-page
   nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-  nnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+  nnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
   inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(1)\<CR>" : "\<Right>"
-  inoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
+  inoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? "\<C-R>=coc#float#scroll(0)\<CR>" : "\<Left>"
   vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
-  vnoremap <silent><nowait><expr> <C-d> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-d>"
+  vnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
   " nnoremap <silent><nowait><expr> <C-]> cscope_connection() ? "\<C-]>" : "\<Plug>(coc-definition)"
   " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<Plug>(coc-references)"
   " nnoremap <silent><nowait><expr> <C-t> cscope_connection() ? "\<C-t>" : "\<C-o>"
