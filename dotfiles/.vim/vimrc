@@ -458,7 +458,7 @@ if &loadplugins
   function! LeaderfSearchMode(cur_mode, cur_word) abort
       let l:option = '--stayOpen --auto-preview rg'
       if a:cur_mode < 2 && len(a:cur_word) < 5
-          return ('Leaderf ' .. l:option .. ' -F -M=80 --live')
+          return ('Leaderf ' .. l:option .. ' -M=80 --no-fixed-strings --live')
       else
           return ('Leaderf! ' .. l:option .. (a:cur_mode < 2 ? ' -w' : '')
                   \ .. ' -F -M=80 -e ' .. a:cur_word)
