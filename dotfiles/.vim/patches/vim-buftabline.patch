@@ -1,5 +1,5 @@
 diff --git a/plugin/buftabline.vim b/plugin/buftabline.vim
-index 81ef326..0c989e5 100644
+index 81ef326..2ac7f02 100644
 --- a/plugin/buftabline.vim
 +++ b/plugin/buftabline.vim
 @@ -2,17 +2,17 @@
@@ -51,25 +51,27 @@ index 81ef326..0c989e5 100644
  endfunction
  
  function! s:switch_buffer(bufnum, clicks, button, mod)
-@@ -55,48 +59,71 @@ function s:SID()
+@@ -55,48 +59,73 @@ function s:SID()
  	return matchstr(expand('<sfile>'), '<SNR>\d\+_')
  endfunction
  
 +let s:mru_list = []
-+function! buftabline#updatebuf()
++function! buftabline#updatebuf(update_mru_list)
 +	let l:bufnums = buftabline#user_buffers()
-+	let l:cur_buf = bufnr('%')
-+	if len(l:bufnums) > 0 && index(l:bufnums, l:cur_buf) != -1
-+		if len(s:mru_list) == 0
++
++	if a:update_mru_list
++		if len(l:bufnums) > 0 && len(s:mru_list) == 0
 +			let s:mru_list = l:bufnums
 +		endif
 +
-+		let s:mru_list = add(filter(s:mru_list, 'v:val != l:cur_buf'), l:cur_buf)
++		let l:cur_buf = bufnr('%')
++		let s:mru_list = insert(filter(s:mru_list, 'v:val != l:cur_buf'), l:cur_buf, 0)
 +		if len(s:mru_list) > g:buftabline_plug_max
-+			let s:mru_list = s:mru_list[-g:buftabline_plug_max:]
++			let s:mru_list = s:mru_list[:g:buftabline_plug_max]
 +		endif
 +	endif
-+	return filter(l:bufnums, 'index(s:mru_list, v:val) != -1')
++
++	return filter(s:mru_list, 'index(l:bufnums, v:val) >= 0')
 +endfunction
 +
  let s:dirsep = fnamemodify(getcwd(),':p')[-1:]
@@ -84,7 +86,7 @@ index 81ef326..0c989e5 100644
 +	" let lpad     = g:buftabline_separators ? nr2char(0x23B8) : ' '
 +	" https://en.wikibooks.org/wiki/Unicode/List_of_useful_symbols
 +	let lpad     = g:buftabline_separators ? ' ' . nr2char(0x00A7) : ' '
-+	let bufnums  = buftabline#updatebuf()
++	let bufnums  = buftabline#updatebuf(1)
  
 -	let bufnums = buftabline#user_buffers()
 -	let centerbuf = s:centerbuf " prevent tabline jumping around when non-user buffer current (e.g. help)
@@ -98,8 +100,8 @@ index 81ef326..0c989e5 100644
  	let path_tabs = []
  	let tabs_per_tail = {}
 -	let currentbuf = winbufnr(0)
-+	let currentbuf = len(s:mru_list) > 0 ? s:mru_list[-1] : winbufnr(0)
-+	let lastbuf = len(s:mru_list) > 1 ? s:mru_list[-2] : -1
++	let currentbuf = len(s:mru_list) > 0 ? s:mru_list[0] : winbufnr(0)
++	let lastbuf = len(s:mru_list) > 1 ? s:mru_list[1] : -1
  	let screen_num = 0
  	for bufnum in bufnums
 -		let screen_num = show_num ? bufnum : show_ord ? screen_num + 1 : ''
@@ -136,7 +138,7 @@ index 81ef326..0c989e5 100644
  		endif
  		let tabs += [tab]
  	endfor
-@@ -113,59 +140,33 @@ function! buftabline#render()
+@@ -113,59 +142,33 @@ function! buftabline#render()
  		endfor
  	endwhile
  
@@ -172,7 +174,7 @@ index 81ef326..0c989e5 100644
 -		" then blame any overflow on the right side, to protect the left
 -		let [lft.width, rgt.width] = [0, lft.width]
 -	endif
--
+ 
 -	" 3. toss away tabs and pieces until all fits:
 -	if ( lft.width + rgt.width ) > &columns
 -		let oversized
@@ -193,16 +195,16 @@ index 81ef326..0c989e5 100644
 -			let endtab.label = substitute(endtab.label, side.cut, side.indicator, '')
 -		endfor
 -	endif
- 
+-
 -	if len(tabs) | let tabs[0].label = substitute(tabs[0].label, lpad, ' ', '') | endif
-+	let remove_idx = 0
++	let remove_idx = len(s:mru_list) - 1
 +	let delta = total_width - &columns
-+	while (delta > 0 && remove_idx < len(s:mru_list))
++	while (delta > 0 && remove_idx > 0)
 +		let remove_tab = filter(copy(tabs), 'v:val.num == s:mru_list[remove_idx]')
 +		if len(remove_tab) == 1
 +			let delta -= remove(tabs, index(tabs, remove_tab[0])).width
 +		endif
-+		let remove_idx += 1
++		let remove_idx -= 1
 +	endwhile
  
  	let swallowclicks = '%'.(1 + tabpagenr('$')).'X'
@@ -216,7 +218,7 @@ index 81ef326..0c989e5 100644
  endfunction
  
  function! buftabline#update(zombie)
-@@ -197,11 +198,31 @@ autocmd FileType qf call buftabline#update(0)
+@@ -197,11 +200,31 @@ autocmd FileType qf call buftabline#update(0)
  autocmd BufDelete * call buftabline#update(str2nr(expand('<abuf>')))
  augroup END
  
@@ -231,7 +233,7 @@ index 81ef326..0c989e5 100644
 +command! -bang -nargs=* BufTablineVSplit call buftabline#action(3, '<bang>'=='!', <f-args>)
 +" action: 0 jump, >0 bd delete buffer
 +function! buftabline#action(action, bang, ...)
-+	let l:valid_bufnums = filter(buftabline#user_buffers(), 'index(s:mru_list, v:val) != -1')
++	let l:valid_bufnums = buftabline#updatebuf(0)
 +	if a:0 == 0
 +		if len(l:valid_bufnums) > 1 && a:action == 0
 +			exec 'silent! bd' . (a:bang ? '! ' : '')
