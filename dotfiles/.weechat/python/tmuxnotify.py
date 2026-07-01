@@ -59,7 +59,7 @@ class WeechatLogData:
     # process mode
     mode: int = MODE_DELETE_SHORT_MSG
     # (HH:MM, event) for gcalcli, (name, msg) for irc and gitlab
-    log: Optional[str] = None
+    log: Optional[dict] = None
     # short message header template, for example: <IRC: (msg)>, [Git: <msg>]
     short_header_template: Optional[str] = None
     # enable report duplicated event
@@ -83,25 +83,24 @@ def notify_cmd_hyperlink(message):
 
 
 def notify_event(msg_from, new_msg):
-    notify_cmd_list = [
-        ("tmux display-popup -E -B -xC -yS -w 30% -h 20% "
-         "-s fg=colour220,bg=colour243 "
-         f"""'echo "{msg_from}\n  {new_msg}";
-         stty -echo;sleep 3;stty echo'"""),
+    if msg_from and new_msg:
+        for cmd in [
+            ("tmux display-popup -E -B -xC -yS -w 30% -h 20% "
+             "-s fg=colour220,bg=colour243 "
+             f"""'echo "{msg_from}\n  {new_msg}";
+             stty -echo;sleep 3;stty echo'"""),
 
-        (f"notify-send -t 10000 -i 'user-idle' "
-         f"'{msg_from}' '{notify_cmd_hyperlink(new_msg)}'"),
+            (f"notify-send -t 10000 -i 'user-idle' "
+             f"'{msg_from}' '{notify_cmd_hyperlink(new_msg)}'"),
 
-        f"""tmux display-message -d 5000 '{re.sub(" +", " ", new_msg)}' &""",
-    ]
-
-    for cmd in notify_cmd_list:
-        os.popen(cmd)
+            f"""tmux display-message -d 5000 '{re.sub(" +", " ", new_msg)}' &""",
+        ]:
+            os.popen(cmd)
 
 
 def remove_colour(input_str):
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return ansi_escape.sub("", input_str).strip()
+    return ansi_escape.sub("", input_str.replace('`', '')).strip()
 
 
 def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
@@ -112,33 +111,46 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
         file_log_dict = OrderedDict()
 
     short_msg_key = "short_msg"
+    full_msg_key = "messages"
+
     log_dict = file_log_dict.get(log.source) or {}
-    # if not in delete mode but log.log is invalid, switch to delete mode
-    if log.mode >= MODE_DELETE or (not log.log):
-        if log.mode == MODE_DELETE_SHORT_MSG:
-            log_dict.pop(short_msg_key, None)  # delete short msg only
+    full_msg = log_dict.get(full_msg_key) or {}
+
+    if log.mode == MODE_DELETE_SHORT_MSG:
+        if short_msg_key in log_dict:
+            log_dict.pop(short_msg_key)  # delete short msg only
         else:
-            file_log_dict.update({log.source: {}})  # delete all
-    else:
-        full_msg_key = "messages"
-        full_msg = log_dict.get(full_msg_key) or {}
-
-        new_msg = log.log.replace('`', '').strip()
-        out_msg = remove_colour(new_msg)
-
-        # ignore duplicated message if not in delete mode
-        if (out_msg in full_msg.values()) and (not log.enable_duplicated_event):
             return None
-
-        if log.log.startswith("weather: "):
-            file_log_dict.update({log.source: {
-                "weather": log.log.split(":")[-1],
-            }})
+    # if not in delete mode but log.log is invalid, switch to delete mode
+    elif log.mode == MODE_DELETE or (not log.log):
+        file_log_dict.update({log.source: {}})  # delete all
+    else:
+        new_msg_set = set()
+        if "weather" in log.log:
+            pre_all_event = list(log_dict.get("all_event", {}).keys())
+            cur_all_event = list(log.log.get("all_event", {}).keys())
+            if pre_all_event:
+                for k, v in log_dict.get("all_event", {}).items():
+                    if v > 0:
+                        new_msg_set.add(remove_colour(k))
+                        v -= 1
+                for new_event in set(cur_all_event).difference(pre_all_event):
+                    new_msg_set.add(remove_colour(new_event))
+                    log.log["all_event"].update({new_event: 20})
+            file_log_dict.update({log.source: log.log})
         else:
-            notify_event(log.source, new_msg)
-            short_msg = (log.short_header_template or "").format(out_msg[:32])
+            for k, v in log.log.items():
+                out_msg = remove_colour(f"{v}: {k}")
+
+                # ignore duplicated message if not in delete mode
+                if (out_msg not in full_msg.values()) or log.enable_duplicated_event:
+                    new_msg_set.add(out_msg)
+
+        notify_event(log.source, "\n".join(new_msg_set))
+        for new_msg in new_msg_set:
+            short_msg = (log.short_header_template or "").format(new_msg[:32])
             new_msg_dict = {
-                datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): out_msg
+                datetime.now().strftime("%Y%m%dT%H%M%S%fZ"): new_msg
             }
 
             if log.mode == MODE_REPLACE or (not log_dict):
@@ -170,7 +182,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
 def parse_today_event():
     today_date = datetime.today()
     re_event = r"(?P<hour>[^:\r\n]+):(?P<minute>\d{2})?[: ]+(?P<event>.+)"
-    weather = None
+    event_dict = {"weather": None, "all_event": {}}
 
     today_event = subprocess.run([
         "python",
@@ -181,22 +193,28 @@ def parse_today_event():
     ], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
 
     for cur_hour, cur_minute, cur_event in re.findall(re_event, today_event):
+        cur_hour = cur_hour.strip()
+        cur_minute = cur_minute.strip()
+        cur_event = cur_event.strip()
+
         if all([cur_hour, cur_minute, cur_event]):
+            cur_event_dict = {f"{cur_hour}:{cur_minute} {cur_event}": 0}
+            event_dict["all_event"].update(cur_event_dict)
             e_t = today_date.replace(
                 hour=int(cur_hour), minute=int(cur_minute))
             r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
             r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
             if today_date > r_s and today_date < r_e:
-                return f"{cur_hour}:{cur_minute} {cur_event.strip()}"
+                return cur_event_dict
         else:  # all day event
-            if "weather" == f"{cur_hour.strip()}{cur_minute.strip()}".lower():
+            if f"{cur_hour}{cur_minute}".lower() == "weather":
                 weather_list = cur_event.split()
-                weather = f"weather: {weather_list[0]}  {weather_list[-1]}"
-    return weather  # if no event, return weather
+                event_dict["weather"] = f"{weather_list[0]}  {weather_list[-1]}"
+    return event_dict if event_dict.get("weather") else None
 
 
 def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
-    minutes_ago = datetime.today() - timedelta(minutes=WEECHAT_CRON_INTERVAL*5)
+    minutes_ago = datetime.today() - timedelta(minutes=WEECHAT_CRON_INTERVAL*20)
     re_comment = (
         r"Date: (?P<date>.+ \d+:\d+)[\s\S]+?"
         r"\r?\n(?P<name>.+)commented[^:]*:(?P<comment>[\s\S]+?)--"
@@ -204,22 +222,21 @@ def gitlab_comment_from_email(email_dir=".config/neomutt/mails"):
     email_list = [
         m for m in Path.home().joinpath(email_dir).rglob("[a-z0-9A-Z]*") if m.is_file()
     ]
-    comment_list = list()
+    comment_dict = {}
     for email in email_list:
         with open(email, "r", encoding="utf-8", errors="ignore") as f:
             for date, name, comment in re.findall(re_comment, f.read()):
                 if datetime.strptime(date, "%a, %d %b %Y %H:%M") > minutes_ago:
                     comment = re.sub(r"(=\r?\n)", "", comment.strip())
-                    comment_list += [f"{name.strip()} {comment.splitlines()[0]}"]
-    return comment_list
+                    comment_dict.update({comment.splitlines()[0]: name.strip()})
+    return comment_dict
 
 
 def cron_timer_cb(data, remaining_calls):
     update_weechat_log(WeechatLogData(
         FROM_GCALCLI, MODE_REPLACE, parse_today_event(), "<{}>", True))
-    for gitlab_comment in gitlab_comment_from_email():
-        update_weechat_log(WeechatLogData(
-            FROM_GITLAB, MODE_APPEND, gitlab_comment, "[Gitlab: {}]", False))
+    update_weechat_log(WeechatLogData(
+        FROM_GITLAB, MODE_APPEND, gitlab_comment_from_email(), "[Gitlab: {}]", False))
     return weechat.WEECHAT_RC_OK
 
 
@@ -240,7 +257,7 @@ def notify_show(data, signal, message):
             return weechat.WEECHAT_RC_OK
 
         update_weechat_log(WeechatLogData(
-            FROM_IRC, MODE_APPEND, f"{name}: {msg}", "[IRC: {}]", True))
+            FROM_IRC, MODE_APPEND, {msg: name}, "[IRC: {}]", True))
     elif (weechat.config_get_plugin('dele_msg_file') == "on"
             and signal == "input_text_changed"):
         update_weechat_log(WeechatLogData(FROM_IRC, MODE_DELETE_SHORT_MSG))

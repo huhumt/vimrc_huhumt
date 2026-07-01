@@ -48,7 +48,7 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
 
     for k, v in filter_sort_event(event_dict):
         event_time = v.get("time")
-        event_name = k[:64]
+        event_name = (v.get("tag", "") + k)[:32] + v.get("attr", "")
 
         if event_time == ALL_DAY_HOLIDAY_KEY:
             out_list[1].append(
@@ -63,29 +63,19 @@ def to_colour(day: str, header: str, event_dict: dict, colour_en: bool) -> str:
                 )
             )
         else:
-            event = f"{event_time}  {event_name}"
-            if "cancelled" in v:
-                out_list[3].append(
-                    ALL_DAY_COLOUR.format(
-                        colour=COLOUR_LIGHT_GRAY + STRIKETHROUGH,
-                        name=f"{event} (cancelled)",
-                    )
-                )
-            else:
-                reminder_c = datetime.strptime(event_time, "%H:%M")
-                reminder_s = (reminder_c - timedelta(minutes=15)).time()
-                reminder_e = (reminder_c + timedelta(minutes=5)).time()
-                # colour disabled or event not start yet
-                if (not colour_en) or (now_h_m < reminder_s):
-                    out_list[3].append(NORMAL_EVENT_COLOUR.format(event=event))
-                elif now_h_m > reminder_e:  # colour enabled and event finished
-                    out_list[3].append(DONE_EVENT_COLOUR.format(event=event))
-                else:  # colour enabled and now in the event
-                    if url := (v["urls"][1:] or ""):
-                        url = "\n    ".join([""] + url)
-                    out_list[3].append(
-                        IN_EVENT_COLOUR.format(event=event, url=url)
-                    )
+            event = f"{event_time}{v.get('end')}  {event_name}"
+            reminder_c = datetime.strptime(event_time, "%H:%M")
+            reminder_s = (reminder_c - timedelta(minutes=15)).time()
+            reminder_e = (reminder_c + timedelta(minutes=5)).time()
+            # colour disabled or event not start yet
+            if (not colour_en) or (now_h_m < reminder_s):
+                out_list[3].append(NORMAL_EVENT_COLOUR.format(event=event))
+            elif now_h_m > reminder_e:  # colour enabled and event finished
+                out_list[3].append(DONE_EVENT_COLOUR.format(event=event))
+            else:  # colour enabled and now in the event
+                if url := "\n    ".join(v.get("urls")):
+                    url = f"\n    {url}"
+                out_list[3].append(IN_EVENT_COLOUR.format(event=event, url=url))
     return "\n".join(sum(out_list, []))
 
 
@@ -210,7 +200,7 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
     re_week_month = f"(?:{'|'.join(week_a)}) (?:{'|'.join(month_b)})"
     re_event = re.compile(
         rf"(?P<date>(?:{re_week_month} |\d+-\d+-)\d+)?"
-        r"[ ]+(?P<time>\d{1,2}:\d{2})?[ ]*(?P<event>.+)"
+        r"[ ]+(?P<time>\d{1,2}:\d{2})?(?P<end>[ ]+- \d{1,2}:\d{2})?[ ]*(?P<event>.+)"
         r"(?:\s+Calendar: (?P<calendar>.+))?"
         r"(?:\s+Link: (?P<link>.+))?"
         r"(?:\s+Hangout Link: (?P<hangout_link>.+))?"
@@ -228,6 +218,7 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
     for (
         date,
         time,
+        end,
         event,
         calendar,
         link,
@@ -278,23 +269,18 @@ def update_event_dict(date_log: str, today_date: datetime) -> OrderedDict:
                 folk_holiday_list.append(event)
             else:
                 cur_event = {
-                    event + (f" ({event_attr})" if event_attr else ""): {
+                    event: {
                         "time": time
                         or (
                             ALL_DAY_HOLIDAY_KEY
                             if england_holiday or ("Holiday" not in calendar)
                             else ALL_DAY_EVENT_KEY
                         ),
-                        "urls": [link]
-                        + list(
-                            filter(
-                                None,
-                                [
-                                    hangout_link,
-                                    search_and_short_url(description),
-                                ],
-                            )
-                        ),
+                        "end": end,
+                        "attr": f" ({event_attr})" if event_attr else "",
+                        "urls": list(filter(None, [
+                            hangout_link, search_and_short_url(description)
+                        ]))
                     }
                 }
         if date and (date != cur_date):
@@ -320,14 +306,18 @@ def remove_colour(input_str: str) -> str:
     return ansi_escape.sub("", input_str).strip()
 
 
-def update_from_file(from_file_event_dict, date_key) -> dict:
+def update_from_file(from_file_event_dict, date_key, from_file_flag) -> dict:
     re_holiday = r"(?P<name>.*holiday.*)\((?P<duration>\d+) day[s]*\)"
     file_holiday = dict()
     for e_date, e_dict in from_file_event_dict.items():
-        if e_date == date_key:
+        if e_date == date_key and (not from_file_flag):
             for k, v in e_dict.items():
-                if "cancelled" in v:
-                    file_holiday[k] = {"cancelled": True} | v
+                for tag, e in re.compile(
+                    r'^(todo|cancelled):[ ]*(.*)', flags=re.IGNORECASE
+                ).findall(k):
+                    file_holiday[e] = v | {"tag": f"{tag.capitalize()}: "}
+                if isinstance(v, dict) and "tag" in v:
+                    file_holiday[k] = v
         if (days_later := (from_date(date_key) - from_date(e_date)).days) > 0:
             for k, v in e_dict.items():
                 for name, duration in re.findall(re_holiday, k, re.IGNORECASE):
@@ -366,10 +356,13 @@ def main_out_agenda(event_dict, today_date, days_later, weather) -> None:
     if event_dict_keys := list(event_dict.keys()):
         start_date = from_date(event_dict_keys[0])
         end_date = from_date(event_dict_keys[-1])
-        if event_date < start_date or event_date > end_date:
-            date_range = f"({event_dict_keys[0]} -> {event_dict_keys[-1]})"
+        if event_date < start_date:
             day_event_dict = {
-                f"Out of range {date_range}": {"time": ALL_DAY_HOLIDAY_KEY}
+                f"Min: {event_dict_keys[0]}": {"time": ALL_DAY_HOLIDAY_KEY}
+            }
+        elif event_date > end_date:
+            day_event_dict = {
+                f"Max: {event_dict_keys[-1]}": {"time": ALL_DAY_HOLIDAY_KEY}
             }
         else:
             ll = "Weekend" if event_date.isoweekday() > 5 else "No Event found"
@@ -441,16 +434,14 @@ if __name__ == "__main__":
             today_date,
         )
 
-    if file_event := update_from_file(from_file_event_dict, days_later_key):
+    if file_event := update_from_file(from_file_event_dict, days_later_key, from_file_flag):
         update_dict_by_key_val(event_dict, days_later_key, file_event)
 
     if args.out_event_only:
         if days_later == 0:
             print(f"weather: {weather}")
         for k, v in filter_sort_event(event_dict.get(days_later_key, {})):
-            if "cancelled" in v:
-                k += " (cancelled)"
-            print(f"{v.get('time')}: {k}")
+            print(f"{v.get('time')}{v.get('end')}: {v.get('tag', '')}{k}{v.get('attr')}")
     else:
         main_out_agenda(event_dict, today_date, days_later, weather)
         if (not from_file_flag) and (event_dict != from_file_event_dict):
