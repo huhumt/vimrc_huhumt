@@ -132,11 +132,13 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
             if pre_all_event:
                 for k, v in log_dict.get("all_event", {}).items():
                     if v > 0:
-                        new_msg_set.add(remove_colour(k))
-                        v -= 1
+                        key = remove_colour(k)
+                        new_msg_set.add(key)
+                        log.log["all_event"].update({key: v - 1})
                 for new_event in set(cur_all_event).difference(pre_all_event):
-                    new_msg_set.add(remove_colour(new_event))
-                    log.log["all_event"].update({new_event: 20})
+                    key = remove_colour(new_event)
+                    new_msg_set.add(key)
+                    log.log["all_event"].update({key: 20})
             file_log_dict.update({log.source: log.log})
         else:
             for k, v in log.log.items():
@@ -198,14 +200,13 @@ def parse_today_event():
         cur_event = cur_event.strip()
 
         if all([cur_hour, cur_minute, cur_event]):
-            cur_event_dict = {f"{cur_hour}:{cur_minute} {cur_event}": 0}
-            event_dict["all_event"].update(cur_event_dict)
+            event_dict["all_event"].update({f"{cur_hour}:{cur_minute} {cur_event}": 0})
             e_t = today_date.replace(
                 hour=int(cur_hour), minute=int(cur_minute))
             r_s = e_t - timedelta(minutes=WEECHAT_CRON_INTERVAL * 4)
             r_e = e_t + timedelta(minutes=WEECHAT_CRON_INTERVAL * 2)
             if today_date > r_s and today_date < r_e:
-                return cur_event_dict
+                return {cur_event: f"{cur_hour}:{cur_minute}"}
         else:  # all day event
             if f"{cur_hour}{cur_minute}".lower() == "weather":
                 weather_list = cur_event.split()
