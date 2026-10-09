@@ -325,6 +325,10 @@ def parse_validate_args(cl_args):
         help="Disable ssh connection"
     )
     parser.add_argument(
+        "--ssh", default=None, help="""
+        set remote ssh domain or ip, this will override --disable-ssh"""
+    )
+    parser.add_argument(
         '-h', '--help',
         action='store_true',
         help='show this help message and exit',
@@ -375,94 +379,113 @@ def parse_validate_args(cl_args):
 
 
 def main():
-    logging.basicConfig()
-    script_type = os.getenv('script_type')
-    if script_type == 'route-up':
-        return route_up(sys.argv[1:])
-
     try:
         args, openvpn_args, preexisting_routeup = parse_validate_args(sys.argv[1:])
     except InvalidArgs:
         return 1
 
-    local_user =  os.environ.get("SUDO_USER")
-    namespace = args.namespace if args.namespace != "" else '""'
+    if args.ssh:
+        args.disable_ssh = False
+        ssh_remote = [args.ssh] if "@" in args.ssh else [f"test@{args.ssh}"]
+    else:
+        ssh_remote = [
+            "test@test.office.test.co.uk",
+            "test@10.10.10.10"
+        ]
 
-    ssh_key = os.path.join(
-        os.path.expanduser(f'~{local_user}'), ".ssh/test_key"
-    )
-    ssh_cmd_list = [
-        'ssh', 'test@test.co.uk',
-        '-p', '2222', '-i', ssh_key
-    ]
-
-    process_id_list = []
     try:
-        ssh_cmd = " ".join(ssh_cmd_list)
-        process_id_list = subprocess.check_output(
-            f"pgrep -f '{ssh_cmd}'", shell=True).decode().splitlines()
+        f = subprocess.check_output("pgrep -f 5901:localhost:5901", shell=True)
     except subprocess.CalledProcessError:
-        ssh_cmd_list += ['-L', '5901:localhost:5901']
-
-    if args.clean:
-        print("Clean namespace and openvpn")
-        for process_id in process_id_list:
-            os.kill(int(process_id), signal.SIGTERM)
-        subprocess.run(["pkill", "openvpn"])
-        subprocess.run(["ip", "netns", "delete", args.namespace])
-        return 0
-
-    pid_filename = "/run/openvpn-client/vpn.pid"
-    try:
-        print(f"setup namespace {args.namespace}")
-        setup_namespace(args.namespace)
-    except Exception as e:
-        print(f"{e}\n{args.namespace} has already been set\n")
+        port_forward = ["-L", "5901:localhost:5901"]
+        process_id_list = []
     else:
-        execv_args = ['openvpn'] + openvpn_args
-        # OK, don't bother assigning an IP to the tun, or creating routes;
-        # we'll just have to do it all over again in the protected namespace
-        execv_args += ['--ifconfig-noexec', '--route-noexec']
-        # there's no legitimate use case for `script-security 3` client-side
-        execv_args += ['--script-security', '2']
-        execv_args += ['--daemon']
-        execv_args += [
-            '--config', os.path.join(
-                os.path.expanduser(f'~{local_user}'), ".ssh/test.ovpn"
+        print("New session without port forwarding")
+        port_forward = []
+        process_id_list = f.decode().splitlines()
+
+    # run as normal user
+    if os.path.expanduser("~") != "/root":
+        rj_cmd = ["ssh", "-t", "test@shell.test.co.uk", "-i", "~/.ssh/shell_key"]
+        if not args.disable_ssh:
+            shell_key = port_forward + ["-p", "2222", "-i", "~/.ssh/office_shell_key"]
+            r_cmd = [f"ssh {sr} {' '.join(shell_key)}" for sr in ssh_remote]
+            rj_cmd += (port_forward + " || ".join(r_cmd).split())
+        print(f"""Run '{" ".join(rj_cmd)}'""")
+        os.execv("/usr/bin/ssh", rj_cmd)
+    else:
+        logging.basicConfig()
+        script_type = os.getenv('script_type')
+        if script_type == 'route-up':
+            return route_up(sys.argv[1:])
+
+        local_user =  os.environ.get("SUDO_USER")
+        namespace = args.namespace if args.namespace != "" else '""'
+
+        if args.clean:
+            print("Clean namespace and openvpn")
+            for process_id in process_id_list:
+                os.kill(int(process_id), signal.SIGTERM)
+            subprocess.run(["pkill", "openvpn"], check=True)
+            subprocess.run(["ip", "netns", "delete", namespace], check=True)
+            return 0
+
+        pid_filename = "/run/openvpn-client/vpn.pid"
+        try:
+            print(f"setup namespace {namespace}")
+            setup_namespace(namespace)
+        except Exception as e:
+            print(f"{e}\n{namespace} has already been set\n")
+        else:
+            execv_args = ['openvpn'] + openvpn_args
+            # OK, don't bother assigning an IP to the tun, or creating routes;
+            # we'll just have to do it all over again in the protected namespace
+            execv_args += ['--ifconfig-noexec', '--route-noexec']
+            # there's no legitimate use case for `script-security 3` client-side
+            execv_args += ['--script-security', '2']
+            execv_args += ['--daemon']
+            execv_args += [
+                '--config', os.path.join(
+                    os.path.expanduser(f'~{local_user}'), ".ssh/test.ovpn"
+                )
+            ]
+            execv_args += ['--writepid', pid_filename]
+            # pass our own path as the route-up, with some extra data
+            disable_arg = serialize_disableargs(
+                args.disable_ipv4, args.disable_ipv6
             )
-        ]
-        execv_args += ['--writepid', pid_filename]
-        # pass our own path as the route-up, with some extra data
-        disable_arg = serialize_disableargs(
-            args.disable_ipv4, args.disable_ipv6
-        )
-        script_name = os.path.abspath(__file__)
-        execv_args += [
-            '--route-up',
-            f"{script_name} {namespace} {args.dns} {preexisting_routeup} {disable_arg}"
-        ]
+            script_name = os.path.abspath(__file__)
+            execv_args += [
+                '--route-up',
+                f"{script_name} {namespace} {args.dns} {preexisting_routeup} {disable_arg}"
+            ]
 
-        retry_cnt = 3
-        while (not os.path.isfile(pid_filename)) and retry_cnt > 0:
-            try:
-                subprocess.check_call(execv_args)
-                time.sleep(5)
-            except Exception as e:
-                print(e)
-            if not os.path.isfile(pid_filename):
-                retry_cnt -= 1
-                print("\nFailed to authentication with given credentials, try again")
+            retry_cnt = 3
+            while (not os.path.isfile(pid_filename)) and retry_cnt > 0:
+                try:
+                    subprocess.check_call(execv_args)
+                    time.sleep(5)
+                except Exception as e:
+                    print(e)
+                if not os.path.isfile(pid_filename):
+                    retry_cnt -= 1
+                    print("\nFailed to authentication with given credentials, try again")
 
-    ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user]
-    ip_cmd_list += ['-i', f'NAMESPACE_NAME=@{namespace}'] if args.disable_ssh else ssh_cmd_list
-    if os.path.isfile(pid_filename):
-        print(f"""Run '{" ".join(ip_cmd_list)}'""")
-        time.sleep(4)
-        os.execv(IP_CMD, ip_cmd_list)
-    else:
-        print("\nBye ...")
-        subprocess.run(["pkill", "openvpn"])
-        subprocess.run(["ip", "netns", "delete", args.namespace])
+        ip_cmd_list = ['ip', 'netns', 'exec', namespace, 'sudo', '-u', local_user, "-i"]
+        if not args.disable_ssh:
+            ip_key = os.path.join(
+                os.path.expanduser(f'~{local_user}'), ".ssh/office_pc_key"
+            )
+            ip_post = " ".join(port_forward + ['-p', '2222', '-i', ip_key])
+            rj_cmd = " || ".join([f"ssh {sr} {ip_post}" for sr in ssh_remote])
+            ip_cmd_list += ["bash", "-c", rj_cmd]
+        if os.path.isfile(pid_filename):
+            print(f"""Run '{" ".join(ip_cmd_list)}'""")
+            time.sleep(4)
+            os.execv(IP_CMD, ip_cmd_list)
+        else:
+            print("Bye...")
+            subprocess.run(["pkill", "openvpn"])
+            subprocess.run(["ip", "netns", "delete", namespace])
 
 
 if __name__ == '__main__':
