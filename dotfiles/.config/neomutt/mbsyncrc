@@ -13,9 +13,9 @@ SubFolders Verbatim
 Channel work-inbox
 Far :work-remote:
 Near :work-local:
-Patterns INBOX Sent Trash Drafts Test/*
+Patterns INBOX Sent Trash Drafts Junk Test/*
 Create Near
 Expunge Both
 SyncState *
 MaxMessages 0
-MaxSize 2m
+MaxSize 10m

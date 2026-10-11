@@ -394,7 +394,7 @@ bind pager h  exit
 # bind pager N       next-unread
 bind pager \Cp       previous-entry
 bind pager \Cn       next-entry
-# bind pager h       display-toggle-weed
+bind pager H       display-toggle-weed
 bind pager gg      top
 bind pager G       bottom
 

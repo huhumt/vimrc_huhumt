@@ -121,8 +121,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
             log_dict.pop(short_msg_key)  # delete short msg only
         else:
             return None
-    # if not in delete mode but log.log is invalid, switch to delete mode
-    elif log.mode == MODE_DELETE or (not log.log):
+    elif log.mode == MODE_DELETE or (log.log is None):
         file_log_dict.update({log.source: {}})  # delete all
     else:
         new_msg_set = set()
@@ -138,7 +137,7 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
                 for new_event in set(cur_all_event).difference(pre_all_event):
                     key = remove_colour(new_event)
                     new_msg_set.add(key)
-                    log.log["all_event"].update({key: 20})
+                    log.log["all_event"].update({key: 8})
             file_log_dict.update({log.source: log.log})
         else:
             for k, v in log.log.items():
@@ -148,7 +147,8 @@ def update_weechat_log(log: WeechatLogData, filename="/tmp/weechat_msg.json"):
                 if (out_msg not in full_msg.values()) or log.enable_duplicated_event:
                     new_msg_set.add(out_msg)
 
-        notify_event(log.source, "\n".join(new_msg_set))
+        if new_msg_set:
+            notify_event(log.source, "\n".join(new_msg_set))
         for new_msg in new_msg_set:
             short_msg = (log.short_header_template or "").format(new_msg[:32])
             new_msg_dict = {

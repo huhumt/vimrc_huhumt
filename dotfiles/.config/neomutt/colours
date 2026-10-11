@@ -30,7 +30,6 @@ color tilde      color108 color237
 color status     color144 color234
 
 # index stuff
-color indicator  color229 color238
 color indicator  color236 color188
 color tree       color109 color237
 color index      color188 color237 ~A
